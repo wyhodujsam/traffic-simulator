@@ -107,12 +107,54 @@ Which phases cover which requirements. Updated during roadmap creation.
 
 | Requirement | Phase | Status |
 |-------------|-------|--------|
-| (populated during roadmap creation) | | |
+| INFR-01 | Phase 1 — Project Bootstrap & Infrastructure | ○ Pending |
+| INFR-02 | Phase 1 — Project Bootstrap & Infrastructure | ○ Pending |
+| INFR-03 | Phase 1 — Project Bootstrap & Infrastructure | ○ Pending |
+| SIM-08 | Phase 1 — Project Bootstrap & Infrastructure | ○ Pending |
+| ROAD-01 | Phase 2 — Domain Model & Road Network Foundation | ○ Pending |
+| ROAD-05 | Phase 2 — Domain Model & Road Network Foundation | ○ Pending |
+| ROAD-06 | Phase 2 — Domain Model & Road Network Foundation | ○ Pending |
+| SIM-02 | Phase 2 — Domain Model & Road Network Foundation | ○ Pending |
+| SIM-05 | Phase 2 — Domain Model & Road Network Foundation | ○ Pending |
+| SIM-06 | Phase 2 — Domain Model & Road Network Foundation | ○ Pending |
+| INFR-04 | Phase 2 — Domain Model & Road Network Foundation | ○ Pending |
+| SIM-01 | Phase 3 — Physics Engine (IDM) | ○ Pending |
+| SIM-03 | Phase 3 — Physics Engine (IDM) | ○ Pending |
+| SIM-04 | Phase 3 — Physics Engine (IDM) | ○ Pending |
+| SIM-07 | Phase 3 — Physics Engine (IDM) | ○ Pending |
+| VIS-01 | Phase 5 — Canvas Rendering & Basic UI | ○ Pending |
+| VIS-02 | Phase 5 — Canvas Rendering & Basic UI | ○ Pending |
+| VIS-03 | Phase 5 — Canvas Rendering & Basic UI | ○ Pending |
+| CTRL-01 | Phase 5 — Canvas Rendering & Basic UI | ○ Pending |
+| CTRL-02 | Phase 5 — Canvas Rendering & Basic UI | ○ Pending |
+| CTRL-03 | Phase 5 — Canvas Rendering & Basic UI | ○ Pending |
+| CTRL-04 | Phase 5 — Canvas Rendering & Basic UI | ○ Pending |
+| STAT-01 | Phase 5 — Canvas Rendering & Basic UI | ○ Pending |
+| STAT-02 | Phase 5 — Canvas Rendering & Basic UI | ○ Pending |
+| STAT-03 | Phase 5 — Canvas Rendering & Basic UI | ○ Pending |
+| OBST-01 | Phase 6 — Live Obstacle Placement | ○ Pending |
+| OBST-02 | Phase 6 — Live Obstacle Placement | ○ Pending |
+| OBST-03 | Phase 6 — Live Obstacle Placement | ○ Pending |
+| OBST-04 | Phase 6 — Live Obstacle Placement | ○ Pending |
+| VIS-05 | Phase 6 — Live Obstacle Placement | ○ Pending |
+| ROAD-02 | Phase 7 — Lane Changing & Road Narrowing | ○ Pending |
+| ROAD-03 | Phase 7 — Lane Changing & Road Narrowing | ○ Pending |
+| ROAD-04 | Phase 7 — Lane Changing & Road Narrowing | ○ Pending |
+| IXTN-01 | Phase 8 — Traffic Signals & Intersections | ○ Pending |
+| IXTN-02 | Phase 8 — Traffic Signals & Intersections | ○ Pending |
+| IXTN-03 | Phase 8 — Traffic Signals & Intersections | ○ Pending |
+| IXTN-04 | Phase 8 — Traffic Signals & Intersections | ○ Pending |
+| IXTN-07 | Phase 8 — Traffic Signals & Intersections | ○ Pending |
+| VIS-04 | Phase 8 — Traffic Signals & Intersections | ○ Pending |
+| CTRL-05 | Phase 9 — JSON Map Configuration & Predefined Scenarios | ○ Pending |
+| IXTN-05 | Phase 10 — Roundabouts, Priority Intersections & Polish | ○ Pending |
+| IXTN-06 | Phase 10 — Roundabouts, Priority Intersections & Polish | ○ Pending |
+| VIS-06 | Phase 10 — Roundabouts, Priority Intersections & Polish | ○ Pending |
 
 **Coverage:**
 - v1 requirements: 33 total
-- Mapped to phases: 0
-- Unmapped: 33 ⚠️
+- Mapped to phases: 33
+- Unmapped: 0 ✓
 
 ---
 *Requirements defined: 2026-03-27*
