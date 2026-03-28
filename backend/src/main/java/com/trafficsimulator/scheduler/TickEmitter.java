@@ -4,6 +4,7 @@ import com.trafficsimulator.dto.ObstacleDto;
 import com.trafficsimulator.dto.SimulationStateDto;
 import com.trafficsimulator.dto.StatsDto;
 import com.trafficsimulator.dto.VehicleDto;
+import com.trafficsimulator.engine.LaneChangeEngine;
 import com.trafficsimulator.engine.PhysicsEngine;
 import com.trafficsimulator.engine.SimulationEngine;
 import com.trafficsimulator.engine.SimulationStatus;
@@ -42,6 +43,7 @@ public class TickEmitter {
     private final SimulationEngine simulationEngine;
     private final VehicleSpawner vehicleSpawner;
     private final PhysicsEngine physicsEngine;
+    private final LaneChangeEngine laneChangeEngine;
 
     @Scheduled(fixedRate = 50)
     public void emitTick() {
@@ -79,7 +81,10 @@ public class TickEmitter {
                     }
                 }
 
-                // 3. Despawn (after physics moved vehicles)
+                // 3. Lane changes (intent -> resolve -> commit) — once per tick, not per sub-step
+                laneChangeEngine.tick(network, tick);
+
+                // 4. Despawn (after physics and lane changes)
                 vehicleSpawner.despawnVehicles(network);
             }
         } else {
@@ -180,8 +185,26 @@ public class TickEmitter {
         double fraction = v.getPosition() / road.getLength();
         double x = road.getStartX() + fraction * (road.getEndX() - road.getStartX());
         double yBase = road.getStartY() + fraction * (road.getEndY() - road.getStartY());
-        double laneOffset = (laneIndex - (road.getLanes().size() - 1) / 2.0) * LANE_WIDTH_PX;
-        double y = yBase + laneOffset;
+
+        // Compute target lane y-offset (current lane)
+        double targetLaneOffset = (laneIndex - (road.getLanes().size() - 1) / 2.0) * LANE_WIDTH_PX;
+
+        double y;
+        String targetLaneId = null;
+        double lcProgress = 1.0;
+
+        if (v.getLaneChangeSourceIndex() >= 0 && v.getLaneChangeProgress() < 1.0) {
+            // Mid lane-change: interpolate between source and target lane y
+            double sourceLaneOffset = (v.getLaneChangeSourceIndex()
+                - (road.getLanes().size() - 1) / 2.0) * LANE_WIDTH_PX;
+            double progress = v.getLaneChangeProgress();
+            y = yBase + sourceLaneOffset + progress * (targetLaneOffset - sourceLaneOffset);
+            targetLaneId = v.getLane().getId();
+            lcProgress = progress;
+        } else {
+            y = yBase + targetLaneOffset;
+        }
+
         double angle = Math.atan2(road.getEndY() - road.getStartY(),
                                   road.getEndX() - road.getStartX());
 
@@ -193,6 +216,8 @@ public class TickEmitter {
             .x(x)
             .y(y)
             .angle(angle)
+            .targetLaneId(targetLaneId)
+            .laneChangeProgress(lcProgress)
             .build();
     }
 }
