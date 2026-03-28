@@ -4,7 +4,7 @@ milestone: v1.0
 milestone_name: milestone
 current_phase: 4
 status: Ready to plan
-last_updated: "2026-03-28T15:42:42.515Z"
+last_updated: "2026-03-28T15:40:52.967Z"
 progress:
   total_phases: 10
   completed_phases: 2
@@ -33,7 +33,7 @@ See: .planning/PROJECT.md (updated 2026-03-27)
 | 1 | Project Bootstrap & Infrastructure | ✓ Complete |
 | 2 | Domain Model & Road Network Foundation | ✓ Complete (5/5 plans done) |
 | 3 | Physics Engine (IDM) | ✓ Complete (2/2 plans done) |
-| 4 | Simulation Engine & Tick Loop | ○ Pending |
+| 4 | Simulation Engine & Tick Loop | ◑ In Progress (1/4 plans done) |
 | 5 | Canvas Rendering & Basic UI | ○ Pending |
 | 6 | Live Obstacle Placement | ○ Pending |
 | 7 | Lane Changing & Road Narrowing | ○ Pending |
@@ -51,3 +51,4 @@ See: .planning/PROJECT.md (updated 2026-03-27)
 - 2026-03-27: Phase 2 Plan 2.5 complete — SimulationStateDto replaces TickDto; VehicleDto+StatsDto; TickEmitter fully wired; 3 review fixes applied (tick counter, timing guard, SetSpawnRate wiring); 30 total tests pass; Phase 2 complete
 - 2026-03-28: Phase 3 Plan 3.1 complete — PhysicsEngine with IDM car-following model, Euler integration, 5 safety guards
 - 2026-03-28: Phase 3 Plan 3.2 complete — 9-test PhysicsEngine test suite (free-flow, following, emergency stop, zero-gap, NaN guard, velocity clamp, benchmark, monotonicity, empty lane); 38 total tests pass; Phase 3 complete
+- 2026-03-28: Phase 4 Plan 4.3 complete — SimulationStatusDto + SimulationController with GET /api/simulation/status and GET /api/maps endpoints; all 38 tests pass
