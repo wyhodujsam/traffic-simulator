@@ -8,6 +8,8 @@ export interface VehicleDto {
   x: number;          // pixel x coordinate
   y: number;          // pixel y coordinate
   angle: number;      // radians
+  targetLaneId?: string | null;       // null if not changing lanes
+  laneChangeProgress?: number;        // 0..1, undefined = not changing
 }
 
 export interface ObstacleDto {
@@ -37,6 +39,12 @@ export interface SimulationStateDto {
   stats: StatsDto;
 }
 
+export interface LaneDto {
+  id: string;
+  laneIndex: number;
+  active: boolean;
+}
+
 export interface RoadDto {
   id: string;
   name: string;
@@ -47,6 +55,7 @@ export interface RoadDto {
   startY: number;
   endX: number;
   endY: number;
+  lanes?: LaneDto[];     // optional — present when backend sends lane details
 }
 
 export interface SimulationStatusDto {
@@ -64,7 +73,8 @@ export interface SimulationStatusDto {
 export type CommandType =
   | 'START' | 'STOP' | 'PAUSE' | 'RESUME'
   | 'SET_SPAWN_RATE' | 'SET_SPEED_MULTIPLIER' | 'SET_MAX_SPEED' | 'LOAD_MAP'
-  | 'ADD_OBSTACLE' | 'REMOVE_OBSTACLE';
+  | 'ADD_OBSTACLE' | 'REMOVE_OBSTACLE'
+  | 'CLOSE_LANE';
 
 export interface CommandDto {
   type: CommandType;
@@ -76,6 +86,8 @@ export interface CommandDto {
   laneIndex?: number;    // ADD_OBSTACLE
   position?: number;     // ADD_OBSTACLE (metres)
   obstacleId?: string;   // REMOVE_OBSTACLE
+  closeLaneRoadId?: string;   // CLOSE_LANE
+  closeLaneIndex?: number;    // CLOSE_LANE
 }
 
 // ---- Snapshot wrapper for interpolation ----
