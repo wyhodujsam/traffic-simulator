@@ -77,7 +77,7 @@
 3. Emergency stop test: vehicle ahead stops instantly; follower brakes hard and stops before collision; velocity clamped to [0, maxSpeed] throughout.
 
 **Plans:**
-1. `PhysicsEngine.java` — full IDM formula, Euler integration with configurable `dt`, velocity clamp `[0, maxSpeed]`
+1. ✓ `PhysicsEngine.java` — full IDM formula, Euler integration with configurable `dt`, velocity clamp `[0, maxSpeed]`
 2. Edge-case guards — minimum gap `s_min >= 1.0 m` enforcement, NaN/Infinity guard after each integration step
 3. Heterogeneous vehicle parameters — ±20% noise on `v0`, `aMax`, `b` per vehicle for emergent jam formation
 4. Unit test suite — free-flow, following, emergency stop, zero-gap, NaN guard, 500-vehicle benchmark (< 5 ms per tick)
