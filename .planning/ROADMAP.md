@@ -96,7 +96,7 @@
 3. Thread safety: 1000 concurrent command enqueues during active tick loop produce zero `ConcurrentModificationException`.
 
 **Plans:**
-1. `SimulationEngine.java` — `ScheduledExecutorService` at 20 Hz, tick order: lights → spawn → physics → collision → despawn → snapshot
+1. ✓ Wire PhysicsEngine into TickEmitter with speed multiplier and sub-stepping
 2. Command queue integration — `LinkedBlockingQueue` drained at tick start; `START`, `STOP`, `PAUSE`, `RESUME` commands
 3. `StatePublisher.java` — `SimpMessagingTemplate` broadcast of `SimulationStateDto` (Jackson serialized) every tick
 4. `SimulationController.java` — REST endpoints for initial config, map selection, simulation status
