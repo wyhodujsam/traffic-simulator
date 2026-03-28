@@ -1,4 +1,17 @@
 /home/sebastian/traffic-simulator/backend/src/main/java/com/trafficsimulator/TrafficSimulatorApplication.java
 /home/sebastian/traffic-simulator/backend/src/main/java/com/trafficsimulator/config/WebSocketConfig.java
+/home/sebastian/traffic-simulator/backend/src/main/java/com/trafficsimulator/controller/CommandHandler.java
+/home/sebastian/traffic-simulator/backend/src/main/java/com/trafficsimulator/dto/CommandDto.java
 /home/sebastian/traffic-simulator/backend/src/main/java/com/trafficsimulator/dto/TickDto.java
+/home/sebastian/traffic-simulator/backend/src/main/java/com/trafficsimulator/engine/SimulationEngine.java
+/home/sebastian/traffic-simulator/backend/src/main/java/com/trafficsimulator/engine/SimulationStatus.java
+/home/sebastian/traffic-simulator/backend/src/main/java/com/trafficsimulator/engine/command/SimulationCommand.java
+/home/sebastian/traffic-simulator/backend/src/main/java/com/trafficsimulator/model/DespawnPoint.java
+/home/sebastian/traffic-simulator/backend/src/main/java/com/trafficsimulator/model/Intersection.java
+/home/sebastian/traffic-simulator/backend/src/main/java/com/trafficsimulator/model/IntersectionType.java
+/home/sebastian/traffic-simulator/backend/src/main/java/com/trafficsimulator/model/Lane.java
+/home/sebastian/traffic-simulator/backend/src/main/java/com/trafficsimulator/model/Road.java
+/home/sebastian/traffic-simulator/backend/src/main/java/com/trafficsimulator/model/RoadNetwork.java
+/home/sebastian/traffic-simulator/backend/src/main/java/com/trafficsimulator/model/SpawnPoint.java
+/home/sebastian/traffic-simulator/backend/src/main/java/com/trafficsimulator/model/Vehicle.java
 /home/sebastian/traffic-simulator/backend/src/main/java/com/trafficsimulator/scheduler/TickEmitter.java

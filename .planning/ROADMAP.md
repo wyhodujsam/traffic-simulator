@@ -55,11 +55,13 @@
 3. Vehicle despawns on reaching road exit point; tick snapshot vehicle count decrements correctly.
 
 **Plans:**
-1. Domain model classes — `Vehicle.java` (IDM fields: v0, aMax, b, s0, T), `Lane.java`, `Road.java`, `RoadNetwork.java`, `Intersection.java` with Lombok
-2. Command queue pattern — `SimulationCommand` sealed interface, `CommandHandler.java`, `LinkedBlockingQueue` wiring in `SimulationEngine`
-3. `VehicleSpawner.java` — spawn at road entry points, configurable rate, overlap prevention
+1. ✓ Domain model classes — `Vehicle.java` (IDM fields: v0, aMax, b, s0, T), `Lane.java`, `Road.java`, `RoadNetwork.java`, `Intersection.java` with Lombok
+2. ✓ Command queue pattern — `SimulationCommand` sealed interface, `CommandHandler.java`, `LinkedBlockingQueue` wiring in `SimulationEngine`
+3. `VehicleSpawner.java` — spawn at road entry points, configurable rate, overlap prevention (plan 02-04, see 02-04-SUMMARY.md)
 4. `MapLoader.java` — Jackson-based JSON → `RoadNetwork` with hardcoded fixture `maps/straight-road.json`
 5. Unit tests — model construction, spawner produces vehicle with correct IDM parameters, despawn on exit
+
+**Note:** Plan ordering in roadmap vs execution order differs. 02-04 (VehicleSpawner) was executed as Wave 2 plan. See 02-04-SUMMARY.md for details.
 
 ---
 
