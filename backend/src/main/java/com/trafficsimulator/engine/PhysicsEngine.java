@@ -1,6 +1,7 @@
 package com.trafficsimulator.engine;
 
 import com.trafficsimulator.model.Lane;
+import com.trafficsimulator.model.Obstacle;
 import com.trafficsimulator.model.Vehicle;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Component;
@@ -30,14 +31,59 @@ public class PhysicsEngine {
         // Sort by position descending — front vehicles first
         vehicles.sort(Comparator.comparingDouble(Vehicle::getPosition).reversed());
 
+        // Pre-sort obstacles by position for efficient lookup
+        List<Obstacle> obstacles = lane.getObstacles();
+
         for (int i = 0; i < vehicles.size(); i++) {
             Vehicle vehicle = vehicles.get(i);
 
-            // Find leader: next vehicle ahead (index i-1 after descending sort)
-            // The vehicle at index 0 has no leader (it is the frontmost)
-            Vehicle leader = (i > 0) ? vehicles.get(i - 1) : null;
+            // Find vehicle leader (existing logic)
+            Vehicle vehicleLeader = (i > 0) ? vehicles.get(i - 1) : null;
 
-            double acceleration = computeAcceleration(vehicle, leader);
+            // Find nearest obstacle ahead
+            Obstacle nearestObstacle = null;
+            double nearestObstaclePos = Double.MAX_VALUE;
+            for (Obstacle obs : obstacles) {
+                if (obs.getPosition() > vehicle.getPosition() && obs.getPosition() < nearestObstaclePos) {
+                    nearestObstacle = obs;
+                    nearestObstaclePos = obs.getPosition();
+                }
+            }
+
+            // Determine effective leader: vehicle or obstacle, whichever is closer
+            double leaderPos, leaderSpeed, leaderLength;
+            boolean hasLeader;
+
+            if (vehicleLeader != null && nearestObstacle != null) {
+                // Both exist — pick the closer one
+                if (vehicleLeader.getPosition() <= nearestObstaclePos) {
+                    leaderPos = vehicleLeader.getPosition();
+                    leaderSpeed = vehicleLeader.getSpeed();
+                    leaderLength = vehicleLeader.getLength();
+                } else {
+                    leaderPos = nearestObstacle.getPosition();
+                    leaderSpeed = 0.0;
+                    leaderLength = nearestObstacle.getLength();
+                }
+                hasLeader = true;
+            } else if (vehicleLeader != null) {
+                leaderPos = vehicleLeader.getPosition();
+                leaderSpeed = vehicleLeader.getSpeed();
+                leaderLength = vehicleLeader.getLength();
+                hasLeader = true;
+            } else if (nearestObstacle != null) {
+                leaderPos = nearestObstacle.getPosition();
+                leaderSpeed = 0.0;
+                leaderLength = nearestObstacle.getLength();
+                hasLeader = true;
+            } else {
+                leaderPos = 0;
+                leaderSpeed = 0;
+                leaderLength = 0;
+                hasLeader = false;
+            }
+
+            double acceleration = computeAcceleration(vehicle, leaderPos, leaderSpeed, leaderLength, hasLeader);
 
             // Guard 4: NaN / Infinity fallback
             if (!Double.isFinite(acceleration)) {
@@ -69,13 +115,22 @@ public class PhysicsEngine {
     }
 
     /**
-     * Computes IDM acceleration for a vehicle, optionally following a leader.
+     * Computes IDM acceleration for a vehicle given optional leader data.
+     * Leader can be a vehicle or an obstacle — represented as position/speed/length primitives.
      *
      * <p>IDM formula: a = aMax * [1 - (v/v0)^delta - (sStar/s)^2]
      *
      * <p>where sStar = s0 + max(0, v*T + v*deltaV / (2*sqrt(aMax*b)))
+     *
+     * @param vehicle       the following vehicle
+     * @param leaderPosition position of leader's front (metres from lane start), or -1 if no leader
+     * @param leaderSpeed    leader's speed (m/s), 0 for obstacles
+     * @param leaderLength   leader's length (metres)
+     * @param hasLeader      true if a leader exists
      */
-    private double computeAcceleration(Vehicle vehicle, Vehicle leader) {
+    private double computeAcceleration(Vehicle vehicle, double leaderPosition,
+                                        double leaderSpeed, double leaderLength,
+                                        boolean hasLeader) {
         double v = vehicle.getSpeed();
         double v0 = vehicle.getV0();
         double aMax = vehicle.getAMax();
@@ -84,19 +139,19 @@ public class PhysicsEngine {
         double vRatio = v / v0;
         double freeRoadTerm = vRatio * vRatio * vRatio * vRatio; // (v/v0)^4
 
-        if (leader == null) {
+        if (!hasLeader) {
             // Free-flow: no interaction term
             return aMax * (1.0 - freeRoadTerm);
         }
 
         // Gap computation (front-bumper to rear-bumper)
-        double gap = leader.getPosition() - vehicle.getPosition() - leader.getLength();
+        double gap = leaderPosition - vehicle.getPosition() - leaderLength;
 
         // Guard 1: Zero / negative gap clamp
         double safeGap = Math.max(gap, S_MIN);
 
         // Speed difference (positive when follower is faster than leader)
-        double deltaV = v - leader.getSpeed();
+        double deltaV = v - leaderSpeed;
 
         // Desired gap s*
         // Guard 5: s* floor via max(0, ...) on the dynamic term
