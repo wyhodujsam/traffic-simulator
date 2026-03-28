@@ -2,26 +2,22 @@ import { describe, it, expect, vi, beforeEach } from 'vitest';
 import { render, screen } from '@testing-library/react';
 import App from '../App';
 import { useSimulationStore } from '../store/useSimulationStore';
-import type { SimulationStateDto, Snapshot } from '../types/simulation';
 
 vi.mock('../hooks/useWebSocket', () => ({
   useWebSocket: vi.fn(),
 }));
 
-function makeSnapshot(tick: number, timestamp: number): Snapshot {
-  const state: SimulationStateDto = {
-    tick,
-    timestamp,
-    status: 'RUNNING',
-    vehicles: [],
-    stats: { vehicleCount: 0, avgSpeed: 0, density: 0, throughput: 0 },
-  };
-  return {
-    state,
-    receivedAt: performance.now(),
-    vehicleMap: new Map(),
-  };
-}
+vi.mock('../components/SimulationCanvas', () => ({
+  SimulationCanvas: () => <div data-testid="canvas">Canvas</div>,
+}));
+
+vi.mock('../components/ControlsPanel', () => ({
+  ControlsPanel: () => <div data-testid="controls">Controls</div>,
+}));
+
+vi.mock('../components/StatsPanel', () => ({
+  StatsPanel: () => <div data-testid="stats">Stats</div>,
+}));
 
 describe('App', () => {
   beforeEach(() => {
@@ -42,21 +38,18 @@ describe('App', () => {
     expect(screen.getByText('Traffic Simulator')).toBeInTheDocument();
   });
 
-  it('should show waiting message when no tick received', () => {
+  it('should render SimulationCanvas', () => {
     render(<App />);
-    expect(screen.getByText(/waiting for connection/)).toBeInTheDocument();
+    expect(screen.getByTestId('canvas')).toBeInTheDocument();
   });
 
-  it('should show tick count', () => {
-    useSimulationStore.setState({ tickCount: 42, currSnapshot: makeSnapshot(42, Date.now()) });
+  it('should render ControlsPanel', () => {
     render(<App />);
-    expect(screen.getByText('Tick count: 42')).toBeInTheDocument();
+    expect(screen.getByTestId('controls')).toBeInTheDocument();
   });
 
-  it('should show latency when tick is received', () => {
-    const now = Date.now();
-    useSimulationStore.setState({ tickCount: 1, currSnapshot: makeSnapshot(1, now) });
+  it('should render StatsPanel', () => {
     render(<App />);
-    expect(screen.getByText(/Latency:/)).toBeInTheDocument();
+    expect(screen.getByTestId('stats')).toBeInTheDocument();
   });
 });
