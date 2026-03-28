@@ -54,4 +54,4 @@ See: .planning/PROJECT.md (updated 2026-03-27)
 - 2026-03-28: Phase 4 Plan 4.3 complete — SimulationStatusDto + SimulationController with GET /api/simulation/status and GET /api/maps endpoints; all 38 tests pass
 - 2026-03-28: Phase 4 Plan 4.4 complete — 1000-thread concurrent enqueue test + 5 tick pipeline integration tests (spawn/physics/despawn, pause/resume, stop/restart, speed multiplier); 44 total tests pass
 - 2026-03-28: Phase 5 Plan 5.2 complete — TypeScript DTOs (VehicleDto, SimulationStateDto, CommandDto, RoadDto, Snapshot), Zustand store expansion (prev/curr snapshots, sendCommand, roads), useWebSocket wiring (sendCommand + REST /api/roads); tsc --noEmit passes
-- 2026-03-28: Phase 5 Plan 5.4 complete — useDebouncedCallback hook, ControlsPanel with Start/Pause/Stop buttons (state-aware), speed multiplier slider (0.5x-5x), spawn rate slider (0.5-5 veh/s), max speed slider (30-200 km/h); all debounced at 200ms; tsc --noEmit passes
+- 2026-03-28: Phase 5 Plan 5.5 complete — StatsPanel component with live statistics (vehicles, avg speed km/h, density, throughput, tick count); reads from Zustand store; tsc --noEmit passes
