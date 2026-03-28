@@ -49,6 +49,9 @@ public class SimulationEngine {
     private VehicleSpawner vehicleSpawner;
 
     @Autowired(required = false)
+    private ObstacleManager obstacleManager;
+
+    @Autowired(required = false)
     private MapLoader mapLoader;
 
     @PostConstruct
@@ -143,6 +146,17 @@ public class SimulationEngine {
             }
             log.info("Max speed updated to {} m/s ({} km/h)", this.maxSpeed, this.maxSpeed * 3.6);
 
+        } else if (cmd instanceof SimulationCommand.AddObstacle addObs) {
+            if (roadNetwork != null && obstacleManager != null) {
+                obstacleManager.addObstacle(roadNetwork, addObs.roadId(), addObs.laneIndex(),
+                    addObs.position(), tickCounter.get());
+            }
+
+        } else if (cmd instanceof SimulationCommand.RemoveObstacle removeObs) {
+            if (roadNetwork != null && obstacleManager != null) {
+                obstacleManager.removeObstacle(roadNetwork, removeObs.obstacleId());
+            }
+
         } else if (cmd instanceof SimulationCommand.LoadMap loadMap) {
             log.info("Load map requested: {}", loadMap.mapId());
 
@@ -166,6 +180,7 @@ public class SimulationEngine {
         for (Road road : roadNetwork.getRoads().values()) {
             for (Lane lane : road.getLanes()) {
                 lane.getVehicles().clear();
+                lane.getObstacles().clear();
             }
         }
     }
