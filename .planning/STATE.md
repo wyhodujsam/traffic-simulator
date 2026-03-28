@@ -44,3 +44,4 @@ See: .planning/PROJECT.md (updated 2026-03-27)
 ## Session Log
 
 - 2026-03-27: Project initialized, research complete, requirements defined, roadmap created
+- 2026-03-27: Plan 02-02 complete — Command Queue Pattern implemented (SimulationCommand, SimulationStatus, SimulationEngine, CommandDto, CommandHandler)
