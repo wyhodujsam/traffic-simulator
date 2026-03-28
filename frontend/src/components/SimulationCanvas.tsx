@@ -9,18 +9,16 @@ import type { RoadDto } from '../types/simulation';
 function computeCanvasSize(roads: RoadDto[]): { width: number; height: number } {
   if (roads.length === 0) return { width: 900, height: 600 };
 
-  let minX = Infinity, minY = Infinity, maxX = -Infinity, maxY = -Infinity;
+  let maxX = -Infinity, maxY = -Infinity;
   for (const road of roads) {
     const halfW = (road.laneCount * LANE_WIDTH_PX) / 2;
-    minX = Math.min(minX, road.startX, road.endX);
     maxX = Math.max(maxX, road.startX, road.endX);
-    minY = Math.min(minY, road.startY - halfW, road.endY - halfW);
     maxY = Math.max(maxY, road.startY + halfW, road.endY + halfW);
   }
 
   return {
-    width: Math.ceil(maxX - minX + CANVAS_PADDING * 2),
-    height: Math.ceil(maxY - minY + CANVAS_PADDING * 2),
+    width: Math.ceil(maxX + CANVAS_PADDING),
+    height: Math.ceil(maxY + CANVAS_PADDING),
   };
 }
 
