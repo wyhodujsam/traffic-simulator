@@ -157,9 +157,9 @@
 3. Per-vehicle 3-second lane change cooldown prevents rapid oscillation between lanes.
 
 **Plans:**
-1. `LaneChangeEngine.java` — MOBIL safety criterion (rear vehicle safe braking) + incentive criterion (speed gain threshold)
+1. ✓ `LaneChangeEngine.java` — MOBIL safety criterion (rear vehicle safe braking) + incentive criterion (speed gain threshold)
 2. Two-phase update — intent scratch buffer marks target slots reserved; conflict resolution picks winner; commit applies to live state
-3. Per-vehicle cooldown — `lastLaneChangeAt` timestamp, 3-second minimum between changes; lateral transition animation over N ticks
+3. ✓ Road narrowing — `CloseLane` command through full pipeline (STOMP → CommandHandler → SimulationCommand → SimulationEngine); LaneDto + RoadDto REST extension
 4. Road narrowing — `REDUCE_LANES` command in `ObstacleManager`; marks lane as closed at position; vehicles reroute via lane change
 
 ---
