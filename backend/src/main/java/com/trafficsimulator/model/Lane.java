@@ -23,6 +23,9 @@ public class Lane {
     @Builder.Default
     private List<Vehicle> vehicles = new ArrayList<>();
 
+    @Builder.Default
+    private List<Obstacle> obstacles = new ArrayList<>();
+
     /**
      * Returns the vehicle directly ahead of the given vehicle in this lane,
      * or null if none exists.
