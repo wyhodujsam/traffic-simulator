@@ -160,7 +160,7 @@
 1. ✓ `LaneChangeEngine.java` — MOBIL safety criterion (rear vehicle safe braking) + incentive criterion (speed gain threshold)
 2. Two-phase update — intent scratch buffer marks target slots reserved; conflict resolution picks winner; commit applies to live state
 3. ✓ Road narrowing — `CloseLane` command through full pipeline (STOMP → CommandHandler → SimulationCommand → SimulationEngine); LaneDto + RoadDto REST extension
-4. Road narrowing — `REDUCE_LANES` command in `ObstacleManager`; marks lane as closed at position; vehicles reroute via lane change
+4. ✓ Lane change & road narrowing tests — 12 tests: LaneChangeEngineTest (9 MOBIL tests), RoadNarrowingIntegrationTest (3 integration tests)
 
 ---
 

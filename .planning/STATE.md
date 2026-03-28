@@ -9,7 +9,7 @@ progress:
   total_phases: 10
   completed_phases: 5
   total_plans: 30
-  completed_plans: 27
+  completed_plans: 28
 ---
 
 # Project State
@@ -36,7 +36,7 @@ See: .planning/PROJECT.md (updated 2026-03-27)
 | 4 | Simulation Engine & Tick Loop | ✓ Complete (4/4 plans done) |
 | 5 | Canvas Rendering & Basic UI | ◑ In Progress (4/5 plans done) |
 | 6 | Live Obstacle Placement | ◑ In Progress (plan 4 done) |
-| 7 | Lane Changing & Road Narrowing | ◑ In Progress (2/4 plans done) |
+| 7 | Lane Changing & Road Narrowing | ◑ In Progress (3/4 plans done) |
 | 8 | Traffic Signals & Intersections | ○ Pending |
 | 9 | JSON Map Configuration & Predefined Scenarios | ○ Pending |
 | 10 | Roundabouts, Priority Intersections & Polish | ○ Pending |
@@ -56,3 +56,4 @@ See: .planning/PROJECT.md (updated 2026-03-27)
 - 2026-03-28: Phase 5 Plan 5.2 complete — TypeScript DTOs (VehicleDto, SimulationStateDto, CommandDto, RoadDto, Snapshot), Zustand store expansion (prev/curr snapshots, sendCommand, roads), useWebSocket wiring (sendCommand + REST /api/roads); tsc --noEmit passes
 - 2026-03-28: Phase 5 Plan 5.5 complete — StatsPanel component with live statistics (vehicles, avg speed km/h, density, throughput, tick count); reads from Zustand store; tsc --noEmit passes
 - 2026-03-28: Phase 5 Plan 5.7 complete — 15 frontend tests: interpolation (6), Zustand store (6), StatsPanel rendering (3); all pass; tsc --noEmit clean
+- 2026-03-28: Phase 7 Plan 7.4 complete — 12 tests: LaneChangeEngineTest (9 MOBIL safety/correctness tests), RoadNarrowingIntegrationTest (3 integration tests); 56 total tests pass
