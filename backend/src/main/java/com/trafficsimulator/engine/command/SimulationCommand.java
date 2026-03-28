@@ -10,7 +10,8 @@ public sealed interface SimulationCommand
             SimulationCommand.LoadMap,
             SimulationCommand.SetMaxSpeed,
             SimulationCommand.AddObstacle,
-            SimulationCommand.RemoveObstacle {
+            SimulationCommand.RemoveObstacle,
+            SimulationCommand.CloseLane {
 
     record Start()                                      implements SimulationCommand {}
     record Stop()                                       implements SimulationCommand {}
@@ -22,4 +23,5 @@ public sealed interface SimulationCommand
     record SetMaxSpeed(double maxSpeedMs)                implements SimulationCommand {}
     record AddObstacle(String roadId, int laneIndex, double position) implements SimulationCommand {}
     record RemoveObstacle(String obstacleId)             implements SimulationCommand {}
+    record CloseLane(String roadId, int laneIndex)       implements SimulationCommand {}
 }
