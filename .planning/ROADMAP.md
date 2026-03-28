@@ -13,7 +13,7 @@
 | 2 | Domain Model & Road Network Foundation | Core domain objects and road loading from JSON | ROAD-01, ROAD-05, ROAD-06, SIM-02, SIM-05, SIM-06, INFR-04 | 5 | 3 |
 | 3 | Physics Engine (IDM) | ✓ Realistic car-following physics with edge-case safety | SIM-01, SIM-03, SIM-04, SIM-07 | 2 | 3 |
 | 4 | Simulation Engine & Tick Loop | Running tick loop with command queue thread safety | SIM-08 (integration) | 4 | 3 |
-| 5 | Canvas Rendering & Basic UI | First visible simulation with controls and stats | VIS-01, VIS-02, VIS-03, CTRL-01, CTRL-02, CTRL-03, CTRL-04, STAT-01, STAT-02, STAT-03 | 5 | 4 |
+| 5 | Canvas Rendering & Basic UI | First visible simulation with controls and stats | VIS-01, VIS-02, VIS-03, CTRL-01, CTRL-02, CTRL-03, CTRL-04, STAT-01, STAT-02, STAT-03 | 7 | 4 |
 | 6 | Live Obstacle Placement | Core MVP differentiator — phantom jam trigger | OBST-01, OBST-02, OBST-03, OBST-04, VIS-05 | 4 | 3 |
 | 7 | Lane Changing & Road Narrowing | MOBIL lane-change model and live lane reduction | ROAD-02, ROAD-03, ROAD-04 | 4 | 3 |
 | 8 | Traffic Signals & Intersections | Signalised intersections with deadlock prevention | IXTN-01, IXTN-02, IXTN-03, IXTN-04, IXTN-07, VIS-04 | 5 | 4 |
@@ -116,11 +116,13 @@
 4. Stats panel updates every tick showing average speed, vehicle count/density, and throughput.
 
 **Plans:**
-1. Layered canvas setup — static roads layer (drawn once) + dynamic vehicles layer (cleared per frame) using `useRef`
-2. `CanvasRenderer.ts` — `drawRoads` (lane lines, road boundaries), `drawVehicles` (colored rectangles with rotation), `requestAnimationFrame` loop
-3. Position interpolation — alpha = elapsed/tickInterval between last two snapshots for smooth 60 fps motion
-4. `ControlsPanel.tsx` — Start/Stop/Pause buttons, speed multiplier slider, spawn rate slider, max speed input; each emits typed `CommandDto` via STOMP
+1. ✓ Layered canvas setup — static roads layer (drawn once) + dynamic vehicles layer (cleared per frame) using `useRef`
+2. ✓ `CanvasRenderer.ts` — `drawRoads` (lane lines, road boundaries), `drawVehicles` (colored rectangles with rotation), `requestAnimationFrame` loop
+3. ✓ Position interpolation — alpha = elapsed/tickInterval between last two snapshots for smooth 60 fps motion
+4. ✓ `ControlsPanel.tsx` — Start/Stop/Pause buttons, speed multiplier slider, spawn rate slider, max speed input; each emits typed `CommandDto` via STOMP
 5. ✓ `StatsPanel.tsx` — average speed (km/h), vehicle density (vehicles/km/lane), throughput (vehicles/min); reads from Zustand store
+6. `ControlsPanel.tsx` wiring — STOMP command sending integration with Zustand store
+7. ✓ Frontend tests — interpolation, store, and component smoke tests (15 tests)
 
 ---
 
