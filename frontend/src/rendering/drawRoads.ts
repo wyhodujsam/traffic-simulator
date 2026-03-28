@@ -32,6 +32,29 @@ function drawRoad(ctx: CanvasRenderingContext2D, road: RoadDto): void {
   ctx.fillStyle = '#3a3a3a';
   ctx.fillRect(0, -roadWidth / 2, roadLength, roadWidth);
 
+  // Closed lane hatching (if lane data available)
+  if (road.lanes) {
+    for (const lane of road.lanes) {
+      if (!lane.active) {
+        const laneY = -roadWidth / 2 + lane.laneIndex * LANE_WIDTH_PX;
+        ctx.fillStyle = 'rgba(255, 60, 60, 0.3)';
+        ctx.fillRect(0, laneY, roadLength, LANE_WIDTH_PX);
+
+        // Diagonal hatching
+        ctx.strokeStyle = 'rgba(255, 60, 60, 0.5)';
+        ctx.lineWidth = 1;
+        ctx.setLineDash([]);
+        const spacing = 12;
+        for (let xPos = 0; xPos < roadLength + LANE_WIDTH_PX; xPos += spacing) {
+          ctx.beginPath();
+          ctx.moveTo(xPos, laneY);
+          ctx.lineTo(xPos - LANE_WIDTH_PX, laneY + LANE_WIDTH_PX);
+          ctx.stroke();
+        }
+      }
+    }
+  }
+
   // Road boundaries — solid white lines
   ctx.strokeStyle = '#ffffff';
   ctx.lineWidth = 2;
