@@ -2,6 +2,8 @@ import { useEffect, useRef, useCallback } from 'react';
 import { useSimulationStore } from '../store/useSimulationStore';
 import { drawRoads } from '../rendering/drawRoads';
 import { drawVehicles } from '../rendering/drawVehicles';
+import { drawObstacles } from '../rendering/drawObstacles';
+import { hitTestObstacle, hitTestRoad } from '../rendering/hitTest';
 import { interpolateVehicles } from '../rendering/interpolation';
 import { CANVAS_PADDING, LANE_WIDTH_PX } from '../rendering/constants';
 import type { RoadDto } from '../types/simulation';
@@ -56,6 +58,9 @@ export function SimulationCanvas() {
       const now = performance.now();
       const vehicles = interpolateVehicles(currSnapshot, prevSnapshot, now);
       drawVehicles(ctx, vehicles);
+
+      const obstacles = useSimulationStore.getState().obstacles;
+      drawObstacles(ctx, obstacles);
     } else {
       ctx.clearRect(0, 0, canvas.width, canvas.height);
     }
@@ -67,6 +72,36 @@ export function SimulationCanvas() {
     rafRef.current = requestAnimationFrame(renderLoop);
     return () => cancelAnimationFrame(rafRef.current);
   }, [renderLoop]);
+
+  const handleCanvasClick = useCallback((e: React.MouseEvent<HTMLCanvasElement>) => {
+    const canvas = vehiclesCanvasRef.current;
+    if (!canvas) return;
+    const rect = canvas.getBoundingClientRect();
+    const cx = e.clientX - rect.left;
+    const cy = e.clientY - rect.top;
+
+    const store = useSimulationStore.getState();
+    const { sendCommand, obstacles } = store;
+    if (!sendCommand) return;
+
+    // 1. Check if click hits an existing obstacle -> REMOVE
+    const hitId = hitTestObstacle(cx, cy, obstacles);
+    if (hitId) {
+      sendCommand({ type: 'REMOVE_OBSTACLE', obstacleId: hitId });
+      return;
+    }
+
+    // 2. Otherwise, map to road/lane/position -> ADD
+    const hit = hitTestRoad(cx, cy, roads);
+    if (hit) {
+      sendCommand({
+        type: 'ADD_OBSTACLE',
+        roadId: hit.roadId,
+        laneIndex: hit.laneIndex,
+        position: hit.position,
+      });
+    }
+  }, [roads]);
 
   return (
     <div style={{ position: 'relative', width, height }}>
@@ -80,7 +115,8 @@ export function SimulationCanvas() {
         ref={vehiclesCanvasRef}
         width={width}
         height={height}
-        style={{ position: 'absolute', top: 0, left: 0 }}
+        onClick={handleCanvasClick}
+        style={{ position: 'absolute', top: 0, left: 0, cursor: 'crosshair' }}
       />
     </div>
   );
