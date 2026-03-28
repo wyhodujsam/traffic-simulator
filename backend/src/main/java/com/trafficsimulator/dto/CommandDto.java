@@ -37,4 +37,16 @@ public class CommandDto {
 
     /** Global max speed in m/s — used by SET_MAX_SPEED. */
     private Double maxSpeed;
+
+    /** Road ID — used by ADD_OBSTACLE. */
+    private String roadId;
+
+    /** Lane index (0-based) — used by ADD_OBSTACLE. */
+    private Integer laneIndex;
+
+    /** Position in metres — used by ADD_OBSTACLE. */
+    private Double position;
+
+    /** Obstacle ID — used by REMOVE_OBSTACLE. */
+    private String obstacleId;
 }
