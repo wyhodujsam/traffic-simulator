@@ -6,7 +6,7 @@ import { interpolateVehicles } from '../rendering/interpolation';
 import { CANVAS_PADDING, LANE_WIDTH_PX } from '../rendering/constants';
 import type { RoadDto } from '../types/simulation';
 
-function computeCanvasSize(roads: RoadDto[]): { width: number; height: number } {
+export function computeCanvasSize(roads: RoadDto[]): { width: number; height: number } {
   if (roads.length === 0) return { width: 900, height: 600 };
 
   let maxX = -Infinity, maxY = -Infinity;
