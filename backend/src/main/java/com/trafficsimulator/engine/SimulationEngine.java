@@ -4,6 +4,7 @@ import com.trafficsimulator.engine.command.SimulationCommand;
 import com.trafficsimulator.model.RoadNetwork;
 import lombok.Getter;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Component;
 
 import java.util.ArrayList;
@@ -27,13 +28,17 @@ public class SimulationEngine {
     @Getter
     private final AtomicLong tickCounter = new AtomicLong(0);
 
-    /** Stored spawn rate — read by VehicleSpawner in Plan 2.4 */
+    /** Stored spawn rate — applied to VehicleSpawner when SetSpawnRate command is processed */
     @Getter
     private volatile double spawnRate = 1.0;
 
     /** Stored speed multiplier — read by tick loop in Phase 4 */
     @Getter
     private volatile double speedMultiplier = 1.0;
+
+    // Optional — wired lazily to break circular dependency
+    @Autowired(required = false)
+    private VehicleSpawner vehicleSpawner;
 
     public void enqueue(SimulationCommand command) {
         commandQueue.offer(command);
@@ -87,6 +92,10 @@ public class SimulationEngine {
 
         } else if (cmd instanceof SimulationCommand.SetSpawnRate setSpawnRate) {
             this.spawnRate = setSpawnRate.vehiclesPerSecond();
+            // Wire through to VehicleSpawner so the rate change actually takes effect
+            if (vehicleSpawner != null) {
+                vehicleSpawner.setVehiclesPerSecond(this.spawnRate);
+            }
             log.info("Spawn rate updated to {} veh/s", this.spawnRate);
 
         } else if (cmd instanceof SimulationCommand.SetSpeedMultiplier setSpeedMultiplier) {
