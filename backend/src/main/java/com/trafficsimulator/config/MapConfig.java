@@ -1,0 +1,59 @@
+package com.trafficsimulator.config;
+
+import com.fasterxml.jackson.annotation.JsonProperty;
+import lombok.Data;
+import lombok.NoArgsConstructor;
+
+import java.util.List;
+
+@Data
+@NoArgsConstructor
+public class MapConfig {
+    @JsonProperty("id")              private String id;
+    @JsonProperty("name")            private String name;
+    @JsonProperty("nodes")           private List<NodeConfig> nodes;
+    @JsonProperty("roads")           private List<RoadConfig> roads;
+    @JsonProperty("intersections")   private List<IntersectionConfig> intersections;
+    @JsonProperty("spawnPoints")     private List<SpawnPointConfig> spawnPoints;
+    @JsonProperty("despawnPoints")   private List<DespawnPointConfig> despawnPoints;
+    @JsonProperty("defaultSpawnRate") private double defaultSpawnRate = 1.0;
+
+    @Data @NoArgsConstructor
+    public static class NodeConfig {
+        private String id;
+        private String type;   // "ENTRY", "EXIT", "INTERSECTION"
+        private double x;
+        private double y;
+    }
+
+    @Data @NoArgsConstructor
+    public static class RoadConfig {
+        private String id;
+        private String name;
+        private String fromNodeId;
+        private String toNodeId;
+        private double length;
+        private double speedLimit;
+        private int laneCount;
+    }
+
+    @Data @NoArgsConstructor
+    public static class IntersectionConfig {
+        private String nodeId;
+        private String type;   // "SIGNAL", "ROUNDABOUT", "PRIORITY"
+    }
+
+    @Data @NoArgsConstructor
+    public static class SpawnPointConfig {
+        private String roadId;
+        private int laneIndex;
+        private double position;
+    }
+
+    @Data @NoArgsConstructor
+    public static class DespawnPointConfig {
+        private String roadId;
+        private int laneIndex;
+        private double position;
+    }
+}
