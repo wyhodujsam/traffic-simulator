@@ -5,6 +5,8 @@ import lombok.Builder;
 import lombok.Data;
 import lombok.NoArgsConstructor;
 
+import java.util.List;
+
 @Data
 @Builder
 @NoArgsConstructor
@@ -19,4 +21,5 @@ public class RoadDto {
     private double startY;       // pixel Y of road start
     private double endX;         // pixel X of road end
     private double endY;         // pixel Y of road end
+    private List<LaneDto> lanes; // per-lane active status for frontend
 }

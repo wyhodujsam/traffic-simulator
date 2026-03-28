@@ -1,5 +1,6 @@
 package com.trafficsimulator.controller;
 
+import com.trafficsimulator.dto.LaneDto;
 import com.trafficsimulator.dto.RoadDto;
 import com.trafficsimulator.dto.SimulationStatusDto;
 import com.trafficsimulator.engine.SimulationEngine;
@@ -63,6 +64,13 @@ public class SimulationController {
         }
         List<RoadDto> result = new ArrayList<>();
         for (Road road : network.getRoads().values()) {
+            List<LaneDto> laneDtos = road.getLanes().stream()
+                .map(lane -> LaneDto.builder()
+                    .id(lane.getId())
+                    .laneIndex(lane.getLaneIndex())
+                    .active(lane.isActive())
+                    .build())
+                .toList();
             result.add(RoadDto.builder()
                 .id(road.getId())
                 .name(road.getName())
@@ -73,6 +81,7 @@ public class SimulationController {
                 .startY(road.getStartY())
                 .endX(road.getEndX())
                 .endY(road.getEndY())
+                .lanes(laneDtos)
                 .build());
         }
         return result;
