@@ -11,7 +11,7 @@
 |---|-------|------|--------------|-------|------------------|
 | 1 | Project Bootstrap & Infrastructure | Working end-to-end WebSocket pipeline | INFR-01, INFR-02, INFR-03, SIM-08 | 6 | 3 |
 | 2 | Domain Model & Road Network Foundation | Core domain objects and road loading from JSON | ROAD-01, ROAD-05, ROAD-06, SIM-02, SIM-05, SIM-06, INFR-04 | 5 | 3 |
-| 3 | Physics Engine (IDM) | Realistic car-following physics with edge-case safety | SIM-01, SIM-03, SIM-04, SIM-07 | 4 | 3 |
+| 3 | Physics Engine (IDM) | ✓ Realistic car-following physics with edge-case safety | SIM-01, SIM-03, SIM-04, SIM-07 | 2 | 3 |
 | 4 | Simulation Engine & Tick Loop | Running tick loop with command queue thread safety | SIM-08 (integration) | 4 | 3 |
 | 5 | Canvas Rendering & Basic UI | First visible simulation with controls and stats | VIS-01, VIS-02, VIS-03, CTRL-01, CTRL-02, CTRL-03, CTRL-04, STAT-01, STAT-02, STAT-03 | 5 | 4 |
 | 6 | Live Obstacle Placement | Core MVP differentiator — phantom jam trigger | OBST-01, OBST-02, OBST-03, OBST-04, VIS-05 | 4 | 3 |
@@ -77,10 +77,10 @@
 3. Emergency stop test: vehicle ahead stops instantly; follower brakes hard and stops before collision; velocity clamped to [0, maxSpeed] throughout.
 
 **Plans:**
-1. ✓ `PhysicsEngine.java` — full IDM formula, Euler integration with configurable `dt`, velocity clamp `[0, maxSpeed]`
-2. Edge-case guards — minimum gap `s_min >= 1.0 m` enforcement, NaN/Infinity guard after each integration step
-3. Heterogeneous vehicle parameters — ±20% noise on `v0`, `aMax`, `b` per vehicle for emergent jam formation
-4. Unit test suite — free-flow, following, emergency stop, zero-gap, NaN guard, 500-vehicle benchmark (< 5 ms per tick)
+1. ✓ `PhysicsEngine.java` — full IDM formula, Euler integration, 5 safety guards (zero-gap, negative speed, maxSpeed clamp, NaN fallback, s* floor)
+2. ✓ Unit test suite — 9 tests: free-flow, following, emergency stop, zero-gap, NaN guard, velocity clamp, 500-vehicle benchmark, monotonicity, empty lane; 38 total tests pass
+
+**Note:** Phase 3 complete. Plans reduced from 4 to 2 — edge-case guards and heterogeneous parameters were implemented inline in Plan 3.1 (PhysicsEngine already reads per-vehicle IDM params from VehicleSpawner's ±20% noise).
 
 ---
 
