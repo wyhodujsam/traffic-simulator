@@ -55,9 +55,29 @@ public class TickEmitter {
         if (simulationEngine.getStatus() == SimulationStatus.RUNNING) {
             tick = simulationEngine.getTickCounter().incrementAndGet();
 
-            // Run spawn + despawn when network is loaded
+            // Run simulation pipeline when network is loaded
             if (network != null) {
-                vehicleSpawner.tick(0.05, network, tick);
+                double baseDt = 0.05; // 50ms = 1/20 Hz
+                double multiplier = simulationEngine.getSpeedMultiplier();
+                double effectiveDt = baseDt * multiplier;
+
+                // Sub-stepping: keep each physics step <= baseDt for Euler stability
+                int subSteps = Math.max(1, (int) Math.ceil(effectiveDt / baseDt));
+                double stepDt = effectiveDt / subSteps;
+
+                // 1. Spawn (uses full effectiveDt for accumulator)
+                vehicleSpawner.tick(effectiveDt, network, tick);
+
+                // 2. Physics sub-steps
+                for (int step = 0; step < subSteps; step++) {
+                    for (Road road : network.getRoads().values()) {
+                        for (Lane lane : road.getLanes()) {
+                            physicsEngine.tick(lane, stepDt);
+                        }
+                    }
+                }
+
+                // 3. Despawn (after physics moved vehicles)
                 vehicleSpawner.despawnVehicles(network);
             }
         } else {
