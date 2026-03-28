@@ -40,6 +40,10 @@ public class SimulationEngine {
     @Getter
     private volatile double speedMultiplier = 1.0;
 
+    /** Global max speed in m/s (~120 km/h default) */
+    @Getter
+    private volatile double maxSpeed = 33.33;
+
     // Optional — wired lazily to break circular dependency
     @Autowired(required = false)
     private VehicleSpawner vehicleSpawner;
@@ -127,6 +131,17 @@ public class SimulationEngine {
         } else if (cmd instanceof SimulationCommand.SetSpeedMultiplier setSpeedMultiplier) {
             this.speedMultiplier = setSpeedMultiplier.multiplier();
             log.info("Speed multiplier updated to {}", this.speedMultiplier);
+
+        } else if (cmd instanceof SimulationCommand.SetMaxSpeed setMaxSpeed) {
+            this.maxSpeed = setMaxSpeed.maxSpeedMs();
+            if (roadNetwork != null) {
+                for (Road road : roadNetwork.getRoads().values()) {
+                    for (Lane lane : road.getLanes()) {
+                        lane.setMaxSpeed(this.maxSpeed);
+                    }
+                }
+            }
+            log.info("Max speed updated to {} m/s ({} km/h)", this.maxSpeed, this.maxSpeed * 3.6);
 
         } else if (cmd instanceof SimulationCommand.LoadMap loadMap) {
             log.info("Load map requested: {}", loadMap.mapId());

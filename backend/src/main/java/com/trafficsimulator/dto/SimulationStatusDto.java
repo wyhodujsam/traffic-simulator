@@ -16,4 +16,5 @@ public class SimulationStatusDto {
     private double speedMultiplier;
     private double spawnRate;
     private String mapId;            // currently loaded map ID, or null
+    private double maxSpeed;         // global max speed in m/s
 }

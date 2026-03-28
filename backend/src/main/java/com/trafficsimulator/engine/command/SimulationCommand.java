@@ -7,7 +7,8 @@ public sealed interface SimulationCommand
             SimulationCommand.Resume,
             SimulationCommand.SetSpawnRate,
             SimulationCommand.SetSpeedMultiplier,
-            SimulationCommand.LoadMap {
+            SimulationCommand.LoadMap,
+            SimulationCommand.SetMaxSpeed {
 
     record Start()                                      implements SimulationCommand {}
     record Stop()                                       implements SimulationCommand {}
@@ -16,4 +17,5 @@ public sealed interface SimulationCommand
     record SetSpawnRate(double vehiclesPerSecond)        implements SimulationCommand {}
     record SetSpeedMultiplier(double multiplier)         implements SimulationCommand {}
     record LoadMap(String mapId)                         implements SimulationCommand {}
+    record SetMaxSpeed(double maxSpeedMs)                implements SimulationCommand {}
 }

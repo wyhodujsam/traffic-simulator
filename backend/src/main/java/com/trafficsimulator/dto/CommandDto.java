@@ -34,4 +34,7 @@ public class CommandDto {
 
     /** Map identifier — used by LOAD_MAP. */
     private String mapId;
+
+    /** Global max speed in m/s — used by SET_MAX_SPEED. */
+    private Double maxSpeed;
 }

@@ -20,7 +20,7 @@ public class CommandHandler {
 
     private static final Set<String> VALID_TYPES = Set.of(
         "START", "STOP", "PAUSE", "RESUME",
-        "SET_SPAWN_RATE", "SET_SPEED_MULTIPLIER", "LOAD_MAP"
+        "SET_SPAWN_RATE", "SET_SPEED_MULTIPLIER", "LOAD_MAP", "SET_MAX_SPEED"
     );
 
     private final SimulationEngine simulationEngine;
@@ -36,6 +36,7 @@ public class CommandHandler {
             case "SET_SPAWN_RATE"       -> new SimulationCommand.SetSpawnRate(dto.getSpawnRate());
             case "SET_SPEED_MULTIPLIER" -> new SimulationCommand.SetSpeedMultiplier(dto.getMultiplier());
             case "LOAD_MAP"             -> new SimulationCommand.LoadMap(dto.getMapId());
+            case "SET_MAX_SPEED"        -> new SimulationCommand.SetMaxSpeed(dto.getMaxSpeed());
             default -> throw new IllegalArgumentException(
                 "Unknown command type: '" + dto.getType() + "'. " +
                 "Valid types are: " + VALID_TYPES.stream().sorted().collect(Collectors.joining(", "))

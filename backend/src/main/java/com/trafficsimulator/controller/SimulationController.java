@@ -47,6 +47,7 @@ public class SimulationController {
             .speedMultiplier(simulationEngine.getSpeedMultiplier())
             .spawnRate(simulationEngine.getSpawnRate())
             .mapId(network != null ? network.getId() : null)
+            .maxSpeed(simulationEngine.getMaxSpeed())
             .build();
     }
 
