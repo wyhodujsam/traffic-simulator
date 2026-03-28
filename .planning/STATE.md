@@ -2,21 +2,21 @@
 gsd_state_version: 1.0
 milestone: v1.0
 milestone_name: milestone
-current_phase: 2
+current_phase: 3
 status: In progress
-last_updated: "2026-03-27T23:30:00.000Z"
+last_updated: "2026-03-27T10:10:00.000Z"
 progress:
   total_phases: 10
-  completed_phases: 1
+  completed_phases: 2
   total_plans: 9
-  completed_plans: 6
+  completed_plans: 7
 ---
 
 # Project State
 
 **Project:** Traffic Simulator
 **Milestone:** v1.0
-**Current Phase:** 2
+**Current Phase:** 3
 **Last Updated:** 2026-03-27
 
 ## Project Reference
@@ -24,14 +24,14 @@ progress:
 See: .planning/PROJECT.md (updated 2026-03-27)
 
 **Core value:** Wierna symulacja fizyki ruchu drogowego
-**Current focus:** Phase 02 — domain-model-road-network-foundation
+**Current focus:** Phase 03 — physics-engine-idm
 
 ## Phase Status
 
 | Phase | Name | Status |
 |-------|------|--------|
 | 1 | Project Bootstrap & Infrastructure | ✓ Complete |
-| 2 | Domain Model & Road Network Foundation | ◑ In Progress (4/5 plans done) |
+| 2 | Domain Model & Road Network Foundation | ✓ Complete (5/5 plans done) |
 | 3 | Physics Engine (IDM) | ○ Pending |
 | 4 | Simulation Engine & Tick Loop | ○ Pending |
 | 5 | Canvas Rendering & Basic UI | ○ Pending |
@@ -47,3 +47,5 @@ See: .planning/PROJECT.md (updated 2026-03-27)
 - 2026-03-27: Phase 2 Plan 2.1 complete — 8 domain model classes created (Vehicle, Lane, Road, RoadNetwork, Intersection, IntersectionType, SpawnPoint, DespawnPoint)
 - 2026-03-27: Phase 2 Plan 2.2 complete — CommandQueue pattern: sealed SimulationCommand, SimulationEngine with LinkedBlockingQueue, CommandHandler STOMP controller
 - 2026-03-27: Phase 2 Plan 2.4 complete — VehicleSpawner with accumulator-based rate, overlap prevention, ±20% IDM noise, despawn logic; 11 unit tests pass; 3 review bugs fixed
+- 2026-03-27: Phase 2 Plan 2.3 catch-up — MapConfig, MapValidator, MapLoader, straight-road.json fixture created; 8 MapLoaderTest tests pass
+- 2026-03-27: Phase 2 Plan 2.5 complete — SimulationStateDto replaces TickDto; VehicleDto+StatsDto; TickEmitter fully wired; 3 review fixes applied (tick counter, timing guard, SetSpawnRate wiring); 30 total tests pass; Phase 2 complete

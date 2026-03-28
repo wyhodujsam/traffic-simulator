@@ -57,11 +57,11 @@
 **Plans:**
 1. ✓ Domain model classes — `Vehicle.java` (IDM fields: v0, aMax, b, s0, T), `Lane.java`, `Road.java`, `RoadNetwork.java`, `Intersection.java` with Lombok
 2. ✓ Command queue pattern — `SimulationCommand` sealed interface, `CommandHandler.java`, `LinkedBlockingQueue` wiring in `SimulationEngine`
-3. `VehicleSpawner.java` — spawn at road entry points, configurable rate, overlap prevention (plan 02-04, see 02-04-SUMMARY.md)
-4. `MapLoader.java` — Jackson-based JSON → `RoadNetwork` with hardcoded fixture `maps/straight-road.json`
-5. Unit tests — model construction, spawner produces vehicle with correct IDM parameters, despawn on exit
+3. ✓ `MapLoader.java` — Jackson-based JSON → `RoadNetwork` with hardcoded fixture `maps/straight-road.json`; `MapValidator` validates before build
+4. ✓ `VehicleSpawner.java` — spawn at road entry points, configurable rate, overlap prevention (see 02-04-SUMMARY.md)
+5. ✓ Integration — `SimulationStateDto` replaces `TickDto`; `TickEmitter` wired with spawn/despawn; 30 tests pass (see 02-05-SUMMARY.md)
 
-**Note:** Plan ordering in roadmap vs execution order differs. 02-04 (VehicleSpawner) was executed as Wave 2 plan. See 02-04-SUMMARY.md for details.
+**Note:** Phase 2 complete. All 5 plans done. 30 tests green.
 
 ---
 
