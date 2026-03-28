@@ -128,7 +128,7 @@ public class PhysicsEngine {
      * @param leaderLength   leader's length (metres)
      * @param hasLeader      true if a leader exists
      */
-    private double computeAcceleration(Vehicle vehicle, double leaderPosition,
+    public double computeAcceleration(Vehicle vehicle, double leaderPosition,
                                         double leaderSpeed, double leaderLength,
                                         boolean hasLeader) {
         double v = vehicle.getSpeed();
@@ -162,5 +162,12 @@ public class PhysicsEngine {
         // IDM acceleration
         double sRatio = sStar / safeGap;
         return aMax * (1.0 - freeRoadTerm - sRatio * sRatio);
+    }
+
+    /**
+     * Computes IDM free-flow acceleration (no leader).
+     */
+    public double computeFreeFlowAcceleration(Vehicle vehicle) {
+        return computeAcceleration(vehicle, 0, 0, 0, false);
     }
 }
