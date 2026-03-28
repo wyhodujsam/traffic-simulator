@@ -138,7 +138,7 @@
 3. Clicking the obstacle removes it; jam dissipates naturally and average speed recovers over time.
 
 **Plans:**
-1. `Obstacle.java` + `ObstacleManager.java` — add/remove at runtime, obstacle occupies full lane width at position
+1. ✓ `Obstacle.java` + `ObstacleManager.java` — add/remove at runtime, obstacle occupies full lane width at position; command pipeline wired end-to-end
 2. `CollisionDetector.java` — AABB distance check between vehicle front and obstacle; triggers IDM braking response
 3. `ADD_OBSTACLE` / `REMOVE_OBSTACLE` commands — canvas click calculates road/lane/position from pixel coords, sends typed command
 4. Canvas obstacle rendering — red/orange rectangle blocking lane with visual distinction from vehicles; click hit-testing for removal
