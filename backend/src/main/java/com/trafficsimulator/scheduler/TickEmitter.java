@@ -3,6 +3,7 @@ package com.trafficsimulator.scheduler;
 import com.trafficsimulator.dto.SimulationStateDto;
 import com.trafficsimulator.dto.StatsDto;
 import com.trafficsimulator.dto.VehicleDto;
+import com.trafficsimulator.engine.PhysicsEngine;
 import com.trafficsimulator.engine.SimulationEngine;
 import com.trafficsimulator.engine.SimulationStatus;
 import com.trafficsimulator.engine.VehicleSpawner;
@@ -38,6 +39,7 @@ public class TickEmitter {
     private final SimpMessagingTemplate messagingTemplate;
     private final SimulationEngine simulationEngine;
     private final VehicleSpawner vehicleSpawner;
+    private final PhysicsEngine physicsEngine;
 
     @Scheduled(fixedRate = 50)
     public void emitTick() {
