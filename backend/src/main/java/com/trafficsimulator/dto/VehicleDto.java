@@ -17,4 +17,6 @@ public class VehicleDto {
     private double x;          // pixel x coordinate for Canvas
     private double y;          // pixel y coordinate for Canvas
     private double angle;      // radians — road direction for vehicle rotation
+    private String targetLaneId;        // null if not mid-transition
+    private double laneChangeProgress;  // 0.0 = just changed, 1.0 = settled
 }
