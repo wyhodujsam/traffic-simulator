@@ -120,7 +120,7 @@
 2. `CanvasRenderer.ts` — `drawRoads` (lane lines, road boundaries), `drawVehicles` (colored rectangles with rotation), `requestAnimationFrame` loop
 3. Position interpolation — alpha = elapsed/tickInterval between last two snapshots for smooth 60 fps motion
 4. `ControlsPanel.tsx` — Start/Stop/Pause buttons, speed multiplier slider, spawn rate slider, max speed input; each emits typed `CommandDto` via STOMP
-5. `StatsPanel.tsx` — average speed (km/h), vehicle density (vehicles/km/lane), throughput (vehicles/min); reads from Zustand store
+5. ✓ `StatsPanel.tsx` — average speed (km/h), vehicle density (vehicles/km/lane), throughput (vehicles/min); reads from Zustand store
 
 ---
 
