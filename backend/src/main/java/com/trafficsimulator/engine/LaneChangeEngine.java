@@ -1,0 +1,303 @@
+package com.trafficsimulator.engine;
+
+import com.trafficsimulator.model.Lane;
+import com.trafficsimulator.model.Road;
+import com.trafficsimulator.model.RoadNetwork;
+import com.trafficsimulator.model.Vehicle;
+import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
+import org.springframework.stereotype.Component;
+
+import java.util.ArrayList;
+import java.util.Comparator;
+import java.util.List;
+import java.util.Map;
+import java.util.stream.Collectors;
+
+@Component
+@RequiredArgsConstructor
+@Slf4j
+public class LaneChangeEngine {
+
+    // MOBIL parameters
+    private static final double B_SAFE = 4.0;          // safe braking limit m/s^2
+    private static final double POLITENESS = 0.3;       // weight for neighbors' disadvantage
+    private static final double A_THRESHOLD_LEFT = 0.3; // threshold for moving left (overtake)
+    private static final double A_THRESHOLD_RIGHT = 0.1;// threshold for moving right (keep-right)
+    private static final double COOLDOWN_SECONDS = 3.0; // seconds between lane changes
+    private static final double BASE_DT = 0.05;         // 50ms tick
+    private static final int    TRANSITION_TICKS = 10;   // ticks for lane change animation
+
+    private final PhysicsEngine physicsEngine;
+
+    /** Record for a lane-change intent before conflict resolution. */
+    record LaneChangeIntent(
+        Vehicle vehicle,
+        Lane sourceLane,
+        Lane targetLane,
+        double position,
+        double incentiveScore
+    ) {}
+
+    /**
+     * Main tick: evaluates MOBIL for all vehicles, resolves conflicts, commits moves.
+     * Called once per tick AFTER physics, BEFORE despawn.
+     */
+    public void tick(RoadNetwork network, long currentTick) {
+        if (network == null) return;
+
+        // Update lane change animation progress for vehicles mid-transition
+        updateLaneChangeProgress(network);
+
+        // Phase 1: Collect intents
+        List<LaneChangeIntent> intents = collectIntents(network, currentTick);
+        if (intents.isEmpty()) return;
+
+        // Phase 2: Resolve conflicts
+        List<LaneChangeIntent> resolved = resolveConflicts(intents);
+
+        // Phase 3: Commit lane changes
+        commitLaneChanges(resolved, currentTick);
+    }
+
+    /**
+     * Phase 1: Iterate all vehicles, evaluate MOBIL for adjacent lanes,
+     * produce intents for desirable lane changes.
+     */
+    private List<LaneChangeIntent> collectIntents(RoadNetwork network, long currentTick) {
+        List<LaneChangeIntent> intents = new ArrayList<>();
+        long cooldownTicks = (long)(COOLDOWN_SECONDS / BASE_DT); // 60 ticks
+
+        for (Road road : network.getRoads().values()) {
+            for (Lane lane : road.getLanes()) {
+                if (!lane.isActive()) continue;
+
+                for (Vehicle vehicle : lane.getVehicles()) {
+                    // Cooldown check
+                    if (!vehicle.isForceLaneChange()) {
+                        long ticksSince = currentTick - vehicle.getLastLaneChangeTick();
+                        if (vehicle.getLastLaneChangeTick() > 0 && ticksSince < cooldownTicks) {
+                            continue;
+                        }
+                    }
+
+                    // Evaluate both directions, pick the best
+                    LaneChangeIntent bestIntent = null;
+
+                    // Try left (higher index)
+                    Lane leftLane = road.getLeftNeighbor(lane);
+                    if (leftLane != null) {
+                        LaneChangeIntent intent = evaluateMOBIL(
+                            vehicle, lane, leftLane, A_THRESHOLD_LEFT);
+                        if (intent != null && (bestIntent == null
+                            || intent.incentiveScore() > bestIntent.incentiveScore())) {
+                            bestIntent = intent;
+                        }
+                    }
+
+                    // Try right (lower index)
+                    Lane rightLane = road.getRightNeighbor(lane);
+                    if (rightLane != null) {
+                        LaneChangeIntent intent = evaluateMOBIL(
+                            vehicle, lane, rightLane, A_THRESHOLD_RIGHT);
+                        if (intent != null && (bestIntent == null
+                            || intent.incentiveScore() > bestIntent.incentiveScore())) {
+                            bestIntent = intent;
+                        }
+                    }
+
+                    if (bestIntent != null) {
+                        intents.add(bestIntent);
+                    }
+                }
+            }
+        }
+        return intents;
+    }
+
+    /**
+     * Evaluates MOBIL safety + incentive criteria for one vehicle moving to targetLane.
+     * Returns an intent if the move is both safe and beneficial, null otherwise.
+     *
+     * For forced lane changes (closed lane), only safety criterion is checked.
+     */
+    private LaneChangeIntent evaluateMOBIL(Vehicle subject, Lane currentLane,
+                                            Lane targetLane, double aThreshold) {
+        double subjectPos = subject.getPosition();
+
+        // Find neighbors in target lane
+        Vehicle newLeader = targetLane.findLeaderAt(subjectPos);
+        Vehicle newFollower = targetLane.findFollowerAt(subjectPos);
+
+        // Current acceleration of subject
+        Vehicle currentLeader = currentLane.getLeader(subject);
+        double aSubjectCurrent = computeIdmAccel(subject, currentLeader);
+
+        // Acceleration of subject in target lane (with new leader)
+        double aSubjectTarget = computeIdmAccel(subject, newLeader);
+
+        // Safety criterion: new follower must not brake harder than b_safe
+        if (newFollower != null) {
+            double aNewFollowerAfter = computeIdmAccelWithLeader(newFollower, subject);
+            if (aNewFollowerAfter < -B_SAFE) {
+                return null; // unsafe
+            }
+        }
+
+        // Gap check: ensure minimum gap exists in target lane
+        if (newLeader != null) {
+            double gapAhead = newLeader.getPosition() - subjectPos - newLeader.getLength();
+            if (gapAhead < subject.getS0() + subject.getLength()) {
+                return null; // not enough space ahead
+            }
+        }
+        if (newFollower != null) {
+            double gapBehind = subjectPos - newFollower.getPosition() - subject.getLength();
+            if (gapBehind < newFollower.getS0()) {
+                return null; // not enough space behind
+            }
+        }
+
+        // For forced lane changes (lane closed), skip incentive check
+        if (subject.isForceLaneChange()) {
+            return new LaneChangeIntent(subject, currentLane, targetLane,
+                subjectPos, Double.MAX_VALUE);
+        }
+
+        // Incentive criterion:
+        // a'_subject - a_subject > p * (a'_old_follower - a_old_follower
+        //                              + a'_new_follower - a_new_follower) + a_threshold
+        Vehicle oldFollower = currentLane.findFollowerAt(subjectPos);
+
+        double aOldFollowerBefore = (oldFollower != null)
+            ? computeIdmAccelWithLeader(oldFollower, subject) : 0.0;
+        double aOldFollowerAfter = (oldFollower != null)
+            ? computeIdmAccel(oldFollower, currentLeader) : 0.0;
+            // After subject leaves, old follower's leader becomes subject's old leader
+
+        double aNewFollowerBefore = (newFollower != null)
+            ? computeIdmAccel(newFollower, newLeader) : 0.0;
+        double aNewFollowerAfter = (newFollower != null)
+            ? computeIdmAccelWithLeader(newFollower, subject) : 0.0;
+
+        double subjectGain = aSubjectTarget - aSubjectCurrent;
+        double neighborCost = (aOldFollowerAfter - aOldFollowerBefore)
+                            + (aNewFollowerAfter - aNewFollowerBefore);
+        double incentive = subjectGain - POLITENESS * neighborCost;
+
+        if (incentive > aThreshold) {
+            return new LaneChangeIntent(subject, currentLane, targetLane,
+                subjectPos, incentive);
+        }
+        return null;
+    }
+
+    /**
+     * Compute IDM acceleration for vehicle following its leader (or free-flow if null).
+     */
+    private double computeIdmAccel(Vehicle vehicle, Vehicle leader) {
+        if (leader == null) {
+            return physicsEngine.computeAcceleration(vehicle, 0, 0, 0, false);
+        }
+        return physicsEngine.computeAcceleration(vehicle,
+            leader.getPosition(), leader.getSpeed(), leader.getLength(), true);
+    }
+
+    /**
+     * Compute IDM acceleration for follower with a specific vehicle as leader.
+     */
+    private double computeIdmAccelWithLeader(Vehicle follower, Vehicle leader) {
+        return physicsEngine.computeAcceleration(follower,
+            leader.getPosition(), leader.getSpeed(), leader.getLength(), true);
+    }
+
+    /**
+     * Phase 2: Group intents by target lane, resolve conflicts where two vehicles
+     * want overlapping positions. Winner = highest incentive score.
+     */
+    private List<LaneChangeIntent> resolveConflicts(List<LaneChangeIntent> intents) {
+        // Group by target lane ID
+        Map<String, List<LaneChangeIntent>> byTargetLane = intents.stream()
+            .collect(Collectors.groupingBy(i -> i.targetLane().getId()));
+
+        List<LaneChangeIntent> resolved = new ArrayList<>();
+
+        for (List<LaneChangeIntent> group : byTargetLane.values()) {
+            // Sort by position ascending
+            group.sort(Comparator.comparingDouble(LaneChangeIntent::position));
+
+            // Check for overlapping intents
+            LaneChangeIntent prev = null;
+            for (LaneChangeIntent intent : group) {
+                if (prev != null) {
+                    double gap = intent.position() - prev.position();
+                    double minGap = intent.vehicle().getS0() + intent.vehicle().getLength();
+                    if (gap < minGap) {
+                        // Conflict: keep the one with higher incentive
+                        if (intent.incentiveScore() > prev.incentiveScore()) {
+                            resolved.remove(prev);
+                            resolved.add(intent);
+                            prev = intent;
+                        }
+                        // else keep prev, skip current intent
+                        continue;
+                    }
+                }
+                resolved.add(intent);
+                prev = intent;
+            }
+        }
+        return resolved;
+    }
+
+    /**
+     * Phase 3: Apply resolved lane changes. Move vehicles between lanes,
+     * record cooldown timestamp, initialize animation progress.
+     */
+    private void commitLaneChanges(List<LaneChangeIntent> intents, long currentTick) {
+        for (LaneChangeIntent intent : intents) {
+            Vehicle vehicle = intent.vehicle();
+            Lane source = intent.sourceLane();
+            Lane target = intent.targetLane();
+
+            // Move vehicle from source to target lane
+            source.getVehicles().remove(vehicle);
+            target.getVehicles().add(vehicle);
+            vehicle.setLane(target);
+
+            // Record cooldown
+            vehicle.setLastLaneChangeTick(currentTick);
+
+            // Clear force flag if was forced
+            vehicle.setForceLaneChange(false);
+
+            // Initialize animation: track source lane index, progress = 0
+            vehicle.setLaneChangeSourceIndex(source.getLaneIndex());
+            vehicle.setLaneChangeProgress(0.0);
+
+            log.debug("Lane change: vehicle={} from lane {} to lane {}",
+                vehicle.getId(), source.getId(), target.getId());
+        }
+    }
+
+    /**
+     * Advances laneChangeProgress for vehicles mid-transition.
+     * Progress goes from 0.0 to 1.0 over TRANSITION_TICKS ticks.
+     */
+    private void updateLaneChangeProgress(RoadNetwork network) {
+        double progressStep = 1.0 / TRANSITION_TICKS;
+        for (Road road : network.getRoads().values()) {
+            for (Lane lane : road.getLanes()) {
+                for (Vehicle v : lane.getVehicles()) {
+                    if (v.getLaneChangeProgress() < 1.0 && v.getLaneChangeSourceIndex() >= 0) {
+                        v.setLaneChangeProgress(
+                            Math.min(1.0, v.getLaneChangeProgress() + progressStep));
+                        if (v.getLaneChangeProgress() >= 1.0) {
+                            v.setLaneChangeSourceIndex(-1); // animation done
+                        }
+                    }
+                }
+            }
+        }
+    }
+}
