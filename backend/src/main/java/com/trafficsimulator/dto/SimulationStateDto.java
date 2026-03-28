@@ -16,5 +16,6 @@ public class SimulationStateDto {
     private long timestamp;
     private String status;            // "RUNNING", "PAUSED", "STOPPED"
     private List<VehicleDto> vehicles;
+    private List<ObstacleDto> obstacles;
     private StatsDto stats;
 }

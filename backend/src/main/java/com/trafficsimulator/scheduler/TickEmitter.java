@@ -1,5 +1,6 @@
 package com.trafficsimulator.scheduler;
 
+import com.trafficsimulator.dto.ObstacleDto;
 import com.trafficsimulator.dto.SimulationStateDto;
 import com.trafficsimulator.dto.StatsDto;
 import com.trafficsimulator.dto.VehicleDto;
@@ -8,6 +9,7 @@ import com.trafficsimulator.engine.SimulationEngine;
 import com.trafficsimulator.engine.SimulationStatus;
 import com.trafficsimulator.engine.VehicleSpawner;
 import com.trafficsimulator.model.Lane;
+import com.trafficsimulator.model.Obstacle;
 import com.trafficsimulator.model.Road;
 import com.trafficsimulator.model.RoadNetwork;
 import com.trafficsimulator.model.Vehicle;
@@ -102,6 +104,7 @@ public class TickEmitter {
 
     private SimulationStateDto buildSnapshot(long tick, RoadNetwork network) {
         List<VehicleDto> vehicleDtos = new ArrayList<>();
+        List<ObstacleDto> obstacleDtos = new ArrayList<>();
         double totalSpeed = 0.0;
         int vehicleCount = 0;
         double totalRoadLength = 0.0;
@@ -115,6 +118,9 @@ public class TickEmitter {
                         vehicleDtos.add(projectVehicle(v, road, laneIdx));
                         totalSpeed += v.getSpeed();
                         vehicleCount++;
+                    }
+                    for (Obstacle obs : lane.getObstacles()) {
+                        obstacleDtos.add(projectObstacle(obs, road, laneIdx));
                     }
                 }
             }
@@ -137,7 +143,30 @@ public class TickEmitter {
             .timestamp(System.currentTimeMillis())
             .status(simulationEngine.getStatus().name())
             .vehicles(vehicleDtos)
+            .obstacles(obstacleDtos)
             .stats(stats)
+            .build();
+    }
+
+    /**
+     * Projects a domain Obstacle to an ObstacleDto with pixel coordinates.
+     */
+    private ObstacleDto projectObstacle(Obstacle obs, Road road, int laneIndex) {
+        double fraction = obs.getPosition() / road.getLength();
+        double x = road.getStartX() + fraction * (road.getEndX() - road.getStartX());
+        double yBase = road.getStartY() + fraction * (road.getEndY() - road.getStartY());
+        double laneOffset = (laneIndex - (road.getLanes().size() - 1) / 2.0) * LANE_WIDTH_PX;
+        double y = yBase + laneOffset;
+        double angle = Math.atan2(road.getEndY() - road.getStartY(),
+                                  road.getEndX() - road.getStartX());
+
+        return ObstacleDto.builder()
+            .id(obs.getId())
+            .laneId(obs.getLaneId())
+            .position(obs.getPosition())
+            .x(x)
+            .y(y)
+            .angle(angle)
             .build();
     }
 
