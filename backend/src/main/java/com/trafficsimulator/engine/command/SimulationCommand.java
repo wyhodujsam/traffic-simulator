@@ -8,7 +8,9 @@ public sealed interface SimulationCommand
             SimulationCommand.SetSpawnRate,
             SimulationCommand.SetSpeedMultiplier,
             SimulationCommand.LoadMap,
-            SimulationCommand.SetMaxSpeed {
+            SimulationCommand.SetMaxSpeed,
+            SimulationCommand.AddObstacle,
+            SimulationCommand.RemoveObstacle {
 
     record Start()                                      implements SimulationCommand {}
     record Stop()                                       implements SimulationCommand {}
@@ -18,4 +20,6 @@ public sealed interface SimulationCommand
     record SetSpeedMultiplier(double multiplier)         implements SimulationCommand {}
     record LoadMap(String mapId)                         implements SimulationCommand {}
     record SetMaxSpeed(double maxSpeedMs)                implements SimulationCommand {}
+    record AddObstacle(String roadId, int laneIndex, double position) implements SimulationCommand {}
+    record RemoveObstacle(String obstacleId)             implements SimulationCommand {}
 }
