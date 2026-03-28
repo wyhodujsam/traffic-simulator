@@ -1,7 +1,11 @@
 package com.trafficsimulator.engine;
 
+import com.trafficsimulator.config.MapLoader;
 import com.trafficsimulator.engine.command.SimulationCommand;
+import com.trafficsimulator.model.Lane;
+import com.trafficsimulator.model.Road;
 import com.trafficsimulator.model.RoadNetwork;
+import jakarta.annotation.PostConstruct;
 import lombok.Getter;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -40,6 +44,24 @@ public class SimulationEngine {
     @Autowired(required = false)
     private VehicleSpawner vehicleSpawner;
 
+    @Autowired(required = false)
+    private MapLoader mapLoader;
+
+    @PostConstruct
+    void loadDefaultMap() {
+        if (mapLoader == null) {
+            log.warn("MapLoader not available — skipping default map load");
+            return;
+        }
+        try {
+            RoadNetwork network = mapLoader.loadFromClasspath("maps/straight-road.json");
+            setRoadNetwork(network);
+            log.info("Default map loaded: {}", network.getId());
+        } catch (Exception e) {
+            log.error("Failed to load default map: {}", e.getMessage(), e);
+        }
+    }
+
     public void enqueue(SimulationCommand command) {
         commandQueue.offer(command);
     }
@@ -72,7 +94,11 @@ public class SimulationEngine {
             }
             status = SimulationStatus.STOPPED;
             tickCounter.set(0);
-            log.info("Simulation stopped");
+            clearAllVehicles();
+            if (vehicleSpawner != null) {
+                vehicleSpawner.reset();
+            }
+            log.info("Simulation stopped — state cleared");
 
         } else if (cmd instanceof SimulationCommand.Pause) {
             if (status != SimulationStatus.RUNNING) {
@@ -114,5 +140,18 @@ public class SimulationEngine {
 
     public void setRoadNetwork(RoadNetwork roadNetwork) {
         this.roadNetwork = roadNetwork;
+    }
+
+    /**
+     * Removes all vehicles from all lanes in the current road network.
+     * Called on Stop to ensure a clean restart.
+     */
+    private void clearAllVehicles() {
+        if (roadNetwork == null) return;
+        for (Road road : roadNetwork.getRoads().values()) {
+            for (Lane lane : road.getLanes()) {
+                lane.getVehicles().clear();
+            }
+        }
     }
 }
