@@ -5,6 +5,7 @@ import com.trafficsimulator.engine.command.SimulationCommand;
 import com.trafficsimulator.model.Lane;
 import com.trafficsimulator.model.Road;
 import com.trafficsimulator.model.RoadNetwork;
+import com.trafficsimulator.model.Vehicle;
 import jakarta.annotation.PostConstruct;
 import lombok.Getter;
 import lombok.extern.slf4j.Slf4j;
@@ -157,6 +158,36 @@ public class SimulationEngine {
                 obstacleManager.removeObstacle(roadNetwork, removeObs.obstacleId());
             }
 
+        } else if (cmd instanceof SimulationCommand.CloseLane closeLane) {
+            if (roadNetwork != null) {
+                Road road = roadNetwork.getRoads().get(closeLane.roadId());
+                if (road != null && closeLane.laneIndex() >= 0
+                    && closeLane.laneIndex() < road.getLanes().size()) {
+                    Lane lane = road.getLanes().get(closeLane.laneIndex());
+
+                    // Count active lanes — don't close the last one
+                    long activeLanes = road.getLanes().stream().filter(Lane::isActive).count();
+                    if (activeLanes <= 1) {
+                        log.warn("Cannot close lane {} — it's the last active lane on road {}",
+                            closeLane.laneIndex(), closeLane.roadId());
+                        return;
+                    }
+
+                    lane.setActive(false);
+
+                    // Flag all vehicles in the closed lane for forced lane change
+                    for (Vehicle v : lane.getVehicles()) {
+                        v.setForceLaneChange(true);
+                    }
+
+                    log.info("Lane closed: road={} lane={} — {} vehicles flagged for merge",
+                        closeLane.roadId(), closeLane.laneIndex(), lane.getVehicles().size());
+                } else {
+                    log.warn("Cannot close lane: road={} laneIndex={} not found",
+                        closeLane.roadId(), closeLane.laneIndex());
+                }
+            }
+
         } else if (cmd instanceof SimulationCommand.LoadMap loadMap) {
             log.info("Load map requested: {}", loadMap.mapId());
 
@@ -181,6 +212,7 @@ public class SimulationEngine {
             for (Lane lane : road.getLanes()) {
                 lane.getVehicles().clear();
                 lane.getObstacles().clear();
+                lane.setActive(true);  // Reset lane status on stop
             }
         }
     }

@@ -8,7 +8,8 @@ import lombok.NoArgsConstructor;
  * STOMP command DTO received from the frontend on /app/command.
  *
  * <p>The {@code type} field must be one of: START, STOP, PAUSE, RESUME,
- * SET_SPAWN_RATE, SET_SPEED_MULTIPLIER, LOAD_MAP. Unknown types produce a
+ * SET_SPAWN_RATE, SET_SPEED_MULTIPLIER, LOAD_MAP, SET_MAX_SPEED,
+ * ADD_OBSTACLE, REMOVE_OBSTACLE, CLOSE_LANE. Unknown types produce a
  * descriptive error message with the list of valid types.
  *
  * <p>Payload fields are nullable and read based on {@code type}:
@@ -16,6 +17,10 @@ import lombok.NoArgsConstructor;
  *   <li>{@code spawnRate} — required for SET_SPAWN_RATE</li>
  *   <li>{@code multiplier} — required for SET_SPEED_MULTIPLIER</li>
  *   <li>{@code mapId} — required for LOAD_MAP</li>
+ *   <li>{@code maxSpeed} — required for SET_MAX_SPEED</li>
+ *   <li>{@code roadId}, {@code laneIndex}, {@code position} — required for ADD_OBSTACLE</li>
+ *   <li>{@code roadId}, {@code laneIndex} — required for CLOSE_LANE</li>
+ *   <li>{@code obstacleId} — required for REMOVE_OBSTACLE</li>
  * </ul>
  */
 @Data
