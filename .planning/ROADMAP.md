@@ -98,8 +98,8 @@
 **Plans:**
 1. ✓ Wire PhysicsEngine into TickEmitter with speed multiplier and sub-stepping
 2. Command queue integration — `LinkedBlockingQueue` drained at tick start; `START`, `STOP`, `PAUSE`, `RESUME` commands
-3. `StatePublisher.java` — `SimpMessagingTemplate` broadcast of `SimulationStateDto` (Jackson serialized) every tick
-4. `SimulationController.java` — REST endpoints for initial config, map selection, simulation status
+3. ✓ `SimulationController.java` + `StatePublisher.java` — REST endpoints for status/maps + STOMP broadcast of SimulationStateDto
+4. ✓ Thread safety & integration tests — 1000-thread concurrent enqueue, tick pipeline integration (spawn/physics/despawn, pause/resume, stop/restart, speed multiplier); 44 tests pass
 
 ---
 

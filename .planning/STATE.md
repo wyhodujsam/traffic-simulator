@@ -3,13 +3,13 @@ gsd_state_version: 1.0
 milestone: v1.0
 milestone_name: milestone
 current_phase: 4
-status: Ready to plan
-last_updated: "2026-03-28T15:40:52.967Z"
+status: In Progress
+last_updated: "2026-03-28T16:47:00.000Z"
 progress:
   total_phases: 10
   completed_phases: 2
   total_plans: 15
-  completed_plans: 11
+  completed_plans: 12
 ---
 
 # Project State
@@ -33,7 +33,7 @@ See: .planning/PROJECT.md (updated 2026-03-27)
 | 1 | Project Bootstrap & Infrastructure | ✓ Complete |
 | 2 | Domain Model & Road Network Foundation | ✓ Complete (5/5 plans done) |
 | 3 | Physics Engine (IDM) | ✓ Complete (2/2 plans done) |
-| 4 | Simulation Engine & Tick Loop | ◑ In Progress (1/4 plans done) |
+| 4 | Simulation Engine & Tick Loop | ◑ In Progress (2/4 plans done) |
 | 5 | Canvas Rendering & Basic UI | ○ Pending |
 | 6 | Live Obstacle Placement | ○ Pending |
 | 7 | Lane Changing & Road Narrowing | ○ Pending |
@@ -52,3 +52,4 @@ See: .planning/PROJECT.md (updated 2026-03-27)
 - 2026-03-28: Phase 3 Plan 3.1 complete — PhysicsEngine with IDM car-following model, Euler integration, 5 safety guards
 - 2026-03-28: Phase 3 Plan 3.2 complete — 9-test PhysicsEngine test suite (free-flow, following, emergency stop, zero-gap, NaN guard, velocity clamp, benchmark, monotonicity, empty lane); 38 total tests pass; Phase 3 complete
 - 2026-03-28: Phase 4 Plan 4.3 complete — SimulationStatusDto + SimulationController with GET /api/simulation/status and GET /api/maps endpoints; all 38 tests pass
+- 2026-03-28: Phase 4 Plan 4.4 complete — 1000-thread concurrent enqueue test + 5 tick pipeline integration tests (spawn/physics/despawn, pause/resume, stop/restart, speed multiplier); 44 total tests pass
