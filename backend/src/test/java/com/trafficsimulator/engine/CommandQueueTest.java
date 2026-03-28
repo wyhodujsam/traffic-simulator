@@ -39,6 +39,55 @@ class CommandQueueTest {
     }
 
     @Test
+    void concurrentEnqueue_1000Threads_duringActiveTick_noConcurrentModificationException() throws Exception {
+        SimulationEngine engine = new SimulationEngine();
+        // Start the simulation so commands are processed against RUNNING state
+        engine.enqueue(new SimulationCommand.Start());
+        engine.drainCommands();
+
+        int threadCount = 1000;
+        CountDownLatch startGate = new CountDownLatch(1);
+        CountDownLatch done = new CountDownLatch(threadCount);
+        ExecutorService executor = Executors.newFixedThreadPool(50);
+
+        for (int i = 0; i < threadCount; i++) {
+            double rate = i * 0.01;
+            executor.submit(() -> {
+                try {
+                    startGate.await(5, TimeUnit.SECONDS);
+                    engine.enqueue(new SimulationCommand.SetSpawnRate(rate));
+                } catch (InterruptedException e) {
+                    Thread.currentThread().interrupt();
+                } finally {
+                    done.countDown();
+                }
+            });
+        }
+
+        // Release all threads simultaneously for maximum contention
+        startGate.countDown();
+
+        // Simulate tick thread draining commands concurrently
+        Thread tickThread = new Thread(() -> {
+            for (int i = 0; i < 100; i++) {
+                engine.drainCommands();
+                try { Thread.sleep(1); } catch (InterruptedException ignored) {}
+            }
+        });
+        tickThread.start();
+
+        done.await(10, TimeUnit.SECONDS);
+        tickThread.join(5000);
+        executor.shutdown();
+
+        // Final drain to catch any stragglers
+        engine.drainCommands();
+
+        // If no ConcurrentModificationException was thrown, the test passes
+        assertThat(engine.getStatus()).isEqualTo(SimulationStatus.RUNNING);
+    }
+
+    @Test
     void drainCommands_appliesStartCommand_changesStatus() {
         SimulationEngine engine = new SimulationEngine();
 
