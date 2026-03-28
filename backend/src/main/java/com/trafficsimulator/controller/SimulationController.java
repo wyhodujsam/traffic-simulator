@@ -1,5 +1,6 @@
 package com.trafficsimulator.controller;
 
+import com.trafficsimulator.dto.RoadDto;
 import com.trafficsimulator.dto.SimulationStatusDto;
 import com.trafficsimulator.engine.SimulationEngine;
 import com.trafficsimulator.model.Lane;
@@ -47,6 +48,33 @@ public class SimulationController {
             .spawnRate(simulationEngine.getSpawnRate())
             .mapId(network != null ? network.getId() : null)
             .build();
+    }
+
+    /**
+     * Returns road geometry for the currently loaded map.
+     * Used by frontend to render road segments on canvas.
+     */
+    @GetMapping("/roads")
+    public List<RoadDto> getRoads() {
+        RoadNetwork network = simulationEngine.getRoadNetwork();
+        if (network == null) {
+            return List.of();
+        }
+        List<RoadDto> result = new ArrayList<>();
+        for (Road road : network.getRoads().values()) {
+            result.add(RoadDto.builder()
+                .id(road.getId())
+                .name(road.getName())
+                .laneCount(road.getLanes().size())
+                .length(road.getLength())
+                .speedLimit(road.getSpeedLimit())
+                .startX(road.getStartX())
+                .startY(road.getStartY())
+                .endX(road.getEndX())
+                .endY(road.getEndY())
+                .build());
+        }
+        return result;
     }
 
     /**
