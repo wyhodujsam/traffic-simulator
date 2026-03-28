@@ -7,6 +7,7 @@ import type {
   VehicleDto,
   CommandDto,
   RoadDto,
+  ObstacleDto,
 } from '../types/simulation';
 
 function buildVehicleMap(vehicles: VehicleDto[]): Map<string, VehicleDto> {
@@ -24,6 +25,9 @@ interface SimulationStore {
   prevSnapshot: Snapshot | null;
   tickCount: number;
   stats: StatsDto | null;
+
+  // --- Obstacles ---
+  obstacles: ObstacleDto[];
 
   // --- Road geometry (fetched once via REST) ---
   roads: RoadDto[];
@@ -44,6 +48,7 @@ export const useSimulationStore = create<SimulationStore>((set, get) => ({
   prevSnapshot: null,
   tickCount: 0,
   stats: null,
+  obstacles: [],
   roads: [],
   roadsLoaded: false,
   sendCommand: null,
@@ -61,6 +66,7 @@ export const useSimulationStore = create<SimulationStore>((set, get) => ({
       currSnapshot: snapshot,
       tickCount: prev.tickCount + 1,
       stats: state.stats,
+      obstacles: state.obstacles ?? [],
     }));
   },
 

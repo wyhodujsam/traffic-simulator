@@ -24,7 +24,18 @@ export interface SimulationStateDto {
   timestamp: number;
   status: SimulationStatus;
   vehicles: VehicleDto[];
+  obstacles: ObstacleDto[];
   stats: StatsDto;
+}
+
+export interface ObstacleDto {
+  id: string;
+  roadId: string;
+  laneIndex: number;
+  position: number;   // metres from road start
+  x: number;          // pixel x coordinate
+  y: number;          // pixel y coordinate
+  angle: number;      // radians
 }
 
 export interface RoadDto {
@@ -53,7 +64,8 @@ export interface SimulationStatusDto {
 
 export type CommandType =
   | 'START' | 'STOP' | 'PAUSE' | 'RESUME'
-  | 'SET_SPAWN_RATE' | 'SET_SPEED_MULTIPLIER' | 'SET_MAX_SPEED' | 'LOAD_MAP';
+  | 'SET_SPAWN_RATE' | 'SET_SPEED_MULTIPLIER' | 'SET_MAX_SPEED' | 'LOAD_MAP'
+  | 'ADD_OBSTACLE' | 'REMOVE_OBSTACLE';
 
 export interface CommandDto {
   type: CommandType;
@@ -61,6 +73,10 @@ export interface CommandDto {
   multiplier?: number;
   maxSpeed?: number;
   mapId?: string;
+  roadId?: string;
+  laneIndex?: number;
+  position?: number;
+  obstacleId?: string;
 }
 
 // ---- Snapshot wrapper for interpolation ----
