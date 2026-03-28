@@ -6,6 +6,8 @@ import lombok.Setter;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Component;
 
+import java.util.ArrayDeque;
+import java.util.Deque;
 import java.util.List;
 import java.util.UUID;
 import java.util.concurrent.ThreadLocalRandom;
@@ -22,7 +24,9 @@ public class VehicleSpawner {
     private static final double T_BASE  = 1.5;    // seconds
     private static final double DEFAULT_VEHICLE_LENGTH = 4.5; // metres
     private static final double MIN_SAFE_GAP = S0 + DEFAULT_VEHICLE_LENGTH; // 6.5m
+    private static final long THROUGHPUT_WINDOW_MS = 60_000;
 
+    private final Deque<Long> despawnTimestamps = new ArrayDeque<>();
     private double spawnAccumulator = 0.0;
 
     @Getter @Setter
@@ -120,6 +124,7 @@ public class VehicleSpawner {
             for (Lane lane : road.getLanes()) {
                 lane.getVehicles().removeIf(v -> {
                     if (v.getPosition() >= lane.getLength()) {
+                        despawnTimestamps.addLast(System.currentTimeMillis());
                         log.debug("Vehicle {} despawned at position {} (lane length {})",
                             v.getId(), v.getPosition(), lane.getLength());
                         return true;
@@ -130,8 +135,21 @@ public class VehicleSpawner {
         }
     }
 
+    /**
+     * Returns vehicles despawned in the last 60 seconds.
+     * Evicts stale entries older than the window.
+     */
+    public int getThroughput() {
+        long cutoff = System.currentTimeMillis() - THROUGHPUT_WINDOW_MS;
+        while (!despawnTimestamps.isEmpty() && despawnTimestamps.peekFirst() < cutoff) {
+            despawnTimestamps.pollFirst();
+        }
+        return despawnTimestamps.size();
+    }
+
     public void reset() {
         spawnAccumulator = 0.0;
         spawnPointIndex = 0;
+        despawnTimestamps.clear();
     }
 }

@@ -129,7 +129,7 @@ public class TickEmitter {
             .vehicleCount(vehicleCount)
             .avgSpeed(avgSpeed)
             .density(density)
-            .throughput(0.0) // throughput tracking deferred to Phase 5
+            .throughput(vehicleSpawner.getThroughput())
             .build();
 
         return SimulationStateDto.builder()
