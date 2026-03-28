@@ -8,6 +8,7 @@ import type {
   ObstacleDto,
   CommandDto,
   RoadDto,
+  ObstacleDto,
 } from '../types/simulation';
 
 function buildVehicleMap(vehicles: VehicleDto[]): Map<string, VehicleDto> {
@@ -25,6 +26,9 @@ interface SimulationStore {
   prevSnapshot: Snapshot | null;
   tickCount: number;
   stats: StatsDto | null;
+  obstacles: ObstacleDto[];
+
+  // --- Obstacles ---
   obstacles: ObstacleDto[];
 
   // --- Road geometry (fetched once via REST) ---
