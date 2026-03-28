@@ -9,7 +9,7 @@ progress:
   total_phases: 10
   completed_phases: 3
   total_plans: 22
-  completed_plans: 15
+  completed_plans: 16
 ---
 
 # Project State
@@ -34,7 +34,7 @@ See: .planning/PROJECT.md (updated 2026-03-27)
 | 2 | Domain Model & Road Network Foundation | ✓ Complete (5/5 plans done) |
 | 3 | Physics Engine (IDM) | ✓ Complete (2/2 plans done) |
 | 4 | Simulation Engine & Tick Loop | ✓ Complete (4/4 plans done) |
-| 5 | Canvas Rendering & Basic UI | ◑ In Progress (2/5 plans done) |
+| 5 | Canvas Rendering & Basic UI | ◑ In Progress (3/5 plans done) |
 | 6 | Live Obstacle Placement | ○ Pending |
 | 7 | Lane Changing & Road Narrowing | ○ Pending |
 | 8 | Traffic Signals & Intersections | ○ Pending |
@@ -54,3 +54,4 @@ See: .planning/PROJECT.md (updated 2026-03-27)
 - 2026-03-28: Phase 4 Plan 4.3 complete — SimulationStatusDto + SimulationController with GET /api/simulation/status and GET /api/maps endpoints; all 38 tests pass
 - 2026-03-28: Phase 4 Plan 4.4 complete — 1000-thread concurrent enqueue test + 5 tick pipeline integration tests (spawn/physics/despawn, pause/resume, stop/restart, speed multiplier); 44 total tests pass
 - 2026-03-28: Phase 5 Plan 5.2 complete — TypeScript DTOs (VehicleDto, SimulationStateDto, CommandDto, RoadDto, Snapshot), Zustand store expansion (prev/curr snapshots, sendCommand, roads), useWebSocket wiring (sendCommand + REST /api/roads); tsc --noEmit passes
+- 2026-03-28: Phase 5 Plan 5.4 complete — useDebouncedCallback hook, ControlsPanel with Start/Pause/Stop buttons (state-aware), speed multiplier slider (0.5x-5x), spawn rate slider (0.5-5 veh/s), max speed slider (30-200 km/h); all debounced at 200ms; tsc --noEmit passes
