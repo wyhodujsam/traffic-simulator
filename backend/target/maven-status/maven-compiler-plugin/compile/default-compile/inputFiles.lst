@@ -1,0 +1,4 @@
+/home/sebastian/traffic-simulator/backend/src/main/java/com/trafficsimulator/TrafficSimulatorApplication.java
+/home/sebastian/traffic-simulator/backend/src/main/java/com/trafficsimulator/config/WebSocketConfig.java
+/home/sebastian/traffic-simulator/backend/src/main/java/com/trafficsimulator/dto/TickDto.java
+/home/sebastian/traffic-simulator/backend/src/main/java/com/trafficsimulator/scheduler/TickEmitter.java

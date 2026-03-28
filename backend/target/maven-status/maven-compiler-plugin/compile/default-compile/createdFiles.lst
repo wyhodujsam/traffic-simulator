@@ -1,0 +1,4 @@
+com/trafficsimulator/config/WebSocketConfig.class
+com/trafficsimulator/scheduler/TickEmitter.class
+com/trafficsimulator/TrafficSimulatorApplication.class
+com/trafficsimulator/dto/TickDto.class
