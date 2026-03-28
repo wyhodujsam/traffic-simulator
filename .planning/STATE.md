@@ -4,12 +4,12 @@ milestone: v1.0
 milestone_name: milestone
 current_phase: 5
 status: In Progress
-last_updated: "2026-03-28T16:53:46.599Z"
+last_updated: "2026-03-28T16:50:37.946Z"
 progress:
   total_phases: 10
   completed_phases: 3
   total_plans: 22
-  completed_plans: 17
+  completed_plans: 16
 ---
 
 # Project State
@@ -54,4 +54,4 @@ See: .planning/PROJECT.md (updated 2026-03-27)
 - 2026-03-28: Phase 4 Plan 4.3 complete — SimulationStatusDto + SimulationController with GET /api/simulation/status and GET /api/maps endpoints; all 38 tests pass
 - 2026-03-28: Phase 4 Plan 4.4 complete — 1000-thread concurrent enqueue test + 5 tick pipeline integration tests (spawn/physics/despawn, pause/resume, stop/restart, speed multiplier); 44 total tests pass
 - 2026-03-28: Phase 5 Plan 5.2 complete — TypeScript DTOs (VehicleDto, SimulationStateDto, CommandDto, RoadDto, Snapshot), Zustand store expansion (prev/curr snapshots, sendCommand, roads), useWebSocket wiring (sendCommand + REST /api/roads); tsc --noEmit passes
-- 2026-03-28: Phase 5 Plan 5.3 complete — Canvas rendering: constants, interpolation utility, drawRoads (static layer), drawVehicles (speed-colored dynamic layer), SimulationCanvas component with two-layer canvas and rAF loop; tsc --noEmit passes
+- 2026-03-28: Phase 5 Plan 5.4 complete — useDebouncedCallback hook, ControlsPanel with Start/Pause/Stop buttons (state-aware), speed multiplier slider (0.5x-5x), spawn rate slider (0.5-5 veh/s), max speed slider (30-200 km/h); all debounced at 200ms; tsc --noEmit passes
