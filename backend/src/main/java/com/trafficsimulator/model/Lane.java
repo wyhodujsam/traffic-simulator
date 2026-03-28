@@ -46,4 +46,36 @@ public class Lane {
         }
         return leader;
     }
+
+    /**
+     * Returns the nearest vehicle ahead of the given position, or null.
+     * Used by MOBIL to find the new leader in a target lane.
+     */
+    public Vehicle findLeaderAt(double position) {
+        Vehicle leader = null;
+        for (Vehicle v : vehicles) {
+            if (v.getPosition() > position) {
+                if (leader == null || v.getPosition() < leader.getPosition()) {
+                    leader = v;
+                }
+            }
+        }
+        return leader;
+    }
+
+    /**
+     * Returns the nearest vehicle behind the given position, or null.
+     * Used by MOBIL to find the new follower in a target lane.
+     */
+    public Vehicle findFollowerAt(double position) {
+        Vehicle follower = null;
+        for (Vehicle v : vehicles) {
+            if (v.getPosition() < position) {
+                if (follower == null || v.getPosition() > follower.getPosition()) {
+                    follower = v;
+                }
+            }
+        }
+        return follower;
+    }
 }
