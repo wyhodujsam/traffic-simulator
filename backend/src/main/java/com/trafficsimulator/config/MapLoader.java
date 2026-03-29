@@ -16,6 +16,8 @@ import java.util.stream.Collectors;
 @Slf4j
 public class MapLoader {
 
+    private static final double LANE_WIDTH_PX = 14.0;
+
     private final ObjectMapper objectMapper;
     private final MapValidator mapValidator;
 
@@ -50,6 +52,34 @@ public class MapLoader {
             MapConfig.NodeConfig fromNode = nodes.get(rc.getFromNodeId());
             MapConfig.NodeConfig toNode   = nodes.get(rc.getToNodeId());
 
+            // Compute pixel coords — offset roads at intersection nodes
+            // so inbound/outbound are parallel (not converging to same point)
+            double startX = fromNode.getX(), startY = fromNode.getY();
+            double endX = toNode.getX(), endY = toNode.getY();
+
+            // If any endpoint is INTERSECTION, offset the ENTIRE road perpendicular
+            // so inbound/outbound pairs are parallel (not converging to same point)
+            if ("INTERSECTION".equals(fromNode.getType()) || "INTERSECTION".equals(toNode.getType())) {
+                double dx = endX - startX;
+                double dy = endY - startY;
+                double len = Math.sqrt(dx * dx + dy * dy);
+                if (len > 0) {
+                    // Perpendicular unit vector
+                    double px = -dy / len;
+                    double py = dx / len;
+                    // Offset: _in roads shift one way, _out roads shift the other
+                    double offset = LANE_WIDTH_PX / 2.0;
+                    if (rc.getId().contains("_in") || rc.getId().contains("_before")) {
+                        offset = -offset;
+                    }
+                    // Shift BOTH endpoints by same offset → road stays parallel to original direction
+                    startX += px * offset;
+                    startY += py * offset;
+                    endX += px * offset;
+                    endY += py * offset;
+                }
+            }
+
             Road road = Road.builder()
                 .id(rc.getId())
                 .name(rc.getName())
@@ -57,8 +87,8 @@ public class MapLoader {
                 .speedLimit(rc.getSpeedLimit())
                 .fromNodeId(rc.getFromNodeId())
                 .toNodeId(rc.getToNodeId())
-                .startX(fromNode.getX()).startY(fromNode.getY())
-                .endX(toNode.getX()).endY(toNode.getY())
+                .startX(startX).startY(startY)
+                .endX(endX).endY(endY)
                 .lanes(new ArrayList<>())
                 .build();
 
