@@ -44,6 +44,7 @@ public class MapConfig {
         private String nodeId;
         private String type;   // "SIGNAL", "ROUNDABOUT", "PRIORITY"
         private List<SignalPhaseConfig> signalPhases;  // nullable, only for SIGNAL type
+        private double intersectionSize;  // pixel radius of intersection box (default 0 = auto)
     }
 
     @Data @NoArgsConstructor

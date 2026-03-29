@@ -27,6 +27,7 @@
     {
       "nodeId": "n_center",
       "type": "SIGNAL",
+      "intersectionSize": 40,
       "signalPhases": [
         { "greenRoadIds": ["r_north_in", "r_south_in"], "durationMs": 25000, "type": "GREEN" },
         { "greenRoadIds": ["r_north_in", "r_south_in"], "durationMs": 3000,  "type": "YELLOW" },
