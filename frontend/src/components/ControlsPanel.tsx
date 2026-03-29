@@ -142,6 +142,27 @@ export function ControlsPanel() {
         </label>
       </div>
 
+      {/* Debug dump */}
+      <div style={{ marginBottom: '16px' }}>
+        <button
+          style={{ ...buttonStyle(true), background: '#3a2a2a', fontSize: '11px' }}
+          onClick={async () => {
+            try {
+              const res = await fetch('/api/debug/dump');
+              const data = await res.json();
+              console.log('%c[DUMP]', 'color: #ff6b6b; font-weight: bold', JSON.stringify(data, null, 2));
+              // Also copy to clipboard
+              await navigator.clipboard.writeText(JSON.stringify(data, null, 2));
+              alert('State dumped to console + clipboard');
+            } catch (e) {
+              console.error('Dump failed:', e);
+            }
+          }}
+        >
+          📋 Dump State
+        </button>
+      </div>
+
       {/* Max speed input */}
       <div style={{ marginBottom: '12px' }}>
         <label>

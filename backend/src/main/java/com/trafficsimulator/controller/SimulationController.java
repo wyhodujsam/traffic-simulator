@@ -5,8 +5,10 @@ import com.trafficsimulator.dto.RoadDto;
 import com.trafficsimulator.dto.SimulationStatusDto;
 import com.trafficsimulator.engine.SimulationEngine;
 import com.trafficsimulator.model.Lane;
+import com.trafficsimulator.model.Obstacle;
 import com.trafficsimulator.model.Road;
 import com.trafficsimulator.model.RoadNetwork;
+import com.trafficsimulator.model.Vehicle;
 import lombok.RequiredArgsConstructor;
 import org.springframework.core.io.Resource;
 import org.springframework.core.io.support.PathMatchingResourcePatternResolver;
@@ -16,7 +18,9 @@ import org.springframework.web.bind.annotation.RestController;
 
 import java.io.IOException;
 import java.util.ArrayList;
+import java.util.LinkedHashMap;
 import java.util.List;
+import java.util.Map;
 
 @RestController
 @RequestMapping("/api")
@@ -85,6 +89,70 @@ public class SimulationController {
                 .build());
         }
         return result;
+    }
+
+    /**
+     * Dumps full road state for debugging: every vehicle and obstacle on every lane
+     * with position, speed, acceleration, and flags.
+     */
+    @GetMapping("/debug/dump")
+    public Map<String, Object> dumpState() {
+        Map<String, Object> dump = new LinkedHashMap<>();
+        dump.put("tick", simulationEngine.getTickCounter().get());
+        dump.put("status", simulationEngine.getStatus().name());
+
+        RoadNetwork network = simulationEngine.getRoadNetwork();
+        if (network == null) {
+            dump.put("network", null);
+            return dump;
+        }
+
+        List<Map<String, Object>> roadsData = new ArrayList<>();
+        for (Road road : network.getRoads().values()) {
+            Map<String, Object> roadData = new LinkedHashMap<>();
+            roadData.put("id", road.getId());
+            roadData.put("length", road.getLength());
+
+            List<Map<String, Object>> lanesData = new ArrayList<>();
+            for (Lane lane : road.getLanes()) {
+                Map<String, Object> laneData = new LinkedHashMap<>();
+                laneData.put("id", lane.getId());
+                laneData.put("index", lane.getLaneIndex());
+                laneData.put("active", lane.isActive());
+                laneData.put("vehicleCount", lane.getVehicles().size());
+                laneData.put("obstacleCount", lane.getObstacles().size());
+
+                List<Map<String, Object>> vehicles = new ArrayList<>();
+                for (Vehicle v : lane.getVehicles()) {
+                    Map<String, Object> vd = new LinkedHashMap<>();
+                    vd.put("id", v.getId());
+                    vd.put("pos", Math.round(v.getPosition() * 10.0) / 10.0);
+                    vd.put("speed", Math.round(v.getSpeed() * 100.0) / 100.0);
+                    vd.put("accel", Math.round(v.getAcceleration() * 100.0) / 100.0);
+                    vd.put("forceLaneChange", v.isForceLaneChange());
+                    vd.put("zipperCandidate", v.isZipperCandidate());
+                    vd.put("laneChangeProgress", v.getLaneChangeProgress());
+                    vehicles.add(vd);
+                }
+                laneData.put("vehicles", vehicles);
+
+                List<Map<String, Object>> obstacles = new ArrayList<>();
+                for (Obstacle obs : lane.getObstacles()) {
+                    Map<String, Object> od = new LinkedHashMap<>();
+                    od.put("id", obs.getId());
+                    od.put("pos", obs.getPosition());
+                    od.put("length", obs.getLength());
+                    obstacles.add(od);
+                }
+                laneData.put("obstacles", obstacles);
+
+                lanesData.add(laneData);
+            }
+            roadData.put("lanes", lanesData);
+            roadsData.add(roadData);
+        }
+        dump.put("roads", roadsData);
+        return dump;
     }
 
     /**
