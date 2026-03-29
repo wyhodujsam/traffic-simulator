@@ -15,5 +15,11 @@ public class Intersection {
     @Builder.Default
     private List<String> connectedRoadIds = new ArrayList<>();
 
-    // TrafficLight trafficLight; — null in Phase 2, added in Phase 8
+    @Builder.Default
+    private List<String> inboundRoadIds = new ArrayList<>();   // roads whose toNodeId = this intersection
+
+    @Builder.Default
+    private List<String> outboundRoadIds = new ArrayList<>();  // roads whose fromNodeId = this intersection
+
+    private TrafficLight trafficLight;  // null for non-SIGNAL types
 }

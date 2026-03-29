@@ -41,6 +41,14 @@ public class MapConfig {
     public static class IntersectionConfig {
         private String nodeId;
         private String type;   // "SIGNAL", "ROUNDABOUT", "PRIORITY"
+        private List<SignalPhaseConfig> signalPhases;  // nullable, only for SIGNAL type
+    }
+
+    @Data @NoArgsConstructor
+    public static class SignalPhaseConfig {
+        private List<String> greenRoadIds;
+        private long durationMs;
+        private String type;  // "GREEN", "YELLOW", "ALL_RED" — defaults to GREEN if null
     }
 
     @Data @NoArgsConstructor

@@ -86,7 +86,7 @@ public class MapLoader {
                 .map(dp -> new DespawnPoint(dp.getRoadId(), dp.getLaneIndex(), dp.getPosition()))
                 .toList();
 
-        // 4. Build intersections (empty in Phase 2)
+        // 4. Build intersections
         Map<String, Intersection> intersections = new LinkedHashMap<>();
         if (config.getIntersections() != null) {
             for (MapConfig.IntersectionConfig ic : config.getIntersections()) {
@@ -95,6 +95,46 @@ public class MapLoader {
                     .type(IntersectionType.valueOf(ic.getType()))
                     .build();
                 intersections.put(ixtn.getId(), ixtn);
+            }
+        }
+
+        // 4b. Wire intersection road connections
+        for (MapConfig.RoadConfig rc : config.getRoads()) {
+            // inbound: road's toNodeId matches intersection
+            Intersection toIxtn = intersections.get(rc.getToNodeId());
+            if (toIxtn != null) {
+                toIxtn.getInboundRoadIds().add(rc.getId());
+                toIxtn.getConnectedRoadIds().add(rc.getId());
+            }
+            // outbound: road's fromNodeId matches intersection
+            Intersection fromIxtn = intersections.get(rc.getFromNodeId());
+            if (fromIxtn != null) {
+                fromIxtn.getOutboundRoadIds().add(rc.getId());
+                fromIxtn.getConnectedRoadIds().add(rc.getId());
+            }
+        }
+
+        // 4c. Build TrafficLight for SIGNAL intersections
+        if (config.getIntersections() != null) {
+            for (MapConfig.IntersectionConfig ic : config.getIntersections()) {
+                if ("SIGNAL".equals(ic.getType()) && ic.getSignalPhases() != null) {
+                    Intersection ixtn = intersections.get(ic.getNodeId());
+                    List<TrafficLightPhase> phases = ic.getSignalPhases().stream()
+                        .map(sp -> TrafficLightPhase.builder()
+                            .greenRoadIds(new HashSet<>(sp.getGreenRoadIds()))
+                            .durationMs(sp.getDurationMs())
+                            .type(sp.getType() == null ? TrafficLightPhase.PhaseType.GREEN
+                                : TrafficLightPhase.PhaseType.valueOf(sp.getType()))
+                            .build())
+                        .toList();
+                    TrafficLight light = TrafficLight.builder()
+                        .intersectionId(ic.getNodeId())
+                        .phases(new ArrayList<>(phases))
+                        .currentPhaseIndex(0)
+                        .phaseElapsedMs(0)
+                        .build();
+                    ixtn.setTrafficLight(light);
+                }
             }
         }
 

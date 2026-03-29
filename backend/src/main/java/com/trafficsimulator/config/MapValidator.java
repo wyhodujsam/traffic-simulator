@@ -75,6 +75,48 @@ public class MapValidator {
             }
         }
 
+        // Validate intersection signal phases
+        if (config.getIntersections() != null && config.getRoads() != null) {
+            Set<String> roadIds = config.getRoads().stream()
+                .map(MapConfig.RoadConfig::getId)
+                .collect(Collectors.toSet());
+
+            // Collect all node IDs that have at least one road connecting
+            Set<String> connectedNodeIds = new java.util.HashSet<>();
+            for (MapConfig.RoadConfig road : config.getRoads()) {
+                connectedNodeIds.add(road.getFromNodeId());
+                connectedNodeIds.add(road.getToNodeId());
+            }
+
+            for (MapConfig.IntersectionConfig ic : config.getIntersections()) {
+                // Validate orphan intersection nodes
+                if (!connectedNodeIds.contains(ic.getNodeId())) {
+                    errors.add("Intersection " + ic.getNodeId() + " has no roads connecting to it");
+                }
+
+                if ("SIGNAL".equals(ic.getType())) {
+                    if (ic.getSignalPhases() == null || ic.getSignalPhases().isEmpty()) {
+                        errors.add("SIGNAL intersection " + ic.getNodeId() + " must have non-empty signalPhases");
+                    } else {
+                        for (int i = 0; i < ic.getSignalPhases().size(); i++) {
+                            MapConfig.SignalPhaseConfig sp = ic.getSignalPhases().get(i);
+                            if (sp.getDurationMs() <= 0) {
+                                errors.add("Intersection " + ic.getNodeId() + " phase " + i + " durationMs must be > 0");
+                            }
+                            if (sp.getGreenRoadIds() != null) {
+                                for (String greenRoadId : sp.getGreenRoadIds()) {
+                                    if (!roadIds.contains(greenRoadId)) {
+                                        errors.add("Intersection " + ic.getNodeId() + " phase " + i
+                                            + " references unknown road: " + greenRoadId);
+                                    }
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+        }
+
         if (errors.isEmpty()) {
             log.info("Map config '{}' validation passed", config.getId());
         } else {
