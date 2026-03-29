@@ -144,10 +144,8 @@ public class PhysicsEngine implements IPhysicsEngine {
                 }
             }
 
-            // Write back
-            vehicle.setAcceleration(acceleration);
-            vehicle.setSpeed(newSpeed);
-            vehicle.setPosition(newPosition);
+            // Write back via domain method
+            vehicle.updatePhysics(newPosition, newSpeed, acceleration);
         }
     }
 
