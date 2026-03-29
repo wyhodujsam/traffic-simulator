@@ -5,13 +5,13 @@ import com.trafficsimulator.dto.SimulationStateDto;
 import com.trafficsimulator.dto.StatsDto;
 import com.trafficsimulator.dto.TrafficLightDto;
 import com.trafficsimulator.dto.VehicleDto;
-import com.trafficsimulator.engine.IntersectionManager;
-import com.trafficsimulator.engine.LaneChangeEngine;
-import com.trafficsimulator.engine.PhysicsEngine;
+import com.trafficsimulator.engine.IIntersectionManager;
+import com.trafficsimulator.engine.ILaneChangeEngine;
+import com.trafficsimulator.engine.IPhysicsEngine;
+import com.trafficsimulator.engine.ITrafficLightController;
+import com.trafficsimulator.engine.IVehicleSpawner;
 import com.trafficsimulator.engine.SimulationEngine;
 import com.trafficsimulator.engine.SimulationStatus;
-import com.trafficsimulator.engine.TrafficLightController;
-import com.trafficsimulator.engine.VehicleSpawner;
 import com.trafficsimulator.model.Intersection;
 import com.trafficsimulator.model.Lane;
 import com.trafficsimulator.model.Obstacle;
@@ -47,11 +47,11 @@ public class TickEmitter {
 
     private final StatePublisher statePublisher;
     private final SimulationEngine simulationEngine;
-    private final VehicleSpawner vehicleSpawner;
-    private final PhysicsEngine physicsEngine;
-    private final LaneChangeEngine laneChangeEngine;
-    private final TrafficLightController trafficLightController;
-    private final IntersectionManager intersectionManager;
+    private final IVehicleSpawner vehicleSpawner;
+    private final IPhysicsEngine physicsEngine;
+    private final ILaneChangeEngine laneChangeEngine;
+    private final ITrafficLightController trafficLightController;
+    private final IIntersectionManager intersectionManager;
 
     @Scheduled(fixedRate = 50)
     public void emitTick() {
