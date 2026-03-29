@@ -1,6 +1,7 @@
 {
   "id": "four-way-signal",
   "name": "Four-Way Signalised Intersection",
+  "description": "4-approach signalised intersection with green/yellow/all-red cycles. Demonstrates signal timing effects on traffic flow.",
   "nodes": [
     { "id": "n_north", "type": "ENTRY", "x": 400.0, "y": 50.0 },
     { "id": "n_south", "type": "ENTRY", "x": 400.0, "y": 550.0 },
