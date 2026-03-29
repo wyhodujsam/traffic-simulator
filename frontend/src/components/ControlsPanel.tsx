@@ -8,6 +8,10 @@ const DEBOUNCE_MS = 200;
 export function ControlsPanel() {
   const status = useSimulationStore((s) => s.status);
   const sendCommand = useSimulationStore((s) => s.sendCommand);
+  const availableMaps = useSimulationStore((s) => s.availableMaps);
+  const currentMapId = useSimulationStore((s) => s.currentMapId);
+  const mapError = useSimulationStore((s) => s.mapError);
+  const refetchRoads = useSimulationStore((s) => s.refetchRoads);
 
   const [speedMultiplier, setSpeedMultiplier] = useState(1.0);
   const [spawnRate, setSpawnRate] = useState(1.0);
@@ -20,6 +24,20 @@ export function ControlsPanel() {
     },
     [sendCommand]
   );
+
+  const handleMapChange = (e: React.ChangeEvent<HTMLSelectElement>) => {
+    const mapId = e.target.value;
+    if (!mapId || mapId === currentMapId) return;
+
+    // Clear stale snapshots to prevent old vehicles rendering on new map
+    useSimulationStore.getState().clearSnapshots();
+
+    send({ type: 'LOAD_MAP', mapId });
+    // Re-fetch roads after short delay to allow backend to load new map
+    setTimeout(() => {
+      if (refetchRoads) refetchRoads();
+    }, 200);
+  };
 
   const debouncedSpeedMultiplier = useDebouncedCallback(
     ((value: number) => send({ type: 'SET_SPEED_MULTIPLIER', multiplier: value })) as (...args: unknown[]) => void,
@@ -81,6 +99,56 @@ export function ControlsPanel() {
   return (
     <div style={{ padding: '16px', fontFamily: 'monospace', color: '#e0e0e0' }}>
       <h3 style={{ margin: '0 0 12px 0' }}>Controls</h3>
+
+      {/* Map selector */}
+      <div style={{ marginBottom: '16px' }}>
+        <label style={{ display: 'block', marginBottom: '4px' }}>
+          Scenario:
+        </label>
+        <select
+          value={currentMapId ?? ''}
+          onChange={handleMapChange}
+          disabled={status === 'RUNNING'}
+          style={{
+            width: '100%',
+            padding: '6px 8px',
+            background: '#2a2a3e',
+            color: '#e0e0e0',
+            border: '1px solid #555',
+            borderRadius: '4px',
+            fontFamily: 'monospace',
+            fontSize: '13px',
+            cursor: status === 'RUNNING' ? 'not-allowed' : 'pointer',
+          }}
+        >
+          {availableMaps.map((m) => (
+            <option key={m.id} value={m.id}>
+              {m.name}
+            </option>
+          ))}
+        </select>
+        {/* Show description of selected map */}
+        {availableMaps.find(m => m.id === currentMapId)?.description && (
+          <div style={{ fontSize: '11px', color: '#888', marginTop: '4px' }}>
+            {availableMaps.find(m => m.id === currentMapId)?.description}
+          </div>
+        )}
+      </div>
+
+      {/* Map error banner */}
+      {mapError && (
+        <div style={{
+          background: '#3a1a1a',
+          border: '1px solid #ff4444',
+          borderRadius: '4px',
+          padding: '8px',
+          marginBottom: '12px',
+          fontSize: '12px',
+          color: '#ff6b6b',
+        }}>
+          {mapError}
+        </div>
+      )}
 
       {/* Simulation state buttons */}
       <div style={{ marginBottom: '16px' }}>
