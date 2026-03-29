@@ -1,6 +1,9 @@
 package com.trafficsimulator.controller;
 
+import com.fasterxml.jackson.databind.ObjectMapper;
+import com.trafficsimulator.config.MapConfig;
 import com.trafficsimulator.dto.LaneDto;
+import com.trafficsimulator.dto.MapInfoDto;
 import com.trafficsimulator.dto.RoadDto;
 import com.trafficsimulator.dto.SimulationStatusDto;
 import com.trafficsimulator.engine.SimulationEngine;
@@ -19,6 +22,7 @@ import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
 
 import java.io.IOException;
+import java.io.InputStream;
 import java.util.ArrayList;
 import java.util.LinkedHashMap;
 import java.util.List;
@@ -30,6 +34,7 @@ import java.util.Map;
 public class SimulationController {
 
     private final SimulationEngine simulationEngine;
+    private final ObjectMapper objectMapper;
 
     /**
      * Returns current simulation status for frontend initialization / debugging.
@@ -180,20 +185,24 @@ public class SimulationController {
     }
 
     /**
-     * Returns list of available map file names (without path prefix and .json suffix).
+     * Returns list of available maps with metadata (id, name, description).
      * Scans classpath:maps/ directory for JSON files.
      */
     @GetMapping("/maps")
-    public List<String> listMaps() throws IOException {
+    public List<MapInfoDto> listMaps() throws IOException {
         PathMatchingResourcePatternResolver resolver = new PathMatchingResourcePatternResolver();
         Resource[] resources = resolver.getResources("classpath:maps/*.json");
-        List<String> mapIds = new ArrayList<>();
+        List<MapInfoDto> maps = new ArrayList<>();
         for (Resource resource : resources) {
-            String filename = resource.getFilename();
-            if (filename != null && filename.endsWith(".json")) {
-                mapIds.add(filename.replace(".json", ""));
+            try (InputStream is = resource.getInputStream()) {
+                MapConfig config = objectMapper.readValue(is, MapConfig.class);
+                maps.add(MapInfoDto.builder()
+                    .id(config.getId())
+                    .name(config.getName())
+                    .description(config.getDescription())
+                    .build());
             }
         }
-        return mapIds;
+        return maps;
     }
 }
