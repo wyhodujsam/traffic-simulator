@@ -3,6 +3,7 @@ import { useSimulationStore } from '../store/useSimulationStore';
 import { drawRoads } from '../rendering/drawRoads';
 import { drawVehicles } from '../rendering/drawVehicles';
 import { drawObstacles } from '../rendering/drawObstacles';
+import { drawTrafficLights } from '../rendering/drawTrafficLights';
 import { hitTestObstacle, hitTestRoad } from '../rendering/hitTest';
 import { interpolateVehicles } from '../rendering/interpolation';
 import { CANVAS_PADDING, LANE_WIDTH_PX } from '../rendering/constants';
@@ -61,6 +62,9 @@ export function SimulationCanvas() {
 
       const obstacles = useSimulationStore.getState().obstacles;
       drawObstacles(ctx, obstacles);
+
+      const trafficLights = useSimulationStore.getState().trafficLights;
+      drawTrafficLights(ctx, trafficLights);
     } else {
       ctx.clearRect(0, 0, canvas.width, canvas.height);
     }
