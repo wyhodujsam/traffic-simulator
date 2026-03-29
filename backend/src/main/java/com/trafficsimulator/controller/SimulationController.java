@@ -144,8 +144,10 @@ public class SimulationController {
             }
             if (!found) continue;
 
-            // Size = widest connected road width in pixels (laneCount * 14px lane width)
-            double size = maxLaneCount * 14.0;
+            // Use explicit intersectionSize from config if set, otherwise derive from widest road
+            double size = ixtn.getIntersectionSize() > 0
+                ? ixtn.getIntersectionSize()
+                : maxLaneCount * 14.0;
             result.add(IntersectionDto.builder()
                 .id(ixtn.getId())
                 .x(cx).y(cy)
