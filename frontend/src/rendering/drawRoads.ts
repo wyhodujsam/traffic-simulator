@@ -15,6 +15,9 @@ export function drawRoads(ctx: CanvasRenderingContext2D, roads: RoadDto[]): void
   for (const road of roads) {
     drawRoad(ctx, road);
   }
+
+  // Draw intersection boxes to cover overlapping road ends
+  drawIntersectionBoxes(ctx, roads);
 }
 
 function drawRoad(ctx: CanvasRenderingContext2D, road: RoadDto): void {
@@ -79,4 +82,51 @@ function drawRoad(ctx: CanvasRenderingContext2D, road: RoadDto): void {
   ctx.setLineDash([]);
 
   ctx.restore();
+}
+
+/**
+ * Finds intersection points (where multiple roads share an endpoint)
+ * and draws a dark square to cover overlapping lane markings.
+ */
+function drawIntersectionBoxes(ctx: CanvasRenderingContext2D, roads: RoadDto[]): void {
+  // Collect all road endpoints and group by proximity
+  const points: { x: number; y: number; roadWidth: number }[] = [];
+  for (const road of roads) {
+    const w = road.laneCount * LANE_WIDTH_PX;
+    points.push({ x: road.startX, y: road.startY, roadWidth: w });
+    points.push({ x: road.endX, y: road.endY, roadWidth: w });
+  }
+
+  // Find clusters of endpoints within 25px of each other (intersection nodes)
+  const used = new Set<number>();
+  for (let i = 0; i < points.length; i++) {
+    if (used.has(i)) continue;
+    const cluster = [points[i]];
+    used.add(i);
+    for (let j = i + 1; j < points.length; j++) {
+      if (used.has(j)) continue;
+      const dx = points[i].x - points[j].x;
+      const dy = points[i].y - points[j].y;
+      if (Math.sqrt(dx * dx + dy * dy) < 25) {
+        cluster.push(points[j]);
+        used.add(j);
+      }
+    }
+    // Only draw box if 3+ road endpoints converge (actual intersection)
+    if (cluster.length >= 3) {
+      const cx = cluster.reduce((s, p) => s + p.x, 0) / cluster.length;
+      const cy = cluster.reduce((s, p) => s + p.y, 0) / cluster.length;
+      const maxW = Math.max(...cluster.map(p => p.roadWidth));
+      const boxSize = maxW + 4;
+
+      ctx.fillStyle = '#3a3a3a';
+      ctx.fillRect(cx - boxSize / 2, cy - boxSize / 2, boxSize, boxSize);
+
+      // Subtle border
+      ctx.strokeStyle = '#555';
+      ctx.lineWidth = 1;
+      ctx.setLineDash([]);
+      ctx.strokeRect(cx - boxSize / 2, cy - boxSize / 2, boxSize, boxSize);
+    }
+  }
 }
