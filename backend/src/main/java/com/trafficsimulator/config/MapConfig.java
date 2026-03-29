@@ -11,6 +11,7 @@ import java.util.List;
 public class MapConfig {
     @JsonProperty("id")              private String id;
     @JsonProperty("name")            private String name;
+    @JsonProperty("description")     private String description;
     @JsonProperty("nodes")           private List<NodeConfig> nodes;
     @JsonProperty("roads")           private List<RoadConfig> roads;
     @JsonProperty("intersections")   private List<IntersectionConfig> intersections;
