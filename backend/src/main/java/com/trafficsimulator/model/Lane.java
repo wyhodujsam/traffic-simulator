@@ -63,8 +63,8 @@ public class Lane {
         vehicles.remove(v);
     }
 
-    public void removeVehiclesIf(Predicate<Vehicle> predicate) {
-        vehicles.removeIf(predicate);
+    public boolean removeVehiclesIf(Predicate<Vehicle> predicate) {
+        return vehicles.removeIf(predicate);
     }
 
     public int getVehicleCount() {
@@ -96,8 +96,8 @@ public class Lane {
         obstacles.remove(o);
     }
 
-    public void removeObstaclesIf(Predicate<Obstacle> predicate) {
-        obstacles.removeIf(predicate);
+    public boolean removeObstaclesIf(Predicate<Obstacle> predicate) {
+        return obstacles.removeIf(predicate);
     }
 
     public void clearObstacles() {
