@@ -7,6 +7,7 @@ com/trafficsimulator/dto/MapInfoDto$MapInfoDtoBuilder.class
 com/trafficsimulator/dto/CommandDto.class
 com/trafficsimulator/config/WebSocketConfig.class
 com/trafficsimulator/config/MapConfig$SpawnPointConfig.class
+com/trafficsimulator/dto/IntersectionDto$IntersectionDtoBuilder.class
 com/trafficsimulator/dto/TrafficLightDto$TrafficLightDtoBuilder.class
 com/trafficsimulator/config/MapConfig$NodeConfig.class
 com/trafficsimulator/engine/IIntersectionManager.class
@@ -25,6 +26,7 @@ com/trafficsimulator/engine/ITrafficLightController.class
 com/trafficsimulator/dto/StatsDto$StatsDtoBuilder.class
 com/trafficsimulator/dto/ObstacleDto$ObstacleDtoBuilder.class
 com/trafficsimulator/engine/command/SimulationCommand$RemoveObstacle.class
+com/trafficsimulator/dto/IntersectionDto.class
 com/trafficsimulator/config/MapConfig$RoadConfig.class
 com/trafficsimulator/engine/LaneChangeEngine$LaneChangeIntent.class
 com/trafficsimulator/model/Road$RoadBuilder.class

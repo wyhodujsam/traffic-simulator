@@ -6,6 +6,7 @@
 /home/sebastian/traffic-simulator/backend/src/main/java/com/trafficsimulator/controller/CommandHandler.java
 /home/sebastian/traffic-simulator/backend/src/main/java/com/trafficsimulator/controller/SimulationController.java
 /home/sebastian/traffic-simulator/backend/src/main/java/com/trafficsimulator/dto/CommandDto.java
+/home/sebastian/traffic-simulator/backend/src/main/java/com/trafficsimulator/dto/IntersectionDto.java
 /home/sebastian/traffic-simulator/backend/src/main/java/com/trafficsimulator/dto/LaneDto.java
 /home/sebastian/traffic-simulator/backend/src/main/java/com/trafficsimulator/dto/MapInfoDto.java
 /home/sebastian/traffic-simulator/backend/src/main/java/com/trafficsimulator/dto/ObstacleDto.java
