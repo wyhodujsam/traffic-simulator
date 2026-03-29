@@ -46,13 +46,13 @@ class VehicleDespawnTest {
             .id("v1").position(800.5).speed(10.0).lane(lane).length(4.5)
             .v0(33.3).aMax(1.4).b(2.0).s0(2.0).T(1.5).spawnedAt(0)
             .build();
-        lane.getVehicles().add(v);
+        lane.addVehicle(v);
 
         RoadNetwork network = buildNetwork(lane, road);
 
         new VehicleSpawner().despawnVehicles(network);
 
-        assertThat(lane.getVehicles()).isEmpty();
+        assertThat(lane.getVehiclesView()).isEmpty();
     }
 
     @Test
@@ -67,13 +67,13 @@ class VehicleDespawnTest {
             .id("v1").position(799.9).speed(10.0).lane(lane).length(4.5)
             .v0(33.3).aMax(1.4).b(2.0).s0(2.0).T(1.5).spawnedAt(0)
             .build();
-        lane.getVehicles().add(v);
+        lane.addVehicle(v);
 
         RoadNetwork network = buildNetwork(lane, road);
 
         new VehicleSpawner().despawnVehicles(network);
 
-        assertThat(lane.getVehicles()).hasSize(1);
+        assertThat(lane.getVehiclesView()).hasSize(1);
     }
 
     @Test
@@ -88,12 +88,12 @@ class VehicleDespawnTest {
             .id("v1").position(800.0).speed(0.0).lane(lane).length(4.5)
             .v0(33.3).aMax(1.4).b(2.0).s0(2.0).T(1.5).spawnedAt(0)
             .build();
-        lane.getVehicles().add(v);
+        lane.addVehicle(v);
 
         RoadNetwork network = buildNetwork(lane, road);
 
         new VehicleSpawner().despawnVehicles(network);
 
-        assertThat(lane.getVehicles()).isEmpty();
+        assertThat(lane.getVehiclesView()).isEmpty();
     }
 }

@@ -107,7 +107,7 @@ public class IntersectionManager implements IIntersectionManager {
             boolean hasWaitingVehicle = false;
             double threshold = otherRoad.getLength() - STOP_LINE_BUFFER - 10.0;
             for (Lane lane : otherRoad.getLanes()) {
-                for (Vehicle v : lane.getVehicles()) {
+                for (Vehicle v : lane.getVehiclesView()) {
                     if (v.getPosition() >= threshold) {
                         hasWaitingVehicle = true;
                         break;
@@ -154,7 +154,7 @@ public class IntersectionManager implements IIntersectionManager {
                 // Count vehicles waiting at stop lines across all inbound roads
                 double waitThreshold = inboundRoad.getLength() - STOP_LINE_BUFFER - 5.0;
                 for (Lane lane : inboundRoad.getLanes()) {
-                    for (Vehicle v : lane.getVehicles()) {
+                    for (Vehicle v : lane.getVehiclesView()) {
                         if (v.getPosition() >= waitThreshold && v.getSpeed() < 0.5) {
                             waitingCount++;
                         }
@@ -216,7 +216,7 @@ public class IntersectionManager implements IIntersectionManager {
             if (inRoad == null) continue;
             double threshold = inRoad.getLength() - STOP_LINE_BUFFER - 5.0;
             for (Lane lane : inRoad.getLanes()) {
-                for (Vehicle v : lane.getVehicles()) {
+                for (Vehicle v : lane.getVehiclesView()) {
                     if (v.getPosition() >= threshold && v.getSpeed() < 0.5) {
                         if (oldest == null || v.getSpawnedAt() < oldest.getSpawnedAt()) {
                             oldest = v;
@@ -232,7 +232,7 @@ public class IntersectionManager implements IIntersectionManager {
         // Find victim's current lane and remove
         Lane victimLane = victim.getLane();
         if (victimLane == null) return;
-        victimLane.getVehicles().remove(victim);
+        victimLane.removeVehicle(victim);
 
         // Pick any outbound road
         if (ixtn.getOutboundRoadIds().isEmpty()) return;
@@ -249,7 +249,7 @@ public class IntersectionManager implements IIntersectionManager {
         victim.setLane(targetLane);
         victim.setLaneChangeSourceIndex(-1);
         victim.setLaneChangeProgress(1.0);
-        targetLane.getVehicles().add(victim);
+        targetLane.addVehicle(victim);
     }
 
     /**
@@ -260,9 +260,9 @@ public class IntersectionManager implements IIntersectionManager {
                                            Lane inLane, RoadNetwork network) {
         boolean transferred = false;
         double threshold = inLane.getLength() - STOP_LINE_BUFFER;
-        Iterator<Vehicle> iter = inLane.getVehicles().iterator();
-        while (iter.hasNext()) {
-            Vehicle v = iter.next();
+        List<Vehicle> toTransfer = new ArrayList<>();
+
+        for (Vehicle v : inLane.getVehiclesView()) {
             if (v.getPosition() < threshold) continue;
 
             // Pick a random outbound road (excluding U-turn)
@@ -282,18 +282,24 @@ public class IntersectionManager implements IIntersectionManager {
                 continue; // no space
             }
 
-            // Transfer: remove from inbound, add to outbound at position 0
-            iter.remove();
+            // Mark for transfer
+            toTransfer.add(v);
             v.setPosition(0.0);
             v.setLane(targetLane);
             v.setLaneChangeSourceIndex(-1);
             v.setLaneChangeProgress(1.0);
-            targetLane.getVehicles().add(v);
+            targetLane.addVehicle(v);
             transferred = true;
 
             log.debug("Vehicle {} transferred through intersection {} from {} to {}",
                 v.getId(), ixtn.getId(), inLane.getId(), targetLane.getId());
         }
+
+        // Remove transferred vehicles from inbound lane
+        for (Vehicle v : toTransfer) {
+            inLane.removeVehicle(v);
+        }
+
         return transferred;
     }
 

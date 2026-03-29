@@ -51,7 +51,7 @@ class TickPipelineIntegrationTest {
         // Vehicles should exist and have non-zero positions (physics moved them)
         List<Vehicle> allVehicles = network.getRoads().values().stream()
             .flatMap(r -> r.getLanes().stream())
-            .flatMap(l -> l.getVehicles().stream())
+            .flatMap(l -> l.getVehiclesView().stream())
             .toList();
 
         assertThat(allVehicles).isNotEmpty();
@@ -78,7 +78,7 @@ class TickPipelineIntegrationTest {
         // Record positions after "running" phase
         List<Double> positionsBeforePause = network.getRoads().values().stream()
             .flatMap(r -> r.getLanes().stream())
-            .flatMap(l -> l.getVehicles().stream())
+            .flatMap(l -> l.getVehiclesView().stream())
             .map(Vehicle::getPosition)
             .toList();
 
@@ -89,7 +89,7 @@ class TickPipelineIntegrationTest {
 
         List<Double> positionsAfterPause = network.getRoads().values().stream()
             .flatMap(r -> r.getLanes().stream())
-            .flatMap(l -> l.getVehicles().stream())
+            .flatMap(l -> l.getVehiclesView().stream())
             .map(Vehicle::getPosition)
             .toList();
 
@@ -108,7 +108,7 @@ class TickPipelineIntegrationTest {
         // Positions should have changed after resume
         List<Double> positionsAfterResume = network.getRoads().values().stream()
             .flatMap(r -> r.getLanes().stream())
-            .flatMap(l -> l.getVehicles().stream())
+            .flatMap(l -> l.getVehiclesView().stream())
             .map(Vehicle::getPosition)
             .toList();
 
@@ -143,7 +143,7 @@ class TickPipelineIntegrationTest {
         // Simulate STOP: clear all vehicles
         for (Road road : network.getRoads().values()) {
             for (Lane lane : road.getLanes()) {
-                lane.getVehicles().clear();
+                lane.clearVehicles();
             }
         }
         spawner.reset();
@@ -239,14 +239,14 @@ class TickPipelineIntegrationTest {
     private int countVehicles(RoadNetwork network) {
         return network.getRoads().values().stream()
             .flatMap(r -> r.getLanes().stream())
-            .mapToInt(l -> l.getVehicles().size())
+            .mapToInt(l -> l.getVehiclesView().size())
             .sum();
     }
 
     private Vehicle findFirstVehicle(RoadNetwork network) {
         return network.getRoads().values().stream()
             .flatMap(r -> r.getLanes().stream())
-            .flatMap(l -> l.getVehicles().stream())
+            .flatMap(l -> l.getVehiclesView().stream())
             .findFirst()
             .orElse(null);
     }

@@ -42,7 +42,7 @@ public class SimulationController {
         if (network != null) {
             for (Road road : network.getRoads().values()) {
                 for (Lane lane : road.getLanes()) {
-                    vehicleCount += lane.getVehicles().size();
+                    vehicleCount += lane.getVehicleCount();
                 }
             }
         }
@@ -143,11 +143,11 @@ public class SimulationController {
                 laneData.put("id", lane.getId());
                 laneData.put("index", lane.getLaneIndex());
                 laneData.put("active", lane.isActive());
-                laneData.put("vehicleCount", lane.getVehicles().size());
-                laneData.put("obstacleCount", lane.getObstacles().size());
+                laneData.put("vehicleCount", lane.getVehicleCount());
+                laneData.put("obstacleCount", lane.getObstaclesView().size());
 
                 List<Map<String, Object>> vehicles = new ArrayList<>();
-                for (Vehicle v : lane.getVehicles()) {
+                for (Vehicle v : lane.getVehiclesView()) {
                     Map<String, Object> vd = new LinkedHashMap<>();
                     vd.put("id", v.getId());
                     vd.put("pos", Math.round(v.getPosition() * 10.0) / 10.0);
@@ -161,7 +161,7 @@ public class SimulationController {
                 laneData.put("vehicles", vehicles);
 
                 List<Map<String, Object>> obstacles = new ArrayList<>();
-                for (Obstacle obs : lane.getObstacles()) {
+                for (Obstacle obs : lane.getObstaclesView()) {
                     Map<String, Object> od = new LinkedHashMap<>();
                     od.put("id", obs.getId());
                     od.put("pos", obs.getPosition());

@@ -6,6 +6,7 @@ import com.trafficsimulator.model.Vehicle;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Component;
 
+import java.util.ArrayList;
 import java.util.Comparator;
 import java.util.List;
 
@@ -41,14 +42,14 @@ public class PhysicsEngine implements IPhysicsEngine {
      */
     @Override
     public void tick(Lane lane, double dt, double stopLinePosition) {
-        List<Vehicle> vehicles = lane.getVehicles();
+        List<Vehicle> vehicles = new ArrayList<>(lane.getVehiclesView());
         if (vehicles.isEmpty()) return;
 
         // Sort by position descending — front vehicles first
         vehicles.sort(Comparator.comparingDouble(Vehicle::getPosition).reversed());
 
         // Pre-sort obstacles by position for efficient lookup
-        List<Obstacle> obstacles = lane.getObstacles();
+        List<Obstacle> obstacles = lane.getObstaclesView();
 
         for (int i = 0; i < vehicles.size(); i++) {
             Vehicle vehicle = vehicles.get(i);

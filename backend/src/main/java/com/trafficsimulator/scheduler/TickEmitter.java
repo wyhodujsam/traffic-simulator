@@ -137,12 +137,12 @@ public class TickEmitter {
                 totalRoadLength += road.getLength();
                 for (int laneIdx = 0; laneIdx < road.getLanes().size(); laneIdx++) {
                     Lane lane = road.getLanes().get(laneIdx);
-                    for (Vehicle v : lane.getVehicles()) {
+                    for (Vehicle v : lane.getVehiclesView()) {
                         vehicleDtos.add(projectVehicle(v, road, laneIdx));
                         totalSpeed += v.getSpeed();
                         vehicleCount++;
                     }
-                    for (Obstacle obs : lane.getObstacles()) {
+                    for (Obstacle obs : lane.getObstaclesView()) {
                         obstacleDtos.add(projectObstacle(obs, road, laneIdx));
                     }
                 }

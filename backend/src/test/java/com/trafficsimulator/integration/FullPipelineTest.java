@@ -38,19 +38,19 @@ class FullPipelineTest {
         }
 
         int totalVehicles = road.getLanes().stream()
-            .mapToInt(lane -> lane.getVehicles().size())
+            .mapToInt(lane -> lane.getVehiclesView().size())
             .sum();
         assertThat(totalVehicles).isEqualTo(1);
 
         // Move vehicle past road end to trigger despawn
         for (Lane lane : road.getLanes()) {
-            lane.getVehicles().forEach(v -> v.setPosition(801.0));
+            lane.getVehiclesView().forEach(v -> v.setPosition(801.0));
         }
 
         spawner.despawnVehicles(network);
 
         int afterDespawn = road.getLanes().stream()
-            .mapToInt(lane -> lane.getVehicles().size())
+            .mapToInt(lane -> lane.getVehiclesView().size())
             .sum();
         assertThat(afterDespawn).isEqualTo(0);
     }
@@ -61,7 +61,7 @@ class FullPipelineTest {
 
         // Find the spawned vehicle across all lanes
         var vehicle = network.getRoads().get("r1").getLanes().stream()
-            .flatMap(lane -> lane.getVehicles().stream())
+            .flatMap(lane -> lane.getVehiclesView().stream())
             .findFirst()
             .orElseThrow();
 

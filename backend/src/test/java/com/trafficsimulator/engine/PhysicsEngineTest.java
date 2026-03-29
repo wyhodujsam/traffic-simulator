@@ -54,7 +54,7 @@ class PhysicsEngineTest {
             .T(1.5)
             .spawnedAt(0)
             .build();
-        lane.getVehicles().add(v);
+        lane.addVehicle(v);
         return v;
     }
 
@@ -250,7 +250,7 @@ class PhysicsEngineTest {
             .isLessThan(500);
 
         // Verify no NaN leaked through
-        for (Vehicle v : lane.getVehicles()) {
+        for (Vehicle v : lane.getVehiclesView()) {
             assertThat(Double.isFinite(v.getSpeed())).isTrue();
             assertThat(Double.isFinite(v.getPosition())).isTrue();
             assertThat(v.getSpeed()).isGreaterThanOrEqualTo(0.0);
@@ -282,6 +282,6 @@ class PhysicsEngineTest {
         // lane has no vehicles
         engine.tick(lane, DT);
         // No exception = pass
-        assertThat(lane.getVehicles()).isEmpty();
+        assertThat(lane.getVehiclesView()).isEmpty();
     }
 }

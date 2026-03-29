@@ -181,12 +181,12 @@ public class SimulationEngine {
                     lane.setActive(false);
 
                     // Flag all vehicles in the closed lane for forced lane change
-                    for (Vehicle v : lane.getVehicles()) {
+                    for (Vehicle v : lane.getVehiclesView()) {
                         v.setForceLaneChange(true);
                     }
 
                     log.info("Lane closed: road={} lane={} — {} vehicles flagged for merge",
-                        closeLane.roadId(), closeLane.laneIndex(), lane.getVehicles().size());
+                        closeLane.roadId(), closeLane.laneIndex(), lane.getVehicleCount());
                 } else {
                     log.warn("Cannot close lane: road={} laneIndex={} not found",
                         closeLane.roadId(), closeLane.laneIndex());
@@ -246,8 +246,8 @@ public class SimulationEngine {
         if (roadNetwork == null) return;
         for (Road road : roadNetwork.getRoads().values()) {
             for (Lane lane : road.getLanes()) {
-                lane.getVehicles().clear();
-                lane.getObstacles().clear();
+                lane.clearVehicles();
+                lane.clearObstacles();
                 lane.setActive(true);  // Reset lane status on stop
             }
         }

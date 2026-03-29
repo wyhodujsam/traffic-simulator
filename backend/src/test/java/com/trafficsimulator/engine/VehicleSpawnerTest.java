@@ -53,14 +53,14 @@ class VehicleSpawnerTest {
         for (int i = 0; i < 20; i++) {
             spawner.tick(0.05, network, i);
         }
-        assertThat(lane0.getVehicles()).hasSize(1);
+        assertThat(lane0.getVehiclesView()).hasSize(1);
     }
 
     @Test
     void tick_spawnsVehicleWithCorrectInitialState() {
         spawner.tick(1.0, network, 1);
 
-        Vehicle v = lane0.getVehicles().get(0);
+        Vehicle v = lane0.getVehiclesView().get(0);
         assertThat(v.getId()).isNotNull();
         assertThat(v.getPosition()).isEqualTo(0.0);
         // Vehicle spawns at 50% of lane maxSpeed to avoid braking cascade
@@ -76,7 +76,7 @@ class VehicleSpawnerTest {
         spawner.setVehiclesPerSecond(100.0);
         spawner.tick(1.0, network, 1);
 
-        Vehicle v = lane0.getVehicles().get(0);
+        Vehicle v = lane0.getVehiclesView().get(0);
         assertThat(v.getV0()).isBetween(33.3 * 0.8, 33.3 * 1.2);
         assertThat(v.getAMax()).isBetween(1.4 * 0.8, 1.4 * 1.2);
         assertThat(v.getB()).isBetween(2.0 * 0.8, 2.0 * 1.2);
@@ -88,11 +88,11 @@ class VehicleSpawnerTest {
     void tick_overlapPrevention_blocksDoubleSpawnAtSamePosition() {
         // Spawn one vehicle at position 0
         spawner.tick(1.0, network, 1);
-        assertThat(lane0.getVehicles()).hasSize(1);
+        assertThat(lane0.getVehiclesView()).hasSize(1);
 
         // Try to spawn another — should be blocked (position 0 occupied within 6.5m gap)
         spawner.tick(1.0, network, 2);
-        assertThat(lane0.getVehicles()).hasSize(1);
+        assertThat(lane0.getVehiclesView()).hasSize(1);
     }
 
     @Test
@@ -117,7 +117,7 @@ class VehicleSpawnerTest {
         for (int i = 0; i < 12; i++) {
             spawner.tick(0.05, network, i);
         }
-        assertThat(lane0.getVehicles()).hasSize(1);
+        assertThat(lane0.getVehiclesView()).hasSize(1);
     }
 
     @Test
@@ -126,20 +126,20 @@ class VehicleSpawnerTest {
         spawner.reset();
         // After reset, need full 1.0s accumulation again
         spawner.tick(0.5, network, 2);
-        assertThat(lane0.getVehicles()).isEmpty();
+        assertThat(lane0.getVehiclesView()).isEmpty();
     }
 
     @Test
     void tick_blockedSpawnPoints_neverCreatesInfiniteLoop() {
         // Fill the lane with a vehicle at position 0 to block the spawn point
         spawner.tick(1.0, network, 1);
-        assertThat(lane0.getVehicles()).hasSize(1);
+        assertThat(lane0.getVehiclesView()).hasSize(1);
 
         // Attempt many ticks — should return without hanging
         for (int i = 0; i < 100; i++) {
             spawner.tick(1.0, network, i + 2);
         }
         // Vehicle is still there, no infinite loop occurred
-        assertThat(lane0.getVehicles()).hasSize(1);
+        assertThat(lane0.getVehiclesView()).hasSize(1);
     }
 }

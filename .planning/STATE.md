@@ -2,21 +2,21 @@
 gsd_state_version: 1.0
 milestone: v1.0
 milestone_name: milestone
-current_phase: 11
-status: Executing Phase 11
-last_updated: "2026-03-29T12:56:25.136Z"
+current_phase: 9
+status: Ready to plan
+last_updated: "2026-03-29T13:04:05.153Z"
 progress:
-  total_phases: 11
+  total_phases: 10
   completed_phases: 7
-  total_plans: 43
-  completed_plans: 35
+  total_plans: 35
+  completed_plans: 34
 ---
 
 # Project State
 
 **Project:** Traffic Simulator
 **Milestone:** v1.0
-**Current Phase:** 11
+**Current Phase:** 9
 **Last Updated:** 2026-03-28
 
 ## Project Reference
@@ -24,7 +24,7 @@ progress:
 See: .planning/PROJECT.md (updated 2026-03-27)
 
 **Core value:** Wierna symulacja fizyki ruchu drogowego
-**Current focus:** Phase 11 — architecture-refactoring
+**Current focus:** Phase 05 — canvas-rendering-basic-ui
 
 ## Phase Status
 
@@ -40,11 +40,6 @@ See: .planning/PROJECT.md (updated 2026-03-27)
 | 8 | Traffic Signals & Intersections | ◑ In Progress (plan 08-03 done) |
 | 9 | JSON Map Configuration & Predefined Scenarios | ○ Pending |
 | 10 | Roundabouts, Priority Intersections & Polish | ○ Pending |
-| 11 | Architecture Refactoring | ◑ In Progress (2/8 plans done) |
-
-## Roadmap Evolution
-
-- Phase 11 added: Architecture Refactoring (from ar-improvement.md review — 8 refactoring steps, target 6/10→9/10)
 
 ## Session Log
 
