@@ -57,11 +57,12 @@ export function SimulationCanvas() {
 
     if (currSnapshot) {
       const now = performance.now();
-      const vehicles = interpolateVehicles(currSnapshot, prevSnapshot, now);
+      const storeRoads = useSimulationStore.getState().roads;
+      const vehicles = interpolateVehicles(currSnapshot, prevSnapshot, now, storeRoads);
       drawVehicles(ctx, vehicles);
 
       const obstacles = useSimulationStore.getState().obstacles;
-      drawObstacles(ctx, obstacles);
+      drawObstacles(ctx, obstacles, storeRoads);
 
       const trafficLights = useSimulationStore.getState().trafficLights;
       drawTrafficLights(ctx, trafficLights);
@@ -89,7 +90,7 @@ export function SimulationCanvas() {
     if (!sendCommand) return;
 
     // 1. Check if click hits an existing obstacle -> REMOVE
-    const hitId = hitTestObstacle(cx, cy, obstacles);
+    const hitId = hitTestObstacle(cx, cy, obstacles, roads);
     if (hitId) {
       sendCommand({ type: 'REMOVE_OBSTACLE', obstacleId: hitId });
       return;

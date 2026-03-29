@@ -2,14 +2,13 @@
 
 export interface VehicleDto {
   id: string;
+  roadId: string;              // which road
   laneId: string;
-  position: number;   // metres from lane start
-  speed: number;      // m/s
-  x: number;          // pixel x coordinate
-  y: number;          // pixel y coordinate
-  angle: number;      // radians
-  targetLaneId?: string | null;       // null if not changing lanes
-  laneChangeProgress?: number;        // 0..1, undefined = not changing
+  laneIndex: number;           // 0-based lane index
+  position: number;            // metres from lane start
+  speed: number;               // m/s
+  laneChangeProgress: number;  // 0..1
+  laneChangeSourceIndex: number; // -1 = none
 }
 
 export interface TrafficLightDto {
@@ -23,11 +22,10 @@ export interface TrafficLightDto {
 
 export interface ObstacleDto {
   id: string;
+  roadId: string;     // which road
   laneId: string;
+  laneIndex: number;  // 0-based lane index
   position: number;   // metres from lane start
-  x: number;          // pixel x coordinate
-  y: number;          // pixel y coordinate
-  angle: number;      // radians
 }
 
 export interface StatsDto {
