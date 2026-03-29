@@ -185,7 +185,9 @@ function drawIntersectionBoxes(ctx: CanvasRenderingContext2D, roads: RoadDto[]):
       const cx = cluster.reduce((s, p) => s + p.x, 0) / cluster.length;
       const cy = cluster.reduce((s, p) => s + p.y, 0) / cluster.length;
       const maxW = Math.max(...cluster.map(p => p.roadWidth));
-      const boxSize = maxW * 2 + 8; // fit 2 road widths (in + out)
+      // Box must cover ALL road ends converging here — needs to be wide enough
+      // for 2 road widths per direction + offset between in/out pairs
+      const boxSize = Math.max(maxW * 4, 60);
 
       ctx.fillStyle = '#3a3a3a';
       ctx.fillRect(cx - boxSize / 2, cy - boxSize / 2, boxSize, boxSize);

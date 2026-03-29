@@ -3,14 +3,14 @@
   "name": "Four-Way Signalised Intersection",
   "description": "4-approach signalised intersection with green/yellow/all-red cycles. Demonstrates signal timing effects on traffic flow.",
   "nodes": [
-    { "id": "n_north",      "type": "ENTRY", "x": 392.0, "y": 50.0 },
-    { "id": "n_south",      "type": "ENTRY", "x": 408.0, "y": 550.0 },
-    { "id": "n_west",       "type": "ENTRY", "x": 50.0,  "y": 308.0 },
-    { "id": "n_east",       "type": "ENTRY", "x": 750.0, "y": 292.0 },
-    { "id": "n_north_exit", "type": "EXIT",  "x": 408.0, "y": 50.0 },
-    { "id": "n_south_exit", "type": "EXIT",  "x": 392.0, "y": 550.0 },
-    { "id": "n_west_exit",  "type": "EXIT",  "x": 50.0,  "y": 292.0 },
-    { "id": "n_east_exit",  "type": "EXIT",  "x": 750.0, "y": 308.0 },
+    { "id": "n_north",      "type": "ENTRY", "x": 393.0, "y": 50.0 },
+    { "id": "n_south",      "type": "ENTRY", "x": 407.0, "y": 550.0 },
+    { "id": "n_west",       "type": "ENTRY", "x": 50.0,  "y": 307.0 },
+    { "id": "n_east",       "type": "ENTRY", "x": 750.0, "y": 293.0 },
+    { "id": "n_north_exit", "type": "EXIT",  "x": 407.0, "y": 50.0 },
+    { "id": "n_south_exit", "type": "EXIT",  "x": 393.0, "y": 550.0 },
+    { "id": "n_west_exit",  "type": "EXIT",  "x": 50.0,  "y": 293.0 },
+    { "id": "n_east_exit",  "type": "EXIT",  "x": 750.0, "y": 307.0 },
     { "id": "n_center",     "type": "INTERSECTION", "x": 400.0, "y": 300.0 }
   ],
   "roads": [
