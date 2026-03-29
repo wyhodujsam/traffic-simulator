@@ -190,11 +190,21 @@ public class LaneChangeEngine {
         }
 
         // Gap check: ensure no obstacle blocks the target position
+        // Use larger gap for obstacles — they're stationary, need stopping distance
         Obstacle targetObstacle = findNearestObstacleAhead(targetLane, subjectPos);
         if (targetObstacle != null) {
             double gapToObstacle = targetObstacle.getPosition() - subjectPos - targetObstacle.getLength();
-            if (gapToObstacle < subject.getS0() + subject.getLength()) {
-                return null; // obstacle too close in target lane
+            double minObstacleGap = subject.getS0() + subject.getLength()
+                + subject.getSpeed() * subject.getT(); // add speed-dependent headway
+            if (gapToObstacle < minObstacleGap) {
+                return null; // obstacle too close ahead in target lane
+            }
+        }
+        // Also check for obstacle behind in target lane (don't land just past one)
+        for (Obstacle obs : targetLane.getObstacles()) {
+            double gapBehindObs = subjectPos - obs.getPosition();
+            if (gapBehindObs > 0 && gapBehindObs < subject.getLength() + subject.getS0()) {
+                return null; // too close behind obstacle in target lane
             }
         }
 
