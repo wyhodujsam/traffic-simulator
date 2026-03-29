@@ -1,0 +1,31 @@
+{
+  "id": "straight-road",
+  "name": "Straight Road — 3 lanes, 800m",
+  "nodes": [
+    { "id": "n1", "type": "ENTRY", "x": 50.0,  "y": 300.0 },
+    { "id": "n2", "type": "EXIT",  "x": 850.0, "y": 300.0 }
+  ],
+  "roads": [
+    {
+      "id": "r1",
+      "name": "Main Road",
+      "fromNodeId": "n1",
+      "toNodeId": "n2",
+      "length": 800.0,
+      "speedLimit": 33.3,
+      "laneCount": 3
+    }
+  ],
+  "intersections": [],
+  "spawnPoints": [
+    { "roadId": "r1", "laneIndex": 0, "position": 0.0 },
+    { "roadId": "r1", "laneIndex": 1, "position": 0.0 },
+    { "roadId": "r1", "laneIndex": 2, "position": 0.0 }
+  ],
+  "despawnPoints": [
+    { "roadId": "r1", "laneIndex": 0, "position": 800.0 },
+    { "roadId": "r1", "laneIndex": 1, "position": 800.0 },
+    { "roadId": "r1", "laneIndex": 2, "position": 800.0 }
+  ],
+  "defaultSpawnRate": 1.0
+}

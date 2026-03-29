@@ -1,0 +1,12 @@
+/home/sebastian/traffic-simulator/backend/src/test/java/com/trafficsimulator/config/MapLoaderTest.java
+/home/sebastian/traffic-simulator/backend/src/test/java/com/trafficsimulator/dto/SimulationStateDtoTest.java
+/home/sebastian/traffic-simulator/backend/src/test/java/com/trafficsimulator/engine/CommandQueueTest.java
+/home/sebastian/traffic-simulator/backend/src/test/java/com/trafficsimulator/engine/LaneChangeEngineTest.java
+/home/sebastian/traffic-simulator/backend/src/test/java/com/trafficsimulator/engine/PhysicsEngineTest.java
+/home/sebastian/traffic-simulator/backend/src/test/java/com/trafficsimulator/engine/RoadNarrowingIntegrationTest.java
+/home/sebastian/traffic-simulator/backend/src/test/java/com/trafficsimulator/engine/TickPipelineIntegrationTest.java
+/home/sebastian/traffic-simulator/backend/src/test/java/com/trafficsimulator/engine/VehicleDespawnTest.java
+/home/sebastian/traffic-simulator/backend/src/test/java/com/trafficsimulator/engine/VehicleSpawnerTest.java
+/home/sebastian/traffic-simulator/backend/src/test/java/com/trafficsimulator/engine/ZipperMergeTest.java
+/home/sebastian/traffic-simulator/backend/src/test/java/com/trafficsimulator/engine/ZipperYieldDebugTest.java
+/home/sebastian/traffic-simulator/backend/src/test/java/com/trafficsimulator/integration/FullPipelineTest.java

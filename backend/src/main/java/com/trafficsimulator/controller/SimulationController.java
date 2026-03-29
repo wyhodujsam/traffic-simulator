@@ -13,6 +13,8 @@ import lombok.RequiredArgsConstructor;
 import org.springframework.core.io.Resource;
 import org.springframework.core.io.support.PathMatchingResourcePatternResolver;
 import org.springframework.web.bind.annotation.GetMapping;
+import org.springframework.web.bind.annotation.PostMapping;
+import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
 
@@ -89,6 +91,28 @@ public class SimulationController {
                 .build());
         }
         return result;
+    }
+
+    /**
+     * REST command endpoint for scripted testing (mirrors STOMP CommandHandler).
+     */
+    @PostMapping("/command")
+    public Map<String, String> postCommand(@RequestBody com.trafficsimulator.dto.CommandDto dto) {
+        com.trafficsimulator.engine.command.SimulationCommand command = switch (dto.getType()) {
+            case "START"                -> new com.trafficsimulator.engine.command.SimulationCommand.Start();
+            case "STOP"                 -> new com.trafficsimulator.engine.command.SimulationCommand.Stop();
+            case "PAUSE"               -> new com.trafficsimulator.engine.command.SimulationCommand.Pause();
+            case "RESUME"              -> new com.trafficsimulator.engine.command.SimulationCommand.Resume();
+            case "SET_SPAWN_RATE"      -> new com.trafficsimulator.engine.command.SimulationCommand.SetSpawnRate(dto.getSpawnRate());
+            case "SET_SPEED_MULTIPLIER"-> new com.trafficsimulator.engine.command.SimulationCommand.SetSpeedMultiplier(dto.getMultiplier());
+            case "SET_MAX_SPEED"       -> new com.trafficsimulator.engine.command.SimulationCommand.SetMaxSpeed(dto.getMaxSpeed());
+            case "ADD_OBSTACLE"        -> new com.trafficsimulator.engine.command.SimulationCommand.AddObstacle(dto.getRoadId(), dto.getLaneIndex(), dto.getPosition());
+            case "REMOVE_OBSTACLE"     -> new com.trafficsimulator.engine.command.SimulationCommand.RemoveObstacle(dto.getObstacleId());
+            case "CLOSE_LANE"          -> new com.trafficsimulator.engine.command.SimulationCommand.CloseLane(dto.getRoadId(), dto.getLaneIndex());
+            default -> throw new IllegalArgumentException("Unknown: " + dto.getType());
+        };
+        simulationEngine.enqueue(command);
+        return Map.of("status", "ok");
     }
 
     /**

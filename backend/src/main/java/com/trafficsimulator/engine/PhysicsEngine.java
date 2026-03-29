@@ -16,8 +16,8 @@ public class PhysicsEngine {
 
     private static final double DELTA = 4.0;   // IDM acceleration exponent
     private static final double S_MIN = 1.0;    // minimum gap guard (metres)
-    private static final double ZIPPER_YIELD_DISTANCE = 80.0; // metres ahead to start yielding
-    private static final double ZIPPER_YIELD_SPEED = 5.0;     // m/s — virtual leader speed at yield point
+    private static final double ZIPPER_YIELD_DISTANCE = 60.0; // metres ahead to start yielding
+    private static final double ZIPPER_YIELD_SPEED = 10.0;    // m/s — virtual leader speed at yield point
 
     /**
      * Advances all vehicles in the lane by one time step using the IDM model.
