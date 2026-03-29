@@ -4,10 +4,12 @@ import com.trafficsimulator.dto.ObstacleDto;
 import com.trafficsimulator.dto.SimulationStateDto;
 import com.trafficsimulator.dto.StatsDto;
 import com.trafficsimulator.dto.VehicleDto;
+import com.trafficsimulator.engine.IntersectionManager;
 import com.trafficsimulator.engine.LaneChangeEngine;
 import com.trafficsimulator.engine.PhysicsEngine;
 import com.trafficsimulator.engine.SimulationEngine;
 import com.trafficsimulator.engine.SimulationStatus;
+import com.trafficsimulator.engine.TrafficLightController;
 import com.trafficsimulator.engine.VehicleSpawner;
 import com.trafficsimulator.model.Lane;
 import com.trafficsimulator.model.Obstacle;
@@ -22,6 +24,7 @@ import org.springframework.stereotype.Component;
 
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Map;
 
 @Component
 @RequiredArgsConstructor
@@ -44,6 +47,8 @@ public class TickEmitter {
     private final VehicleSpawner vehicleSpawner;
     private final PhysicsEngine physicsEngine;
     private final LaneChangeEngine laneChangeEngine;
+    private final TrafficLightController trafficLightController;
+    private final IntersectionManager intersectionManager;
 
     @Scheduled(fixedRate = 50)
     public void emitTick() {
@@ -69,14 +74,21 @@ public class TickEmitter {
                 int subSteps = Math.max(1, (int) Math.ceil(effectiveDt / baseDt));
                 double stepDt = effectiveDt / subSteps;
 
+                // 0. Advance traffic lights (before physics, so stop lines are current)
+                trafficLightController.tick(effectiveDt, network);
+
+                // 0b. Compute stop lines for red lights and box-blocking
+                Map<String, Double> stopLines = intersectionManager.computeStopLines(network);
+
                 // 1. Spawn (uses full effectiveDt for accumulator)
                 vehicleSpawner.tick(effectiveDt, network, tick);
 
-                // 2. Physics sub-steps
+                // 2. Physics sub-steps (with stop lines)
                 for (int step = 0; step < subSteps; step++) {
                     for (Road road : network.getRoads().values()) {
                         for (Lane lane : road.getLanes()) {
-                            physicsEngine.tick(lane, stepDt);
+                            double stopLine = stopLines.getOrDefault(lane.getId(), -1.0);
+                            physicsEngine.tick(lane, stepDt, stopLine);
                         }
                     }
                 }
@@ -84,7 +96,10 @@ public class TickEmitter {
                 // 3. Lane changes (intent -> resolve -> commit) — once per tick, not per sub-step
                 laneChangeEngine.tick(network, tick);
 
-                // 4. Despawn (after physics and lane changes)
+                // 4. Intersection transfers (after physics, before despawn)
+                intersectionManager.processTransfers(network, tick);
+
+                // 5. Despawn (only EXIT-node roads)
                 vehicleSpawner.despawnVehicles(network);
             }
         } else {
