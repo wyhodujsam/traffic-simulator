@@ -7,7 +7,6 @@ import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Component;
 
 import java.util.ArrayList;
-import java.util.Comparator;
 import java.util.List;
 
 @Component
@@ -45,8 +44,7 @@ public class PhysicsEngine implements IPhysicsEngine {
         List<Vehicle> vehicles = new ArrayList<>(lane.getVehiclesView());
         if (vehicles.isEmpty()) return;
 
-        // Sort by position descending — front vehicles first
-        vehicles.sort(Comparator.comparingDouble(Vehicle::getPosition).reversed());
+        // List is already sorted descending by Lane's sorted invariant — no sort needed here
 
         // Pre-sort obstacles by position for efficient lookup
         List<Obstacle> obstacles = lane.getObstaclesView();
@@ -147,6 +145,9 @@ public class PhysicsEngine implements IPhysicsEngine {
             // Write back via domain method
             vehicle.updatePhysics(newPosition, newSpeed, acceleration);
         }
+
+        // Re-sort after position updates to maintain sorted invariant
+        lane.resortVehicles();
     }
 
     /**
