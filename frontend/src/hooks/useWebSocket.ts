@@ -2,19 +2,35 @@ import { useEffect, useRef } from 'react';
 import { Client, IMessage } from '@stomp/stompjs';
 import SockJS from 'sockjs-client';
 import { useSimulationStore } from '../store/useSimulationStore';
-import type { CommandDto, RoadDto } from '../types/simulation';
+import type { CommandDto, MapInfo, RoadDto } from '../types/simulation';
 
 export function useWebSocket() {
   const clientRef = useRef<Client | null>(null);
 
   useEffect(() => {
-    // Fetch road geometry once via REST
-    fetch('/api/roads')
+    // Reusable road fetch function
+    const fetchRoads = () => {
+      fetch('/api/roads')
+        .then((res) => res.json())
+        .then((roads: RoadDto[]) => {
+          useSimulationStore.getState().setRoads(roads);
+        })
+        .catch((err) => console.error('[REST] Failed to fetch roads:', err));
+    };
+
+    // Fetch road geometry on mount
+    fetchRoads();
+
+    // Store fetchRoads so ControlsPanel can re-fetch after map load
+    useSimulationStore.getState().setRefetchRoads(fetchRoads);
+
+    // Fetch available maps list
+    fetch('/api/maps')
       .then((res) => res.json())
-      .then((roads: RoadDto[]) => {
-        useSimulationStore.getState().setRoads(roads);
+      .then((maps: MapInfo[]) => {
+        useSimulationStore.getState().setAvailableMaps(maps);
       })
-      .catch((err) => console.error('[REST] Failed to fetch roads:', err));
+      .catch((err) => console.error('[REST] Failed to fetch maps:', err));
 
     const client = new Client({
       webSocketFactory: () => new SockJS('/ws'),
