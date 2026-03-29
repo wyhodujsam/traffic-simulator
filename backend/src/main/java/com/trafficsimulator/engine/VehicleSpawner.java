@@ -16,7 +16,7 @@ import java.util.stream.Collectors;
 
 @Component
 @Slf4j
-public class VehicleSpawner {
+public class VehicleSpawner implements IVehicleSpawner {
 
     // IDM base parameters
     private static final double V0_BASE = 33.3;   // m/s (~120 km/h)
@@ -40,6 +40,7 @@ public class VehicleSpawner {
      * Called each tick. Accumulates spawn budget and spawns vehicles when
      * budget exceeds 1.0. Uses round-robin spawn point selection.
      */
+    @Override
     public void tick(double dt, RoadNetwork network, long currentTick) {
         spawnAccumulator += dt * vehiclesPerSecond;
 
@@ -75,7 +76,7 @@ public class VehicleSpawner {
 
             if (isSpawnPositionClear(lane, sp.position())) {
                 Vehicle vehicle = createVehicle(lane, sp.position(), currentTick);
-                lane.getVehicles().add(vehicle);
+                lane.addVehicle(vehicle);
                 log.debug("Spawned vehicle {} on lane {} at position {}",
                     vehicle.getId(), lane.getId(), sp.position());
                 return true;
@@ -86,7 +87,7 @@ public class VehicleSpawner {
     }
 
     private boolean isSpawnPositionClear(Lane lane, double spawnPosition) {
-        return lane.getVehicles().stream()
+        return lane.getVehiclesView().stream()
             .noneMatch(v -> Math.abs(v.getPosition() - spawnPosition) < MIN_SAFE_GAP);
     }
 
@@ -122,6 +123,7 @@ public class VehicleSpawner {
      * Only despawns on roads ending at EXIT nodes (roads with despawn points).
      * Called at the end of each tick after physics update.
      */
+    @Override
     public void despawnVehicles(RoadNetwork network) {
         // Build set of road IDs that are exit roads (have despawn points)
         Set<String> exitRoadIds = network.getDespawnPoints().stream()
@@ -131,7 +133,7 @@ public class VehicleSpawner {
         for (Road road : network.getRoads().values()) {
             if (!exitRoadIds.contains(road.getId())) continue;  // skip non-exit roads
             for (Lane lane : road.getLanes()) {
-                lane.getVehicles().removeIf(v -> {
+                lane.removeVehiclesIf(v -> {
                     if (v.getPosition() >= lane.getLength()) {
                         despawnTimestamps.addLast(System.currentTimeMillis());
                         log.debug("Vehicle {} despawned at position {} (lane length {})",
@@ -148,6 +150,7 @@ public class VehicleSpawner {
      * Returns vehicles despawned in the last 60 seconds.
      * Evicts stale entries older than the window.
      */
+    @Override
     public int getThroughput() {
         long cutoff = System.currentTimeMillis() - THROUGHPUT_WINDOW_MS;
         while (!despawnTimestamps.isEmpty() && despawnTimestamps.peekFirst() < cutoff) {
@@ -156,6 +159,7 @@ public class VehicleSpawner {
         return despawnTimestamps.size();
     }
 
+    @Override
     public void reset() {
         spawnAccumulator = 0.0;
         spawnPointIndex = 0;

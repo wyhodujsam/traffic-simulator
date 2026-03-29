@@ -1,0 +1,29 @@
+{
+  "id": "construction-zone",
+  "name": "Construction Zone — 3→1 Lane Narrowing",
+  "description": "3-lane highway with lanes 1 and 2 pre-closed, forcing all traffic into lane 0. Demonstrates merge congestion at high density.",
+  "nodes": [
+    { "id": "entry", "type": "ENTRY", "x": 50.0,  "y": 200.0 },
+    { "id": "exit",  "type": "EXIT",  "x": 850.0, "y": 200.0 }
+  ],
+  "roads": [
+    {
+      "id": "main_road",
+      "name": "Highway with Construction",
+      "fromNodeId": "entry",
+      "toNodeId": "exit",
+      "length": 800.0,
+      "speedLimit": 22.2,
+      "laneCount": 3,
+      "closedLanes": [1, 2]
+    }
+  ],
+  "intersections": [],
+  "spawnPoints": [
+    { "roadId": "main_road", "laneIndex": 0, "position": 0.0 }
+  ],
+  "despawnPoints": [
+    { "roadId": "main_road", "laneIndex": 0, "position": 800.0 }
+  ],
+  "defaultSpawnRate": 2.0
+}

@@ -1,9 +1,14 @@
 package com.trafficsimulator.controller;
 
+import com.fasterxml.jackson.databind.ObjectMapper;
+import com.trafficsimulator.config.MapConfig;
 import com.trafficsimulator.dto.LaneDto;
+import com.trafficsimulator.dto.IntersectionDto;
+import com.trafficsimulator.dto.MapInfoDto;
 import com.trafficsimulator.dto.RoadDto;
 import com.trafficsimulator.dto.SimulationStatusDto;
 import com.trafficsimulator.engine.SimulationEngine;
+import com.trafficsimulator.model.Intersection;
 import com.trafficsimulator.model.Lane;
 import com.trafficsimulator.model.Obstacle;
 import com.trafficsimulator.model.Road;
@@ -19,6 +24,7 @@ import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
 
 import java.io.IOException;
+import java.io.InputStream;
 import java.util.ArrayList;
 import java.util.LinkedHashMap;
 import java.util.List;
@@ -30,6 +36,7 @@ import java.util.Map;
 public class SimulationController {
 
     private final SimulationEngine simulationEngine;
+    private final ObjectMapper objectMapper;
 
     /**
      * Returns current simulation status for frontend initialization / debugging.
@@ -42,7 +49,7 @@ public class SimulationController {
         if (network != null) {
             for (Road road : network.getRoads().values()) {
                 for (Lane lane : road.getLanes()) {
-                    vehicleCount += lane.getVehicles().size();
+                    vehicleCount += lane.getVehicleCount();
                 }
             }
         }
@@ -69,6 +76,7 @@ public class SimulationController {
             return List.of();
         }
         List<RoadDto> result = new ArrayList<>();
+        Map<String, Intersection> intersections = network.getIntersections();
         for (Road road : network.getRoads().values()) {
             List<LaneDto> laneDtos = road.getLanes().stream()
                 .map(lane -> LaneDto.builder()
@@ -77,6 +85,19 @@ public class SimulationController {
                     .active(lane.isActive())
                     .build())
                 .toList();
+
+            // Compute clip distances based on intersection sizes
+            double clipStart = 0;
+            double clipEnd = 0;
+            Intersection fromIxtn = intersections.get(road.getFromNodeId());
+            Intersection toIxtn = intersections.get(road.getToNodeId());
+            if (fromIxtn != null && fromIxtn.getIntersectionSize() > 0) {
+                clipStart = fromIxtn.getIntersectionSize() / 2.0;
+            }
+            if (toIxtn != null && toIxtn.getIntersectionSize() > 0) {
+                clipEnd = toIxtn.getIntersectionSize() / 2.0;
+            }
+
             result.add(RoadDto.builder()
                 .id(road.getId())
                 .name(road.getName())
@@ -88,6 +109,49 @@ public class SimulationController {
                 .endX(road.getEndX())
                 .endY(road.getEndY())
                 .lanes(laneDtos)
+                .clipStart(clipStart)
+                .clipEnd(clipEnd)
+                .build());
+        }
+        return result;
+    }
+
+    /**
+     * Returns intersection geometry for the currently loaded map.
+     * Used by frontend to render intersection boxes on canvas.
+     */
+    @GetMapping("/intersections")
+    public List<IntersectionDto> getIntersections() {
+        RoadNetwork network = simulationEngine.getRoadNetwork();
+        if (network == null) return List.of();
+
+        List<IntersectionDto> result = new ArrayList<>();
+        for (Intersection ixtn : network.getIntersections().values()) {
+            double cx = 0, cy = 0;
+            boolean found = false;
+            int maxLaneCount = 1;
+            for (String roadId : ixtn.getConnectedRoadIds()) {
+                Road road = network.getRoads().get(roadId);
+                if (road == null) continue;
+                if (!found) {
+                    if (road.getToNodeId().equals(ixtn.getId())) {
+                        cx = road.getEndX(); cy = road.getEndY(); found = true;
+                    } else if (road.getFromNodeId().equals(ixtn.getId())) {
+                        cx = road.getStartX(); cy = road.getStartY(); found = true;
+                    }
+                }
+                maxLaneCount = Math.max(maxLaneCount, road.getLanes().size());
+            }
+            if (!found) continue;
+
+            // Use explicit intersectionSize from config if set, otherwise derive from widest road
+            double size = ixtn.getIntersectionSize() > 0
+                ? ixtn.getIntersectionSize()
+                : maxLaneCount * 14.0;
+            result.add(IntersectionDto.builder()
+                .id(ixtn.getId())
+                .x(cx).y(cy)
+                .size(size)
                 .build());
         }
         return result;
@@ -109,6 +173,7 @@ public class SimulationController {
             case "ADD_OBSTACLE"        -> new com.trafficsimulator.engine.command.SimulationCommand.AddObstacle(dto.getRoadId(), dto.getLaneIndex(), dto.getPosition());
             case "REMOVE_OBSTACLE"     -> new com.trafficsimulator.engine.command.SimulationCommand.RemoveObstacle(dto.getObstacleId());
             case "CLOSE_LANE"          -> new com.trafficsimulator.engine.command.SimulationCommand.CloseLane(dto.getRoadId(), dto.getLaneIndex());
+            case "LOAD_MAP"            -> new com.trafficsimulator.engine.command.SimulationCommand.LoadMap(dto.getMapId());
             default -> throw new IllegalArgumentException("Unknown: " + dto.getType());
         };
         simulationEngine.enqueue(command);
@@ -143,11 +208,11 @@ public class SimulationController {
                 laneData.put("id", lane.getId());
                 laneData.put("index", lane.getLaneIndex());
                 laneData.put("active", lane.isActive());
-                laneData.put("vehicleCount", lane.getVehicles().size());
-                laneData.put("obstacleCount", lane.getObstacles().size());
+                laneData.put("vehicleCount", lane.getVehicleCount());
+                laneData.put("obstacleCount", lane.getObstaclesView().size());
 
                 List<Map<String, Object>> vehicles = new ArrayList<>();
-                for (Vehicle v : lane.getVehicles()) {
+                for (Vehicle v : lane.getVehiclesView()) {
                     Map<String, Object> vd = new LinkedHashMap<>();
                     vd.put("id", v.getId());
                     vd.put("pos", Math.round(v.getPosition() * 10.0) / 10.0);
@@ -161,7 +226,7 @@ public class SimulationController {
                 laneData.put("vehicles", vehicles);
 
                 List<Map<String, Object>> obstacles = new ArrayList<>();
-                for (Obstacle obs : lane.getObstacles()) {
+                for (Obstacle obs : lane.getObstaclesView()) {
                     Map<String, Object> od = new LinkedHashMap<>();
                     od.put("id", obs.getId());
                     od.put("pos", obs.getPosition());
@@ -180,20 +245,24 @@ public class SimulationController {
     }
 
     /**
-     * Returns list of available map file names (without path prefix and .json suffix).
+     * Returns list of available maps with metadata (id, name, description).
      * Scans classpath:maps/ directory for JSON files.
      */
     @GetMapping("/maps")
-    public List<String> listMaps() throws IOException {
+    public List<MapInfoDto> listMaps() throws IOException {
         PathMatchingResourcePatternResolver resolver = new PathMatchingResourcePatternResolver();
         Resource[] resources = resolver.getResources("classpath:maps/*.json");
-        List<String> mapIds = new ArrayList<>();
+        List<MapInfoDto> maps = new ArrayList<>();
         for (Resource resource : resources) {
-            String filename = resource.getFilename();
-            if (filename != null && filename.endsWith(".json")) {
-                mapIds.add(filename.replace(".json", ""));
+            try (InputStream is = resource.getInputStream()) {
+                MapConfig config = objectMapper.readValue(is, MapConfig.class);
+                maps.add(MapInfoDto.builder()
+                    .id(config.getId())
+                    .name(config.getName())
+                    .description(config.getDescription())
+                    .build());
             }
         }
-        return mapIds;
+        return maps;
     }
 }

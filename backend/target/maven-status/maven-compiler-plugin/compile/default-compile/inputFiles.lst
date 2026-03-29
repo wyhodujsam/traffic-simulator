@@ -6,7 +6,9 @@
 /home/sebastian/traffic-simulator/backend/src/main/java/com/trafficsimulator/controller/CommandHandler.java
 /home/sebastian/traffic-simulator/backend/src/main/java/com/trafficsimulator/controller/SimulationController.java
 /home/sebastian/traffic-simulator/backend/src/main/java/com/trafficsimulator/dto/CommandDto.java
+/home/sebastian/traffic-simulator/backend/src/main/java/com/trafficsimulator/dto/IntersectionDto.java
 /home/sebastian/traffic-simulator/backend/src/main/java/com/trafficsimulator/dto/LaneDto.java
+/home/sebastian/traffic-simulator/backend/src/main/java/com/trafficsimulator/dto/MapInfoDto.java
 /home/sebastian/traffic-simulator/backend/src/main/java/com/trafficsimulator/dto/ObstacleDto.java
 /home/sebastian/traffic-simulator/backend/src/main/java/com/trafficsimulator/dto/RoadDto.java
 /home/sebastian/traffic-simulator/backend/src/main/java/com/trafficsimulator/dto/SimulationStateDto.java
@@ -15,6 +17,12 @@
 /home/sebastian/traffic-simulator/backend/src/main/java/com/trafficsimulator/dto/TickDto.java
 /home/sebastian/traffic-simulator/backend/src/main/java/com/trafficsimulator/dto/TrafficLightDto.java
 /home/sebastian/traffic-simulator/backend/src/main/java/com/trafficsimulator/dto/VehicleDto.java
+/home/sebastian/traffic-simulator/backend/src/main/java/com/trafficsimulator/engine/CommandDispatcher.java
+/home/sebastian/traffic-simulator/backend/src/main/java/com/trafficsimulator/engine/IIntersectionManager.java
+/home/sebastian/traffic-simulator/backend/src/main/java/com/trafficsimulator/engine/ILaneChangeEngine.java
+/home/sebastian/traffic-simulator/backend/src/main/java/com/trafficsimulator/engine/IPhysicsEngine.java
+/home/sebastian/traffic-simulator/backend/src/main/java/com/trafficsimulator/engine/ITrafficLightController.java
+/home/sebastian/traffic-simulator/backend/src/main/java/com/trafficsimulator/engine/IVehicleSpawner.java
 /home/sebastian/traffic-simulator/backend/src/main/java/com/trafficsimulator/engine/IntersectionManager.java
 /home/sebastian/traffic-simulator/backend/src/main/java/com/trafficsimulator/engine/LaneChangeEngine.java
 /home/sebastian/traffic-simulator/backend/src/main/java/com/trafficsimulator/engine/ObstacleManager.java
@@ -36,4 +44,5 @@
 /home/sebastian/traffic-simulator/backend/src/main/java/com/trafficsimulator/model/TrafficLight.java
 /home/sebastian/traffic-simulator/backend/src/main/java/com/trafficsimulator/model/TrafficLightPhase.java
 /home/sebastian/traffic-simulator/backend/src/main/java/com/trafficsimulator/model/Vehicle.java
+/home/sebastian/traffic-simulator/backend/src/main/java/com/trafficsimulator/scheduler/SnapshotBuilder.java
 /home/sebastian/traffic-simulator/backend/src/main/java/com/trafficsimulator/scheduler/TickEmitter.java

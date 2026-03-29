@@ -1,6 +1,7 @@
 {
   "id": "straight-road",
   "name": "Straight Road — 3 lanes, 800m",
+  "description": "Simple 3-lane, 800m straight road. Good for observing basic car-following and lane change behavior.",
   "nodes": [
     { "id": "n1", "type": "ENTRY", "x": 50.0,  "y": 300.0 },
     { "id": "n2", "type": "EXIT",  "x": 850.0, "y": 300.0 }

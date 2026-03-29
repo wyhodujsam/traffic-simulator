@@ -46,7 +46,7 @@ public class ObstacleManager {
             .createdAtTick(currentTick)
             .build();
 
-        lane.getObstacles().add(obstacle);
+        lane.addObstacle(obstacle);
         log.info("Obstacle added: id={} lane={} position={}m", obstacle.getId(), lane.getId(), clampedPos);
         return obstacle;
     }
@@ -58,7 +58,7 @@ public class ObstacleManager {
     public boolean removeObstacle(RoadNetwork network, String obstacleId) {
         for (Road road : network.getRoads().values()) {
             for (Lane lane : road.getLanes()) {
-                boolean removed = lane.getObstacles().removeIf(o -> o.getId().equals(obstacleId));
+                boolean removed = lane.removeObstaclesIf(o -> o.getId().equals(obstacleId));
                 if (removed) {
                     log.info("Obstacle removed: id={} from lane={}", obstacleId, lane.getId());
                     return true;
@@ -70,13 +70,26 @@ public class ObstacleManager {
     }
 
     /**
+     * Removes all obstacles from all lanes in the network.
+     * Called during map loading to clear obstacles from the old network.
+     */
+    public void clearAll(RoadNetwork network) {
+        for (Road road : network.getRoads().values()) {
+            for (Lane lane : road.getLanes()) {
+                lane.clearObstacles();
+            }
+        }
+        log.info("All obstacles cleared");
+    }
+
+    /**
      * Returns all obstacles across all lanes (for snapshot building).
      */
     public List<Obstacle> getAllObstacles(RoadNetwork network) {
         List<Obstacle> all = new ArrayList<>();
         for (Road road : network.getRoads().values()) {
             for (Lane lane : road.getLanes()) {
-                all.addAll(lane.getObstacles());
+                all.addAll(lane.getObstaclesView());
             }
         }
         return all;

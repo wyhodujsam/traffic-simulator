@@ -1,4 +1,4 @@
-/** Pixel width per lane — must match backend LANE_WIDTH_PX */
+/** Pixel width per lane — used by frontend projection */
 export const LANE_WIDTH_PX = 14.0;
 
 /** Vehicle rendering dimensions (slightly exaggerated for visibility) */

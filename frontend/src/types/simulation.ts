@@ -2,14 +2,13 @@
 
 export interface VehicleDto {
   id: string;
+  roadId: string;              // which road
   laneId: string;
-  position: number;   // metres from lane start
-  speed: number;      // m/s
-  x: number;          // pixel x coordinate
-  y: number;          // pixel y coordinate
-  angle: number;      // radians
-  targetLaneId?: string | null;       // null if not changing lanes
-  laneChangeProgress?: number;        // 0..1, undefined = not changing
+  laneIndex: number;           // 0-based lane index
+  position: number;            // metres from lane start
+  speed: number;               // m/s
+  laneChangeProgress: number;  // 0..1
+  laneChangeSourceIndex: number; // -1 = none
 }
 
 export interface TrafficLightDto {
@@ -23,11 +22,10 @@ export interface TrafficLightDto {
 
 export interface ObstacleDto {
   id: string;
+  roadId: string;     // which road
   laneId: string;
+  laneIndex: number;  // 0-based lane index
   position: number;   // metres from lane start
-  x: number;          // pixel x coordinate
-  y: number;          // pixel y coordinate
-  angle: number;      // radians
 }
 
 export interface StatsDto {
@@ -35,6 +33,13 @@ export interface StatsDto {
   avgSpeed: number;      // m/s
   density: number;       // vehicles/km
   throughput: number;    // vehicles despawned in last 60s
+}
+
+export interface IntersectionDto {
+  id: string;
+  x: number;
+  y: number;
+  size: number;
 }
 
 export type SimulationStatus = 'RUNNING' | 'PAUSED' | 'STOPPED';
@@ -47,6 +52,14 @@ export interface SimulationStateDto {
   obstacles: ObstacleDto[];
   trafficLights: TrafficLightDto[];
   stats: StatsDto;
+  error: string | null;
+  mapId: string | null;
+}
+
+export interface MapInfo {
+  id: string;
+  name: string;
+  description: string | null;
 }
 
 export interface LaneDto {
@@ -66,6 +79,8 @@ export interface RoadDto {
   endX: number;
   endY: number;
   lanes?: LaneDto[];     // optional — present when backend sends lane details
+  clipStart: number;     // pixels to trim from road start (near intersection)
+  clipEnd: number;       // pixels to trim from road end (near intersection)
 }
 
 export interface SimulationStatusDto {

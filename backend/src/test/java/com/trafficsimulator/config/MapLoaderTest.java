@@ -21,7 +21,7 @@ class MapLoaderTest {
 
     @Test
     void loadStraightRoad_returnsValidRoadNetwork() throws Exception {
-        RoadNetwork network = mapLoader.loadFromClasspath("maps/straight-road.json");
+        RoadNetwork network = mapLoader.loadFromClasspath("maps/straight-road.json").network();
 
         assertThat(network).isNotNull();
         assertThat(network.getId()).isEqualTo("straight-road");
@@ -29,7 +29,7 @@ class MapLoaderTest {
 
     @Test
     void loadStraightRoad_hasOneRoadWithThreeLanes() throws Exception {
-        RoadNetwork network = mapLoader.loadFromClasspath("maps/straight-road.json");
+        RoadNetwork network = mapLoader.loadFromClasspath("maps/straight-road.json").network();
 
         assertThat(network.getRoads()).hasSize(1);
         Road road = network.getRoads().get("r1");
@@ -41,7 +41,7 @@ class MapLoaderTest {
 
     @Test
     void loadStraightRoad_laneIdsAreCorrect() throws Exception {
-        RoadNetwork network = mapLoader.loadFromClasspath("maps/straight-road.json");
+        RoadNetwork network = mapLoader.loadFromClasspath("maps/straight-road.json").network();
         Road road = network.getRoads().get("r1");
 
         assertThat(road.getLanes().get(0).getId()).isEqualTo("r1-lane0");
@@ -51,7 +51,7 @@ class MapLoaderTest {
 
     @Test
     void loadStraightRoad_laneBackReferencesRoad() throws Exception {
-        RoadNetwork network = mapLoader.loadFromClasspath("maps/straight-road.json");
+        RoadNetwork network = mapLoader.loadFromClasspath("maps/straight-road.json").network();
         Road road = network.getRoads().get("r1");
         Lane lane = road.getLanes().get(0);
 
@@ -62,7 +62,7 @@ class MapLoaderTest {
 
     @Test
     void loadStraightRoad_nodeCoordinatesPropagated() throws Exception {
-        RoadNetwork network = mapLoader.loadFromClasspath("maps/straight-road.json");
+        RoadNetwork network = mapLoader.loadFromClasspath("maps/straight-road.json").network();
         Road road = network.getRoads().get("r1");
 
         assertThat(road.getStartX()).isEqualTo(50.0);
@@ -73,7 +73,7 @@ class MapLoaderTest {
 
     @Test
     void loadStraightRoad_hasSpawnAndDespawnPoints() throws Exception {
-        RoadNetwork network = mapLoader.loadFromClasspath("maps/straight-road.json");
+        RoadNetwork network = mapLoader.loadFromClasspath("maps/straight-road.json").network();
 
         assertThat(network.getSpawnPoints()).hasSize(3);
         assertThat(network.getDespawnPoints()).hasSize(3);
@@ -83,7 +83,7 @@ class MapLoaderTest {
 
     @Test
     void loadStraightRoad_intersectionsEmpty() throws Exception {
-        RoadNetwork network = mapLoader.loadFromClasspath("maps/straight-road.json");
+        RoadNetwork network = mapLoader.loadFromClasspath("maps/straight-road.json").network();
 
         assertThat(network.getIntersections()).isEmpty();
     }

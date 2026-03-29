@@ -41,7 +41,7 @@ class IntersectionManagerTest {
             .length(4.5).v0(13.9).aMax(1.5).b(2.0).s0(2.0).T(1.5)
             .spawnedAt(spawnedAt).laneChangeProgress(1.0).laneChangeSourceIndex(-1)
             .build();
-        lane.getVehicles().add(v);
+        lane.addVehicle(v);
         return v;
     }
 
@@ -141,14 +141,14 @@ class IntersectionManagerTest {
         manager.processTransfers(network, 1);
 
         // Vehicle should have been removed from inbound lane
-        assertThat(inLane.getVehicles()).isEmpty();
+        assertThat(inLane.getVehiclesView()).isEmpty();
 
         // Vehicle should be on one of the outbound roads at position 0
         boolean foundOnOutbound = false;
         for (String outId : List.of("r_south_out", "r_west_out", "r_east_out")) {
             Road outRoad = network.getRoads().get(outId);
-            if (!outRoad.getLanes().get(0).getVehicles().isEmpty()) {
-                Vehicle transferred = outRoad.getLanes().get(0).getVehicles().get(0);
+            if (!outRoad.getLanes().get(0).getVehiclesView().isEmpty()) {
+                Vehicle transferred = outRoad.getLanes().get(0).getVehiclesView().get(0);
                 assertThat(transferred.getId()).isEqualTo("v1");
                 assertThat(transferred.getPosition()).isEqualTo(0.0);
                 foundOnOutbound = true;
@@ -170,8 +170,8 @@ class IntersectionManagerTest {
         manager.processTransfers(network, 1);
 
         // Vehicle should still be on inbound lane (RED light)
-        assertThat(inLane.getVehicles()).hasSize(1);
-        assertThat(inLane.getVehicles().get(0).getId()).isEqualTo("v1");
+        assertThat(inLane.getVehiclesView()).hasSize(1);
+        assertThat(inLane.getVehiclesView().get(0).getId()).isEqualTo("v1");
     }
 
     @Test
@@ -193,8 +193,8 @@ class IntersectionManagerTest {
         manager.processTransfers(network, 1);
 
         // Vehicle should NOT be transferred — all outbound roads blocked
-        assertThat(inLane.getVehicles()).hasSize(1);
-        assertThat(inLane.getVehicles().get(0).getId()).isEqualTo("v1");
+        assertThat(inLane.getVehiclesView()).hasSize(1);
+        assertThat(inLane.getVehiclesView().get(0).getId()).isEqualTo("v1");
     }
 
     @Test
@@ -209,7 +209,7 @@ class IntersectionManagerTest {
         manager.processTransfers(network, 1);
 
         // Vehicle should be transferred
-        assertThat(inLane.getVehicles()).isEmpty();
+        assertThat(inLane.getVehiclesView()).isEmpty();
     }
 
     @Test
@@ -223,7 +223,7 @@ class IntersectionManagerTest {
         manager.processTransfers(network, 1);
 
         // After transfer, find the vehicle and check speed
-        assertThat(inLane.getVehicles()).isEmpty();
+        assertThat(inLane.getVehiclesView()).isEmpty();
         // The vehicle object itself should retain speed (it's mutated in place)
         assertThat(v.getPosition()).isEqualTo(0.0);
         // Speed is NOT explicitly set during transfer, so it retains original value
@@ -286,10 +286,10 @@ class IntersectionManagerTest {
         }
 
         // After deadlock resolution, one vehicle should have been force-advanced to an outbound road
-        int totalInbound = northLane.getVehicles().size() + southLane.getVehicles().size();
+        int totalInbound = northLane.getVehiclesView().size() + southLane.getVehiclesView().size();
         Lane northOut = roads.get("r_north_out").getLanes().get(0);
         Lane southOut = roads.get("r_south_out").getLanes().get(0);
-        int totalOutbound = northOut.getVehicles().size() + southOut.getVehicles().size();
+        int totalOutbound = northOut.getVehiclesView().size() + southOut.getVehiclesView().size();
 
         assertThat(totalOutbound).isGreaterThanOrEqualTo(1);
         assertThat(totalInbound + totalOutbound).isEqualTo(2); // no vehicles lost

@@ -19,4 +19,6 @@ public class SimulationStateDto {
     private List<ObstacleDto> obstacles;
     private List<TrafficLightDto> trafficLights;
     private StatsDto stats;
+    private String mapId;
+    private String error;
 }

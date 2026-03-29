@@ -1,4 +1,5 @@
 import type { RoadDto, ObstacleDto } from '../types/simulation';
+import { projectObstacle } from './projection';
 import { LANE_WIDTH_PX, OBSTACLE_LENGTH_PX, OBSTACLE_HIT_PADDING } from './constants';
 
 export interface RoadHit {
@@ -15,17 +16,19 @@ export interface RoadHit {
 export function hitTestObstacle(
   cx: number,
   cy: number,
-  obstacles: ObstacleDto[]
+  obstacles: ObstacleDto[],
+  roads: RoadDto[]
 ): string | null {
   const halfL = OBSTACLE_LENGTH_PX / 2 + OBSTACLE_HIT_PADDING;
   const halfW = LANE_WIDTH_PX / 2 + OBSTACLE_HIT_PADDING;
 
   for (const o of obstacles) {
+    const { x, y, angle } = projectObstacle(o, roads);
     // Transform click into obstacle's local frame
-    const dx = cx - o.x;
-    const dy = cy - o.y;
-    const cos = Math.cos(-o.angle);
-    const sin = Math.sin(-o.angle);
+    const dx = cx - x;
+    const dy = cy - y;
+    const cos = Math.cos(-angle);
+    const sin = Math.sin(-angle);
     const localX = dx * cos - dy * sin;
     const localY = dx * sin + dy * cos;
 

@@ -6,12 +6,12 @@ import com.trafficsimulator.model.Vehicle;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Component;
 
-import java.util.Comparator;
+import java.util.ArrayList;
 import java.util.List;
 
 @Component
 @Slf4j
-public class PhysicsEngine {
+public class PhysicsEngine implements IPhysicsEngine {
 
     private static final double DELTA = 4.0;   // IDM acceleration exponent
     private static final double S_MIN = 1.0;    // minimum gap guard (metres)
@@ -25,6 +25,7 @@ public class PhysicsEngine {
      * @param lane the lane containing vehicles to update
      * @param dt   time step in seconds (e.g. 0.05 for 20 Hz)
      */
+    @Override
     public void tick(Lane lane, double dt) {
         tick(lane, dt, -1.0);  // no stop line
     }
@@ -38,15 +39,15 @@ public class PhysicsEngine {
      * @param stopLinePosition if >= 0, acts as a stationary virtual leader at this position;
      *                         if < 0, no stop line (normal behavior)
      */
+    @Override
     public void tick(Lane lane, double dt, double stopLinePosition) {
-        List<Vehicle> vehicles = lane.getVehicles();
+        List<Vehicle> vehicles = new ArrayList<>(lane.getVehiclesView());
         if (vehicles.isEmpty()) return;
 
-        // Sort by position descending — front vehicles first
-        vehicles.sort(Comparator.comparingDouble(Vehicle::getPosition).reversed());
+        // List is already sorted descending by Lane's sorted invariant — no sort needed here
 
         // Pre-sort obstacles by position for efficient lookup
-        List<Obstacle> obstacles = lane.getObstacles();
+        List<Obstacle> obstacles = lane.getObstaclesView();
 
         for (int i = 0; i < vehicles.size(); i++) {
             Vehicle vehicle = vehicles.get(i);
@@ -141,11 +142,12 @@ public class PhysicsEngine {
                 }
             }
 
-            // Write back
-            vehicle.setAcceleration(acceleration);
-            vehicle.setSpeed(newSpeed);
-            vehicle.setPosition(newPosition);
+            // Write back via domain method
+            vehicle.updatePhysics(newPosition, newSpeed, acceleration);
         }
+
+        // Re-sort after position updates to maintain sorted invariant
+        lane.resortVehicles();
     }
 
     /**
@@ -162,6 +164,7 @@ public class PhysicsEngine {
      * @param leaderLength   leader's length (metres)
      * @param hasLeader      true if a leader exists
      */
+    @Override
     public double computeAcceleration(Vehicle vehicle, double leaderPosition,
                                         double leaderSpeed, double leaderLength,
                                         boolean hasLeader) {
@@ -201,6 +204,7 @@ public class PhysicsEngine {
     /**
      * Computes IDM free-flow acceleration (no leader).
      */
+    @Override
     public double computeFreeFlowAcceleration(Vehicle vehicle) {
         return computeAcceleration(vehicle, 0, 0, 0, false);
     }

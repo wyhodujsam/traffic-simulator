@@ -1,4 +1,5 @@
-import type { ObstacleDto } from '../types/simulation';
+import type { ObstacleDto, RoadDto } from '../types/simulation';
+import { projectObstacle } from './projection';
 import { OBSTACLE_LENGTH_PX, LANE_WIDTH_PX } from './constants';
 
 /**
@@ -8,12 +9,15 @@ import { OBSTACLE_LENGTH_PX, LANE_WIDTH_PX } from './constants';
  */
 export function drawObstacles(
   ctx: CanvasRenderingContext2D,
-  obstacles: ObstacleDto[]
+  obstacles: ObstacleDto[],
+  roads: RoadDto[]
 ): void {
   for (const o of obstacles) {
+    const { x, y, angle } = projectObstacle(o, roads);
+
     ctx.save();
-    ctx.translate(o.x, o.y);
-    ctx.rotate(o.angle);
+    ctx.translate(x, y);
+    ctx.rotate(angle);
 
     const halfL = OBSTACLE_LENGTH_PX / 2;
     const halfW = LANE_WIDTH_PX / 2;

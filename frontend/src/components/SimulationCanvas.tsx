@@ -1,6 +1,7 @@
 import { useEffect, useRef, useCallback } from 'react';
 import { useSimulationStore } from '../store/useSimulationStore';
 import { drawRoads } from '../rendering/drawRoads';
+import { drawIntersections } from '../rendering/drawIntersections';
 import { drawVehicles } from '../rendering/drawVehicles';
 import { drawObstacles } from '../rendering/drawObstacles';
 import { drawTrafficLights } from '../rendering/drawTrafficLights';
@@ -32,6 +33,7 @@ export function SimulationCanvas() {
 
   const roads = useSimulationStore((s) => s.roads);
   const roadsLoaded = useSimulationStore((s) => s.roadsLoaded);
+  const intersections = useSimulationStore((s) => s.intersections);
 
   const { width, height } = computeCanvasSize(roads);
 
@@ -43,7 +45,8 @@ export function SimulationCanvas() {
     const ctx = canvas.getContext('2d');
     if (!ctx) return;
     drawRoads(ctx, roads);
-  }, [roads, roadsLoaded]);
+    drawIntersections(ctx, intersections);
+  }, [roads, roadsLoaded, intersections]);
 
   // Animation loop for vehicles layer
   const renderLoop = useCallback(() => {
@@ -57,11 +60,12 @@ export function SimulationCanvas() {
 
     if (currSnapshot) {
       const now = performance.now();
-      const vehicles = interpolateVehicles(currSnapshot, prevSnapshot, now);
+      const storeRoads = useSimulationStore.getState().roads;
+      const vehicles = interpolateVehicles(currSnapshot, prevSnapshot, now, storeRoads);
       drawVehicles(ctx, vehicles);
 
       const obstacles = useSimulationStore.getState().obstacles;
-      drawObstacles(ctx, obstacles);
+      drawObstacles(ctx, obstacles, storeRoads);
 
       const trafficLights = useSimulationStore.getState().trafficLights;
       drawTrafficLights(ctx, trafficLights);
@@ -89,7 +93,7 @@ export function SimulationCanvas() {
     if (!sendCommand) return;
 
     // 1. Check if click hits an existing obstacle -> REMOVE
-    const hitId = hitTestObstacle(cx, cy, obstacles);
+    const hitId = hitTestObstacle(cx, cy, obstacles, roads);
     if (hitId) {
       sendCommand({ type: 'REMOVE_OBSTACLE', obstacleId: hitId });
       return;

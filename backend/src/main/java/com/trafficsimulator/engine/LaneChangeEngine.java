@@ -19,7 +19,7 @@ import java.util.stream.Collectors;
 @Component
 @RequiredArgsConstructor
 @Slf4j
-public class LaneChangeEngine {
+public class LaneChangeEngine implements ILaneChangeEngine {
 
     // MOBIL parameters
     private static final double B_SAFE = 4.0;          // safe braking limit m/s^2
@@ -33,7 +33,7 @@ public class LaneChangeEngine {
     private static final double OBSTACLE_PROXIMITY = 30.0; // metres — "stuck behind obstacle" threshold
     private static final int    ZIPPER_INTERVAL_TICKS = 40; // ticks between zipper merges per obstacle (~2s)
 
-    private final PhysicsEngine physicsEngine;
+    private final IPhysicsEngine physicsEngine;
 
     /** Tracks last zipper merge tick per obstacle ID to enforce merge interval */
     private final Map<String, Long> lastZipperMergeTick = new HashMap<>();
@@ -51,6 +51,7 @@ public class LaneChangeEngine {
      * Main tick: evaluates MOBIL for all vehicles, resolves conflicts, commits moves.
      * Called once per tick AFTER physics, BEFORE despawn.
      */
+    @Override
     public void tick(RoadNetwork network, long currentTick) {
         if (network == null) return;
 
@@ -83,7 +84,7 @@ public class LaneChangeEngine {
             for (Lane lane : road.getLanes()) {
                 if (!lane.isActive()) continue;
 
-                for (Vehicle vehicle : lane.getVehicles()) {
+                for (Vehicle vehicle : lane.getVehiclesView()) {
                     // Skip vehicles stuck behind obstacle unless they're the zipper candidate
                     // This enforces one-by-one merging
                     if (isStuckBehindObstacle(vehicle, lane) && !vehicle.isZipperCandidate()) {
@@ -92,8 +93,7 @@ public class LaneChangeEngine {
 
                     // Cooldown check (skip for forced and zipper candidates)
                     if (!vehicle.isForceLaneChange() && !vehicle.isZipperCandidate()) {
-                        long ticksSince = currentTick - vehicle.getLastLaneChangeTick();
-                        if (vehicle.getLastLaneChangeTick() > 0 && ticksSince < cooldownTicks) {
+                        if (!vehicle.canChangeLane(currentTick, cooldownTicks)) {
                             continue;
                         }
                     }
@@ -201,7 +201,7 @@ public class LaneChangeEngine {
             }
         }
         // Also check for obstacle behind in target lane (don't land just past one)
-        for (Obstacle obs : targetLane.getObstacles()) {
+        for (Obstacle obs : targetLane.getObstaclesView()) {
             double gapBehindObs = subjectPos - obs.getPosition();
             if (gapBehindObs > 0 && gapBehindObs < subject.getLength() + subject.getS0()) {
                 return null; // too close behind obstacle in target lane
@@ -289,7 +289,7 @@ public class LaneChangeEngine {
     private Obstacle findNearestObstacleAhead(Lane lane, double position) {
         Obstacle nearest = null;
         double nearestPos = Double.MAX_VALUE;
-        for (Obstacle obs : lane.getObstacles()) {
+        for (Obstacle obs : lane.getObstaclesView()) {
             if (obs.getPosition() > position && obs.getPosition() < nearestPos) {
                 nearest = obs;
                 nearestPos = obs.getPosition();
@@ -368,12 +368,11 @@ public class LaneChangeEngine {
             Lane target = intent.targetLane();
 
             // Move vehicle from source to target lane
-            source.getVehicles().remove(vehicle);
-            target.getVehicles().add(vehicle);
-            vehicle.setLane(target);
+            source.removeVehicle(vehicle);
+            target.addVehicle(vehicle);
 
-            // Record cooldown
-            vehicle.setLastLaneChangeTick(currentTick);
+            // Domain method: sets lane, animation tracking, and cooldown
+            vehicle.startLaneChange(target, source.getLaneIndex(), currentTick);
 
             // Clear force flag if was forced
             vehicle.setForceLaneChange(false);
@@ -381,7 +380,7 @@ public class LaneChangeEngine {
             // Record zipper merge time for rate-limiting
             if (vehicle.isZipperCandidate()) {
                 // Find which obstacle this vehicle was behind
-                for (Obstacle obs : source.getObstacles()) {
+                for (Obstacle obs : source.getObstaclesView()) {
                     double dist = obs.getPosition() - vehicle.getPosition();
                     if (dist > -5 && dist < OBSTACLE_PROXIMITY) {
                         lastZipperMergeTick.put(obs.getId(), currentTick);
@@ -390,10 +389,6 @@ public class LaneChangeEngine {
                 }
                 vehicle.setZipperCandidate(false);
             }
-
-            // Initialize animation: track source lane index, progress = 0
-            vehicle.setLaneChangeSourceIndex(source.getLaneIndex());
-            vehicle.setLaneChangeProgress(0.0);
 
             log.debug("Lane change: vehicle={} from lane {} to lane {}",
                 vehicle.getId(), source.getId(), target.getId());
@@ -405,7 +400,7 @@ public class LaneChangeEngine {
      */
     private boolean isStuckBehindObstacle(Vehicle vehicle, Lane lane) {
         if (vehicle.getSpeed() > 2.0) return false;
-        for (Obstacle obs : lane.getObstacles()) {
+        for (Obstacle obs : lane.getObstaclesView()) {
             double dist = obs.getPosition() - vehicle.getPosition();
             if (dist > 0 && dist < OBSTACLE_PROXIMITY) {
                 return true;
@@ -423,12 +418,12 @@ public class LaneChangeEngine {
         for (Road road : network.getRoads().values()) {
             for (Lane lane : road.getLanes()) {
                 // Clear previous marks
-                for (Vehicle v : lane.getVehicles()) {
+                for (Vehicle v : lane.getVehiclesView()) {
                     v.setZipperCandidate(false);
                 }
 
                 // For each obstacle, find the first vehicle behind it that is slow/stopped
-                for (Obstacle obs : lane.getObstacles()) {
+                for (Obstacle obs : lane.getObstaclesView()) {
                     // Enforce merge interval per obstacle
                     Long lastMerge = lastZipperMergeTick.get(obs.getId());
                     if (lastMerge != null && currentTick - lastMerge < ZIPPER_INTERVAL_TICKS) {
@@ -437,7 +432,7 @@ public class LaneChangeEngine {
 
                     Vehicle closest = null;
                     double closestDist = Double.MAX_VALUE;
-                    for (Vehicle v : lane.getVehicles()) {
+                    for (Vehicle v : lane.getVehiclesView()) {
                         double dist = obs.getPosition() - v.getPosition();
                         if (dist > 0 && dist < OBSTACLE_PROXIMITY && dist < closestDist) {
                             closest = v;
@@ -460,12 +455,11 @@ public class LaneChangeEngine {
         double progressStep = 1.0 / TRANSITION_TICKS;
         for (Road road : network.getRoads().values()) {
             for (Lane lane : road.getLanes()) {
-                for (Vehicle v : lane.getVehicles()) {
+                for (Vehicle v : lane.getVehiclesView()) {
                     if (v.getLaneChangeProgress() < 1.0 && v.getLaneChangeSourceIndex() >= 0) {
-                        v.setLaneChangeProgress(
-                            Math.min(1.0, v.getLaneChangeProgress() + progressStep));
+                        v.advanceLaneChangeProgress(progressStep);
                         if (v.getLaneChangeProgress() >= 1.0) {
-                            v.setLaneChangeSourceIndex(-1); // animation done
+                            v.completeLaneChange();
                         }
                     }
                 }

@@ -9,7 +9,7 @@ import java.util.concurrent.ThreadLocalRandom;
 
 @Component
 @Slf4j
-public class IntersectionManager {
+public class IntersectionManager implements IIntersectionManager {
 
     private static final double STOP_LINE_BUFFER = 2.0;  // metres before road end
     private static final double MIN_ENTRY_GAP = 7.0;     // vehicle length + s0
@@ -26,6 +26,7 @@ public class IntersectionManager {
      * Builds a map of laneId -> stopLinePosition for all lanes that should have
      * a red-light or box-blocking stop. Called each tick before physics.
      */
+    @Override
     public Map<String, Double> computeStopLines(RoadNetwork network) {
         Map<String, Double> stopLines = new HashMap<>();
         for (Intersection ixtn : network.getIntersections().values()) {
@@ -106,7 +107,7 @@ public class IntersectionManager {
             boolean hasWaitingVehicle = false;
             double threshold = otherRoad.getLength() - STOP_LINE_BUFFER - 10.0;
             for (Lane lane : otherRoad.getLanes()) {
-                for (Vehicle v : lane.getVehicles()) {
+                for (Vehicle v : lane.getVehiclesView()) {
                     if (v.getPosition() >= threshold) {
                         hasWaitingVehicle = true;
                         break;
@@ -140,6 +141,7 @@ public class IntersectionManager {
      * Transfers vehicles that have reached the end of inbound roads through intersections
      * to outbound roads. Called each tick after physics, before despawn.
      */
+    @Override
     public void processTransfers(RoadNetwork network, long currentTick) {
         for (Intersection ixtn : network.getIntersections().values()) {
             boolean transferredAny = false;
@@ -152,7 +154,7 @@ public class IntersectionManager {
                 // Count vehicles waiting at stop lines across all inbound roads
                 double waitThreshold = inboundRoad.getLength() - STOP_LINE_BUFFER - 5.0;
                 for (Lane lane : inboundRoad.getLanes()) {
-                    for (Vehicle v : lane.getVehicles()) {
+                    for (Vehicle v : lane.getVehiclesView()) {
                         if (v.getPosition() >= waitThreshold && v.getSpeed() < 0.5) {
                             waitingCount++;
                         }
@@ -214,7 +216,7 @@ public class IntersectionManager {
             if (inRoad == null) continue;
             double threshold = inRoad.getLength() - STOP_LINE_BUFFER - 5.0;
             for (Lane lane : inRoad.getLanes()) {
-                for (Vehicle v : lane.getVehicles()) {
+                for (Vehicle v : lane.getVehiclesView()) {
                     if (v.getPosition() >= threshold && v.getSpeed() < 0.5) {
                         if (oldest == null || v.getSpawnedAt() < oldest.getSpawnedAt()) {
                             oldest = v;
@@ -230,7 +232,7 @@ public class IntersectionManager {
         // Find victim's current lane and remove
         Lane victimLane = victim.getLane();
         if (victimLane == null) return;
-        victimLane.getVehicles().remove(victim);
+        victimLane.removeVehicle(victim);
 
         // Pick any outbound road
         if (ixtn.getOutboundRoadIds().isEmpty()) return;
@@ -243,11 +245,10 @@ public class IntersectionManager {
         if (targetLane == null) return;
 
         // Force transfer -- ignores space check
-        victim.setPosition(0.0);
-        victim.setLane(targetLane);
-        victim.setLaneChangeSourceIndex(-1);
-        victim.setLaneChangeProgress(1.0);
-        targetLane.getVehicles().add(victim);
+        victim.updatePhysics(0.0, victim.getSpeed(), victim.getAcceleration());
+        victim.setLane(targetLane);  // transfer = special case, not a lane change
+        victim.completeLaneChange();
+        targetLane.addVehicle(victim);
     }
 
     /**
@@ -258,9 +259,9 @@ public class IntersectionManager {
                                            Lane inLane, RoadNetwork network) {
         boolean transferred = false;
         double threshold = inLane.getLength() - STOP_LINE_BUFFER;
-        Iterator<Vehicle> iter = inLane.getVehicles().iterator();
-        while (iter.hasNext()) {
-            Vehicle v = iter.next();
+        List<Vehicle> toTransfer = new ArrayList<>();
+
+        for (Vehicle v : inLane.getVehiclesView()) {
             if (v.getPosition() < threshold) continue;
 
             // Pick a random outbound road (excluding U-turn)
@@ -280,18 +281,23 @@ public class IntersectionManager {
                 continue; // no space
             }
 
-            // Transfer: remove from inbound, add to outbound at position 0
-            iter.remove();
-            v.setPosition(0.0);
-            v.setLane(targetLane);
-            v.setLaneChangeSourceIndex(-1);
-            v.setLaneChangeProgress(1.0);
-            targetLane.getVehicles().add(v);
+            // Mark for transfer
+            toTransfer.add(v);
+            v.updatePhysics(0.0, v.getSpeed(), v.getAcceleration());
+            v.setLane(targetLane);  // transfer = special case, not a lane change
+            v.completeLaneChange();
+            targetLane.addVehicle(v);
             transferred = true;
 
             log.debug("Vehicle {} transferred through intersection {} from {} to {}",
                 v.getId(), ixtn.getId(), inLane.getId(), targetLane.getId());
         }
+
+        // Remove transferred vehicles from inbound lane
+        for (Vehicle v : toTransfer) {
+            inLane.removeVehicle(v);
+        }
+
         return transferred;
     }
 

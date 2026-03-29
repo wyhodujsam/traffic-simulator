@@ -16,10 +16,14 @@ import java.util.stream.Collectors;
 @Slf4j
 public class MapLoader {
 
+    private static final double LANE_WIDTH_PX = 14.0;
+
     private final ObjectMapper objectMapper;
     private final MapValidator mapValidator;
 
-    public RoadNetwork loadFromClasspath(String resourcePath) throws IOException {
+    public record LoadedMap(RoadNetwork network, double defaultSpawnRate) {}
+
+    public LoadedMap loadFromClasspath(String resourcePath) throws IOException {
         InputStream is = getClass().getClassLoader().getResourceAsStream(resourcePath);
         if (is == null) {
             throw new IllegalArgumentException("Map resource not found: " + resourcePath);
@@ -33,7 +37,8 @@ public class MapLoader {
             throw new IllegalArgumentException("Map config validation failed: " + errors);
         }
 
-        return buildRoadNetwork(config);
+        RoadNetwork network = buildRoadNetwork(config);
+        return new LoadedMap(network, config.getDefaultSpawnRate());
     }
 
     private RoadNetwork buildRoadNetwork(MapConfig config) {
@@ -47,6 +52,34 @@ public class MapLoader {
             MapConfig.NodeConfig fromNode = nodes.get(rc.getFromNodeId());
             MapConfig.NodeConfig toNode   = nodes.get(rc.getToNodeId());
 
+            // Compute pixel coords — offset roads at intersection nodes
+            // so inbound/outbound are parallel (not converging to same point)
+            double startX = fromNode.getX(), startY = fromNode.getY();
+            double endX = toNode.getX(), endY = toNode.getY();
+
+            // If any endpoint is INTERSECTION, offset the ENTIRE road perpendicular
+            // so inbound/outbound pairs are parallel (not converging to same point)
+            if ("INTERSECTION".equals(fromNode.getType()) || "INTERSECTION".equals(toNode.getType())) {
+                double dx = endX - startX;
+                double dy = endY - startY;
+                double len = Math.sqrt(dx * dx + dy * dy);
+                if (len > 0) {
+                    // Perpendicular unit vector
+                    double px = -dy / len;
+                    double py = dx / len;
+                    // Offset: all roads shift the same direction relative to their
+                    // perpendicular. Since in/out roads have opposite direction vectors,
+                    // their perpendiculars are naturally opposite → same offset value
+                    // produces parallel separation.
+                    double offset = LANE_WIDTH_PX / 2.0;
+                    // Shift BOTH endpoints by same offset → road stays parallel to original direction
+                    startX += px * offset;
+                    startY += py * offset;
+                    endX += px * offset;
+                    endY += py * offset;
+                }
+            }
+
             Road road = Road.builder()
                 .id(rc.getId())
                 .name(rc.getName())
@@ -54,8 +87,8 @@ public class MapLoader {
                 .speedLimit(rc.getSpeedLimit())
                 .fromNodeId(rc.getFromNodeId())
                 .toNodeId(rc.getToNodeId())
-                .startX(fromNode.getX()).startY(fromNode.getY())
-                .endX(toNode.getX()).endY(toNode.getY())
+                .startX(startX).startY(startY)
+                .endX(endX).endY(endY)
                 .lanes(new ArrayList<>())
                 .build();
 
@@ -66,7 +99,7 @@ public class MapLoader {
                     .road(road)
                     .length(rc.getLength())
                     .maxSpeed(rc.getSpeedLimit())
-                    .active(true)
+                    .active(rc.getClosedLanes() == null || !rc.getClosedLanes().contains(i))
                     .build();
                 road.getLanes().add(lane);
             }
@@ -93,6 +126,7 @@ public class MapLoader {
                 Intersection ixtn = Intersection.builder()
                     .id(ic.getNodeId())
                     .type(IntersectionType.valueOf(ic.getType()))
+                    .intersectionSize(ic.getIntersectionSize())
                     .build();
                 intersections.put(ixtn.getId(), ixtn);
             }

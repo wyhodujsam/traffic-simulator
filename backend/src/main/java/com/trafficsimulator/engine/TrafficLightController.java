@@ -9,12 +9,13 @@ import org.springframework.stereotype.Component;
 
 @Component
 @Slf4j
-public class TrafficLightController {
+public class TrafficLightController implements ITrafficLightController {
 
     /**
      * Advances all traffic lights in the network by dt seconds.
      * Called at the start of each tick, before physics.
      */
+    @Override
     public void tick(double dt, RoadNetwork network) {
         if (network == null) return;
         for (Intersection ixtn : network.getIntersections().values()) {

@@ -11,6 +11,7 @@ import java.util.List;
 public class MapConfig {
     @JsonProperty("id")              private String id;
     @JsonProperty("name")            private String name;
+    @JsonProperty("description")     private String description;
     @JsonProperty("nodes")           private List<NodeConfig> nodes;
     @JsonProperty("roads")           private List<RoadConfig> roads;
     @JsonProperty("intersections")   private List<IntersectionConfig> intersections;
@@ -35,6 +36,7 @@ public class MapConfig {
         private double length;
         private double speedLimit;
         private int laneCount;
+        private List<Integer> closedLanes;  // lane indexes to close at load (optional)
     }
 
     @Data @NoArgsConstructor
@@ -42,6 +44,7 @@ public class MapConfig {
         private String nodeId;
         private String type;   // "SIGNAL", "ROUNDABOUT", "PRIORITY"
         private List<SignalPhaseConfig> signalPhases;  // nullable, only for SIGNAL type
+        private double intersectionSize;  // pixel radius of intersection box (default 0 = auto)
     }
 
     @Data @NoArgsConstructor
