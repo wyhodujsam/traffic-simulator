@@ -79,6 +79,12 @@ public class LaneChangeEngine {
                 if (!lane.isActive()) continue;
 
                 for (Vehicle vehicle : lane.getVehicles()) {
+                    // Skip vehicles stuck behind obstacle unless they're the zipper candidate
+                    // This enforces one-by-one merging
+                    if (isStuckBehindObstacle(vehicle, lane) && !vehicle.isZipperCandidate()) {
+                        continue;
+                    }
+
                     // Cooldown check (skip for forced and zipper candidates)
                     if (!vehicle.isForceLaneChange() && !vehicle.isZipperCandidate()) {
                         long ticksSince = currentTick - vehicle.getLastLaneChangeTick();
@@ -143,25 +149,30 @@ public class LaneChangeEngine {
         double aSubjectTarget = computeIdmAccelInLane(subject, newLeader, targetLane);
 
         // Safety criterion: new follower must not brake harder than b_safe
-        // Zipper merge candidates get a relaxed threshold to allow cooperative merging
-        double effectiveBSafe = subject.isZipperCandidate() ? B_SAFE_ZIPPER : B_SAFE;
-        if (newFollower != null) {
+        // Zipper candidates: only require minimum physical gap (no braking check).
+        // The follower will naturally brake via IDM after the merge.
+        boolean isZipper = subject.isZipperCandidate();
+        if (newFollower != null && !isZipper) {
             double aNewFollowerAfter = computeIdmAccelWithLeader(newFollower, subject);
-            if (aNewFollowerAfter < -effectiveBSafe) {
+            if (aNewFollowerAfter < -B_SAFE) {
                 return null; // unsafe
             }
         }
 
         // Gap check: ensure minimum gap to vehicles in target lane
+        // Zipper candidates use a tighter minimum gap (just vehicle length)
+        double minGapAhead = isZipper ? subject.getLength() : subject.getS0() + subject.getLength();
+        double minGapBehind = isZipper ? subject.getLength() : (newFollower != null ? newFollower.getS0() : 0);
+
         if (newLeader != null) {
             double gapAhead = newLeader.getPosition() - subjectPos - newLeader.getLength();
-            if (gapAhead < subject.getS0() + subject.getLength()) {
+            if (gapAhead < minGapAhead) {
                 return null; // not enough space ahead
             }
         }
         if (newFollower != null) {
             double gapBehind = subjectPos - newFollower.getPosition() - subject.getLength();
-            if (gapBehind < newFollower.getS0()) {
+            if (gapBehind < minGapBehind) {
                 return null; // not enough space behind
             }
         }
@@ -352,6 +363,20 @@ public class LaneChangeEngine {
             log.debug("Lane change: vehicle={} from lane {} to lane {}",
                 vehicle.getId(), source.getId(), target.getId());
         }
+    }
+
+    /**
+     * Returns true if the vehicle is slow/stopped and within OBSTACLE_PROXIMITY of an obstacle ahead.
+     */
+    private boolean isStuckBehindObstacle(Vehicle vehicle, Lane lane) {
+        if (vehicle.getSpeed() > 2.0) return false;
+        for (Obstacle obs : lane.getObstacles()) {
+            double dist = obs.getPosition() - vehicle.getPosition();
+            if (dist > 0 && dist < OBSTACLE_PROXIMITY) {
+                return true;
+            }
+        }
+        return false;
     }
 
     /**
