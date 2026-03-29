@@ -11,9 +11,8 @@ import lombok.NoArgsConstructor;
 @AllArgsConstructor
 public class ObstacleDto {
     private String id;
+    private String roadId;      // which road
     private String laneId;
-    private double position;  // metres from lane start
-    private double x;         // pixel x coordinate
-    private double y;         // pixel y coordinate
-    private double angle;     // road angle (radians, for rendering rotation)
+    private int laneIndex;      // 0-based lane index
+    private double position;    // metres from lane start
 }

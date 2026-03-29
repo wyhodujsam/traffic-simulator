@@ -41,7 +41,7 @@ class SnapshotBuilderTest {
     }
 
     @Test
-    void testVehicleProjection() {
+    void testVehicleDtoContainsDomainFields() {
         // Road from (0,0) to (1000,0), length=1000, single lane
         Lane lane = Lane.builder()
             .id("r1-lane0").laneIndex(0).length(1000).maxSpeed(33.3).active(true)
@@ -60,17 +60,20 @@ class SnapshotBuilderTest {
             .build();
         lane.addVehicle(v);
 
-        VehicleDto dto = snapshotBuilder.projectVehicle(v, road, 0);
+        VehicleDto dto = snapshotBuilder.buildVehicleDto(v, road, 0);
 
-        assertThat(dto.getX()).isCloseTo(500.0, within(0.01));
-        assertThat(dto.getY()).isCloseTo(0.0, within(0.01));
-        assertThat(dto.getAngle()).isCloseTo(0.0, within(0.01));  // horizontal road
-        assertThat(dto.getSpeed()).isCloseTo(10.0, within(0.01));
         assertThat(dto.getId()).isEqualTo("v1");
+        assertThat(dto.getRoadId()).isEqualTo("r1");
+        assertThat(dto.getLaneId()).isEqualTo("r1-lane0");
+        assertThat(dto.getLaneIndex()).isEqualTo(0);
+        assertThat(dto.getPosition()).isCloseTo(500.0, within(0.01));
+        assertThat(dto.getSpeed()).isCloseTo(10.0, within(0.01));
+        assertThat(dto.getLaneChangeSourceIndex()).isEqualTo(-1);
+        assertThat(dto.getLaneChangeProgress()).isCloseTo(1.0, within(0.01));
     }
 
     @Test
-    void testObstacleProjection() {
+    void testObstacleDtoContainsDomainFields() {
         // Diagonal road from (0,0) to (300,400), length=500
         Lane lane = Lane.builder()
             .id("r1-lane0").laneIndex(0).length(500).maxSpeed(33.3).active(true)
@@ -88,12 +91,13 @@ class SnapshotBuilderTest {
             .build();
         lane.addObstacle(obs);
 
-        ObstacleDto dto = snapshotBuilder.projectObstacle(obs, road, 0);
+        ObstacleDto dto = snapshotBuilder.buildObstacleDto(obs, road, 0);
 
-        assertThat(dto.getX()).isCloseTo(150.0, within(0.01));  // 0 + 0.5 * 300
-        assertThat(dto.getY()).isCloseTo(200.0, within(0.01));  // 0 + 0.5 * 400
-        assertThat(dto.getAngle()).isCloseTo(Math.atan2(400, 300), within(0.001));
         assertThat(dto.getId()).isEqualTo("obs1");
+        assertThat(dto.getRoadId()).isEqualTo("r1");
+        assertThat(dto.getLaneId()).isEqualTo("r1-lane0");
+        assertThat(dto.getLaneIndex()).isEqualTo(0);
+        assertThat(dto.getPosition()).isCloseTo(250.0, within(0.01));
     }
 
     @Test

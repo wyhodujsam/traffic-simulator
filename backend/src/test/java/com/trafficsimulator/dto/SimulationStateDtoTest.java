@@ -44,8 +44,9 @@ class SimulationStateDtoTest {
     @Test
     void simulationStateDto_buildsCorrectly() {
         VehicleDto vehicleDto = VehicleDto.builder()
-            .id("v1").laneId("r1-lane0").position(100.0).speed(20.0)
-            .x(150.0).y(300.0).angle(0.0)
+            .id("v1").roadId("r1").laneId("r1-lane0").laneIndex(0)
+            .position(100.0).speed(20.0)
+            .laneChangeProgress(1.0).laneChangeSourceIndex(-1)
             .build();
 
         StatsDto stats = StatsDto.builder()

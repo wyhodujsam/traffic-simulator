@@ -11,12 +11,11 @@ import lombok.NoArgsConstructor;
 @AllArgsConstructor
 public class VehicleDto {
     private String id;
+    private String roadId;               // which road
     private String laneId;
-    private double position;   // metres from lane start
-    private double speed;      // m/s
-    private double x;          // pixel x coordinate for Canvas
-    private double y;          // pixel y coordinate for Canvas
-    private double angle;      // radians — road direction for vehicle rotation
-    private String targetLaneId;        // null if not mid-transition
-    private double laneChangeProgress;  // 0.0 = just changed, 1.0 = settled
+    private int laneIndex;               // 0-based lane index
+    private double position;             // metres from lane start
+    private double speed;                // m/s
+    private double laneChangeProgress;   // 0.0..1.0
+    private int laneChangeSourceIndex;   // -1 = none
 }

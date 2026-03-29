@@ -21,9 +21,6 @@ import java.util.List;
 @Component
 public class SnapshotBuilder {
 
-    /** Pixel width per lane — temporary, removed when projection moves to frontend */
-    private static final double LANE_WIDTH_PX = 14.0;
-
     /**
      * Builds a complete SimulationStateDto snapshot from the current state.
      */
@@ -43,12 +40,12 @@ public class SnapshotBuilder {
                 for (int laneIdx = 0; laneIdx < road.getLanes().size(); laneIdx++) {
                     Lane lane = road.getLanes().get(laneIdx);
                     for (Vehicle v : lane.getVehiclesView()) {
-                        vehicleDtos.add(projectVehicle(v, road, laneIdx));
+                        vehicleDtos.add(buildVehicleDto(v, road, laneIdx));
                         totalSpeed += v.getSpeed();
                         vehicleCount++;
                     }
                     for (Obstacle obs : lane.getObstaclesView()) {
-                        obstacleDtos.add(projectObstacle(obs, road, laneIdx));
+                        obstacleDtos.add(buildObstacleDto(obs, road, laneIdx));
                     }
                 }
             }
@@ -99,65 +96,31 @@ public class SnapshotBuilder {
     }
 
     /**
-     * Projects a domain Vehicle to a VehicleDto with pixel coordinates.
+     * Maps a domain Vehicle to a VehicleDto with domain coordinates.
      */
-    VehicleDto projectVehicle(Vehicle v, Road road, int laneIndex) {
-        double fraction = v.getPosition() / road.getLength();
-        double x = road.getStartX() + fraction * (road.getEndX() - road.getStartX());
-        double yBase = road.getStartY() + fraction * (road.getEndY() - road.getStartY());
-
-        double targetLaneOffset = (laneIndex - (road.getLanes().size() - 1) / 2.0) * LANE_WIDTH_PX;
-
-        double y;
-        String targetLaneId = null;
-        double lcProgress = 1.0;
-
-        if (v.getLaneChangeSourceIndex() >= 0 && v.getLaneChangeProgress() < 1.0) {
-            double sourceLaneOffset = (v.getLaneChangeSourceIndex()
-                - (road.getLanes().size() - 1) / 2.0) * LANE_WIDTH_PX;
-            double progress = v.getLaneChangeProgress();
-            y = yBase + sourceLaneOffset + progress * (targetLaneOffset - sourceLaneOffset);
-            targetLaneId = v.getLane().getId();
-            lcProgress = progress;
-        } else {
-            y = yBase + targetLaneOffset;
-        }
-
-        double angle = Math.atan2(road.getEndY() - road.getStartY(),
-                                  road.getEndX() - road.getStartX());
-
+    VehicleDto buildVehicleDto(Vehicle v, Road road, int laneIndex) {
         return VehicleDto.builder()
             .id(v.getId())
+            .roadId(road.getId())
             .laneId(v.getLane().getId())
+            .laneIndex(laneIndex)
             .position(v.getPosition())
             .speed(v.getSpeed())
-            .x(x)
-            .y(y)
-            .angle(angle)
-            .targetLaneId(targetLaneId)
-            .laneChangeProgress(lcProgress)
+            .laneChangeProgress(v.getLaneChangeProgress())
+            .laneChangeSourceIndex(v.getLaneChangeSourceIndex())
             .build();
     }
 
     /**
-     * Projects a domain Obstacle to an ObstacleDto with pixel coordinates.
+     * Maps a domain Obstacle to an ObstacleDto with domain coordinates.
      */
-    ObstacleDto projectObstacle(Obstacle obs, Road road, int laneIndex) {
-        double fraction = obs.getPosition() / road.getLength();
-        double x = road.getStartX() + fraction * (road.getEndX() - road.getStartX());
-        double yBase = road.getStartY() + fraction * (road.getEndY() - road.getStartY());
-        double laneOffset = (laneIndex - (road.getLanes().size() - 1) / 2.0) * LANE_WIDTH_PX;
-        double y = yBase + laneOffset;
-        double angle = Math.atan2(road.getEndY() - road.getStartY(),
-                                  road.getEndX() - road.getStartX());
-
+    ObstacleDto buildObstacleDto(Obstacle obs, Road road, int laneIndex) {
         return ObstacleDto.builder()
             .id(obs.getId())
+            .roadId(road.getId())
             .laneId(obs.getLaneId())
+            .laneIndex(laneIndex)
             .position(obs.getPosition())
-            .x(x)
-            .y(y)
-            .angle(angle)
             .build();
     }
 }
