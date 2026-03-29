@@ -1,6 +1,7 @@
 package com.trafficsimulator.engine;
 
 import com.trafficsimulator.model.Lane;
+import com.trafficsimulator.model.Obstacle;
 import com.trafficsimulator.model.Road;
 import com.trafficsimulator.model.RoadNetwork;
 import com.trafficsimulator.model.Vehicle;
@@ -129,12 +130,12 @@ public class LaneChangeEngine {
         Vehicle newLeader = targetLane.findLeaderAt(subjectPos);
         Vehicle newFollower = targetLane.findFollowerAt(subjectPos);
 
-        // Current acceleration of subject
+        // Current acceleration of subject (obstacle-aware)
         Vehicle currentLeader = currentLane.getLeader(subject);
-        double aSubjectCurrent = computeIdmAccel(subject, currentLeader);
+        double aSubjectCurrent = computeIdmAccelInLane(subject, currentLeader, currentLane);
 
-        // Acceleration of subject in target lane (with new leader)
-        double aSubjectTarget = computeIdmAccel(subject, newLeader);
+        // Acceleration of subject in target lane (obstacle-aware)
+        double aSubjectTarget = computeIdmAccelInLane(subject, newLeader, targetLane);
 
         // Safety criterion: new follower must not brake harder than b_safe
         if (newFollower != null) {
@@ -144,7 +145,7 @@ public class LaneChangeEngine {
             }
         }
 
-        // Gap check: ensure minimum gap exists in target lane
+        // Gap check: ensure minimum gap to vehicles in target lane
         if (newLeader != null) {
             double gapAhead = newLeader.getPosition() - subjectPos - newLeader.getLength();
             if (gapAhead < subject.getS0() + subject.getLength()) {
@@ -155,6 +156,15 @@ public class LaneChangeEngine {
             double gapBehind = subjectPos - newFollower.getPosition() - subject.getLength();
             if (gapBehind < newFollower.getS0()) {
                 return null; // not enough space behind
+            }
+        }
+
+        // Gap check: ensure no obstacle blocks the target position
+        Obstacle targetObstacle = findNearestObstacleAhead(targetLane, subjectPos);
+        if (targetObstacle != null) {
+            double gapToObstacle = targetObstacle.getPosition() - subjectPos - targetObstacle.getLength();
+            if (gapToObstacle < subject.getS0() + subject.getLength()) {
+                return null; // obstacle too close in target lane
             }
         }
 
@@ -193,7 +203,63 @@ public class LaneChangeEngine {
     }
 
     /**
+     * Compute IDM acceleration for vehicle in a lane, considering both vehicle leader
+     * and obstacles (nearest ahead wins). This mirrors PhysicsEngine.tick() logic.
+     */
+    private double computeIdmAccelInLane(Vehicle vehicle, Vehicle vehicleLeader, Lane lane) {
+        // Find nearest obstacle ahead in the lane
+        Obstacle nearestObstacle = findNearestObstacleAhead(lane, vehicle.getPosition());
+
+        double leaderPos, leaderSpeed, leaderLength;
+        boolean hasLeader;
+
+        if (vehicleLeader != null && nearestObstacle != null) {
+            if (vehicleLeader.getPosition() <= nearestObstacle.getPosition()) {
+                leaderPos = vehicleLeader.getPosition();
+                leaderSpeed = vehicleLeader.getSpeed();
+                leaderLength = vehicleLeader.getLength();
+            } else {
+                leaderPos = nearestObstacle.getPosition();
+                leaderSpeed = 0.0;
+                leaderLength = nearestObstacle.getLength();
+            }
+            hasLeader = true;
+        } else if (vehicleLeader != null) {
+            leaderPos = vehicleLeader.getPosition();
+            leaderSpeed = vehicleLeader.getSpeed();
+            leaderLength = vehicleLeader.getLength();
+            hasLeader = true;
+        } else if (nearestObstacle != null) {
+            leaderPos = nearestObstacle.getPosition();
+            leaderSpeed = 0.0;
+            leaderLength = nearestObstacle.getLength();
+            hasLeader = true;
+        } else {
+            leaderPos = 0; leaderSpeed = 0; leaderLength = 0;
+            hasLeader = false;
+        }
+
+        return physicsEngine.computeAcceleration(vehicle, leaderPos, leaderSpeed, leaderLength, hasLeader);
+    }
+
+    /**
+     * Find nearest obstacle ahead of the given position in a lane.
+     */
+    private Obstacle findNearestObstacleAhead(Lane lane, double position) {
+        Obstacle nearest = null;
+        double nearestPos = Double.MAX_VALUE;
+        for (Obstacle obs : lane.getObstacles()) {
+            if (obs.getPosition() > position && obs.getPosition() < nearestPos) {
+                nearest = obs;
+                nearestPos = obs.getPosition();
+            }
+        }
+        return nearest;
+    }
+
+    /**
      * Compute IDM acceleration for vehicle following its leader (or free-flow if null).
+     * Used when we don't need obstacle awareness (e.g., follower-with-specific-leader).
      */
     private double computeIdmAccel(Vehicle vehicle, Vehicle leader) {
         if (leader == null) {
