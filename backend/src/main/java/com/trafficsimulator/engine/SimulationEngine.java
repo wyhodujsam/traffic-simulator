@@ -91,8 +91,15 @@ public class SimulationEngine {
     public void drainCommands() {
         List<SimulationCommand> pending = new ArrayList<>();
         commandQueue.drainTo(pending);
-        for (SimulationCommand cmd : pending) {
-            commandDispatcher.dispatch(cmd);
+        if (pending.isEmpty()) return;
+
+        writeLock().lock();
+        try {
+            for (SimulationCommand cmd : pending) {
+                commandDispatcher.dispatch(cmd);
+            }
+        } finally {
+            writeLock().unlock();
         }
     }
 
