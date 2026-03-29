@@ -17,5 +17,6 @@ public class SimulationStateDto {
     private String status;            // "RUNNING", "PAUSED", "STOPPED"
     private List<VehicleDto> vehicles;
     private List<ObstacleDto> obstacles;
+    private List<TrafficLightDto> trafficLights;
     private StatsDto stats;
 }
