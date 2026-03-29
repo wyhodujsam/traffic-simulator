@@ -3,6 +3,7 @@ package com.trafficsimulator.engine;
 import com.trafficsimulator.engine.command.SimulationCommand;
 import org.junit.jupiter.api.Test;
 
+import java.lang.reflect.Field;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
@@ -12,9 +13,25 @@ import static org.assertj.core.api.Assertions.assertThat;
 
 class CommandQueueTest {
 
+    /**
+     * Creates a SimulationEngine with a CommandDispatcher wired in (no Spring context needed).
+     */
+    private static SimulationEngine createEngine() {
+        SimulationEngine engine = new SimulationEngine();
+        CommandDispatcher dispatcher = new CommandDispatcher(engine);
+        try {
+            Field field = SimulationEngine.class.getDeclaredField("commandDispatcher");
+            field.setAccessible(true);
+            field.set(engine, dispatcher);
+        } catch (ReflectiveOperationException e) {
+            throw new RuntimeException("Failed to wire CommandDispatcher into SimulationEngine", e);
+        }
+        return engine;
+    }
+
     @Test
     void concurrentEnqueue_100Threads_noConcurrentModificationException() throws Exception {
-        SimulationEngine engine = new SimulationEngine();
+        SimulationEngine engine = createEngine();
         int threadCount = 100;
         CountDownLatch latch = new CountDownLatch(threadCount);
         ExecutorService executor = Executors.newFixedThreadPool(threadCount);
@@ -40,7 +57,7 @@ class CommandQueueTest {
 
     @Test
     void concurrentEnqueue_1000Threads_duringActiveTick_noConcurrentModificationException() throws Exception {
-        SimulationEngine engine = new SimulationEngine();
+        SimulationEngine engine = createEngine();
         // Start the simulation so commands are processed against RUNNING state
         engine.enqueue(new SimulationCommand.Start());
         engine.drainCommands();
@@ -89,7 +106,7 @@ class CommandQueueTest {
 
     @Test
     void drainCommands_appliesStartCommand_changesStatus() {
-        SimulationEngine engine = new SimulationEngine();
+        SimulationEngine engine = createEngine();
 
         assertThat(engine.getStatus()).isEqualTo(SimulationStatus.STOPPED);
 
@@ -101,7 +118,7 @@ class CommandQueueTest {
 
     @Test
     void drainCommands_appliesPauseAfterStart() {
-        SimulationEngine engine = new SimulationEngine();
+        SimulationEngine engine = createEngine();
 
         engine.enqueue(new SimulationCommand.Start());
         engine.enqueue(new SimulationCommand.Pause());
@@ -112,7 +129,7 @@ class CommandQueueTest {
 
     @Test
     void drainCommands_resumeAfterPause() {
-        SimulationEngine engine = new SimulationEngine();
+        SimulationEngine engine = createEngine();
 
         engine.enqueue(new SimulationCommand.Start());
         engine.drainCommands();
@@ -126,7 +143,7 @@ class CommandQueueTest {
 
     @Test
     void drainCommands_stopResetsTickCounter() {
-        SimulationEngine engine = new SimulationEngine();
+        SimulationEngine engine = createEngine();
         // Must start first so Stop command is accepted (state machine: STOPPED->RUNNING->STOPPED)
         engine.enqueue(new SimulationCommand.Start());
         engine.drainCommands();
