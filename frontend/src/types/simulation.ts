@@ -35,6 +35,13 @@ export interface StatsDto {
   throughput: number;    // vehicles despawned in last 60s
 }
 
+export interface IntersectionDto {
+  id: string;
+  x: number;
+  y: number;
+  size: number;
+}
+
 export type SimulationStatus = 'RUNNING' | 'PAUSED' | 'STOPPED';
 
 export interface SimulationStateDto {

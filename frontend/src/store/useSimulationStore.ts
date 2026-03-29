@@ -10,6 +10,7 @@ import type {
   CommandDto,
   RoadDto,
   MapInfo,
+  IntersectionDto,
 } from '../types/simulation';
 
 function buildVehicleMap(vehicles: VehicleDto[]): Map<string, VehicleDto> {
@@ -36,6 +37,9 @@ interface SimulationStore {
   roads: RoadDto[];
   roadsLoaded: boolean;
 
+  // --- Intersection geometry (fetched once via REST) ---
+  intersections: IntersectionDto[];
+
   // --- Command sending ---
   sendCommand: ((cmd: CommandDto) => void) | null;
 
@@ -49,6 +53,7 @@ interface SimulationStore {
   setTick: (state: SimulationStateDto) => void;
   setSendCommand: (fn: ((cmd: CommandDto) => void) | null) => void;
   setRoads: (roads: RoadDto[]) => void;
+  setIntersections: (intersections: IntersectionDto[]) => void;
   setAvailableMaps: (maps: MapInfo[]) => void;
   setCurrentMapId: (mapId: string | null) => void;
   setMapError: (error: string | null) => void;
@@ -66,6 +71,7 @@ export const useSimulationStore = create<SimulationStore>((set, get) => ({
   trafficLights: [],
   roads: [],
   roadsLoaded: false,
+  intersections: [],
   sendCommand: null,
   availableMaps: [],
   currentMapId: null,
@@ -95,6 +101,7 @@ export const useSimulationStore = create<SimulationStore>((set, get) => ({
   setSendCommand: (fn) => set({ sendCommand: fn }),
 
   setRoads: (roads) => set({ roads, roadsLoaded: true }),
+  setIntersections: (intersections) => set({ intersections }),
   setAvailableMaps: (maps) => set({ availableMaps: maps }),
   setCurrentMapId: (mapId) => set({ currentMapId: mapId }),
   setMapError: (error) => set({ mapError: error }),

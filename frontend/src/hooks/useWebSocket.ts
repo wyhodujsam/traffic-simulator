@@ -2,13 +2,13 @@ import { useEffect, useRef } from 'react';
 import { Client, IMessage } from '@stomp/stompjs';
 import SockJS from 'sockjs-client';
 import { useSimulationStore } from '../store/useSimulationStore';
-import type { CommandDto, MapInfo, RoadDto } from '../types/simulation';
+import type { CommandDto, IntersectionDto, MapInfo, RoadDto } from '../types/simulation';
 
 export function useWebSocket() {
   const clientRef = useRef<Client | null>(null);
 
   useEffect(() => {
-    // Reusable road fetch function
+    // Reusable road + intersection fetch function
     const fetchRoads = () => {
       fetch('/api/roads')
         .then((res) => res.json())
@@ -16,6 +16,13 @@ export function useWebSocket() {
           useSimulationStore.getState().setRoads(roads);
         })
         .catch((err) => console.error('[REST] Failed to fetch roads:', err));
+
+      fetch('/api/intersections')
+        .then((res) => res.json())
+        .then((intersections: IntersectionDto[]) => {
+          useSimulationStore.getState().setIntersections(intersections);
+        })
+        .catch((err) => console.error('[REST] Failed to fetch intersections:', err));
     };
 
     // Fetch road geometry on mount
