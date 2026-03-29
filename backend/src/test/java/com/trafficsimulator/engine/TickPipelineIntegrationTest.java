@@ -188,9 +188,7 @@ class TickPipelineIntegrationTest {
         double displacement1x = vehicle.getPosition() - posAfterSpawn;
 
         // Reset vehicle to same starting conditions
-        vehicle.setPosition(posAfterSpawn);
-        vehicle.setSpeed(speedAfterSpawn);
-        vehicle.setAcceleration(0.0);
+        vehicle.updatePhysics(posAfterSpawn, speedAfterSpawn, 0.0);
 
         // Run 10 ticks at 2x speed (same number of ticks, double dt)
         // Sub-step: 2 steps of baseDt each

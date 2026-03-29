@@ -1,5 +1,5 @@
 <?xml version="1.0" encoding="UTF-8"?>
-<testsuite xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:noNamespaceSchemaLocation="https://maven.apache.org/surefire/maven-surefire-plugin/xsd/surefire-test-report-3.0.xsd" version="3.0" name="com.trafficsimulator.engine.CommandDispatcherTest" time="0.011" tests="8" errors="0" skipped="0" failures="0">
+<testsuite xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:noNamespaceSchemaLocation="https://maven.apache.org/surefire/maven-surefire-plugin/xsd/surefire-test-report-3.0.xsd" version="3.0" name="com.trafficsimulator.scheduler.SnapshotBuilderTest" time="0.529" tests="5" errors="0" skipped="0" failures="0">
   <properties>
     <property name="java.specification.version" value="17"/>
     <property name="sun.jnu.encoding" value="UTF-8"/>
@@ -53,43 +53,9 @@
     <property name="sun.io.unicode.encoding" value="UnicodeLittle"/>
     <property name="java.class.version" value="61.0"/>
   </properties>
-  <testcase name="testSetSpawnRate" classname="com.trafficsimulator.engine.CommandDispatcherTest" time="0.002">
-    <system-out><![CDATA[15:10:09.506 [main] INFO com.trafficsimulator.engine.CommandDispatcher -- Spawn rate updated to 2.5 veh/s
-]]></system-out>
-  </testcase>
-  <testcase name="testStopCommand" classname="com.trafficsimulator.engine.CommandDispatcherTest" time="0.0">
-    <system-out><![CDATA[15:10:09.507 [main] INFO com.trafficsimulator.engine.CommandDispatcher -- Simulation started
-15:10:09.507 [main] INFO com.trafficsimulator.engine.CommandDispatcher -- Simulation stopped — state cleared
-]]></system-out>
-  </testcase>
-  <testcase name="testPauseResumeRoundTrip" classname="com.trafficsimulator.engine.CommandDispatcherTest" time="0.0">
-    <system-out><![CDATA[15:10:09.508 [main] INFO com.trafficsimulator.engine.CommandDispatcher -- Simulation started
-15:10:09.508 [main] INFO com.trafficsimulator.engine.CommandDispatcher -- Simulation paused
-15:10:09.508 [main] INFO com.trafficsimulator.engine.CommandDispatcher -- Simulation resumed
-]]></system-out>
-  </testcase>
-  <testcase name="testSetSpeedMultiplier" classname="com.trafficsimulator.engine.CommandDispatcherTest" time="0.001">
-    <system-out><![CDATA[15:10:09.509 [main] INFO com.trafficsimulator.engine.CommandDispatcher -- Speed multiplier updated to 3.0
-]]></system-out>
-  </testcase>
-  <testcase name="testLoadMap" classname="com.trafficsimulator.engine.CommandDispatcherTest" time="0.004">
-    <system-out><![CDATA[15:10:09.509 [main] INFO com.trafficsimulator.engine.CommandDispatcher -- Simulation started
-15:10:09.512 [main] INFO com.trafficsimulator.config.MapLoader -- Loaded map config: straight-road (Straight Road — 3 lanes, 800m)
-15:10:09.513 [main] INFO com.trafficsimulator.config.MapValidator -- Map config 'straight-road' validation passed
-15:10:09.513 [main] INFO com.trafficsimulator.config.MapLoader -- Built road network 'straight-road': 1 roads, 3 lanes total, 3 spawn points
-15:10:09.513 [main] INFO com.trafficsimulator.engine.CommandDispatcher -- Map loaded: straight-road
-]]></system-out>
-  </testcase>
-  <testcase name="testCloseLane" classname="com.trafficsimulator.engine.CommandDispatcherTest" time="0.001">
-    <system-out><![CDATA[15:10:09.514 [main] INFO com.trafficsimulator.engine.CommandDispatcher -- Lane closed: road=road1 lane=1 — 0 vehicles flagged for merge
-]]></system-out>
-  </testcase>
-  <testcase name="testCloseLaneLastLaneRejected" classname="com.trafficsimulator.engine.CommandDispatcherTest" time="0.0">
-    <system-out><![CDATA[15:10:09.515 [main] WARN com.trafficsimulator.engine.CommandDispatcher -- Cannot close lane 0 — it's the last active lane on road road1
-]]></system-out>
-  </testcase>
-  <testcase name="testStartCommand" classname="com.trafficsimulator.engine.CommandDispatcherTest" time="0.0">
-    <system-out><![CDATA[15:10:09.516 [main] INFO com.trafficsimulator.engine.CommandDispatcher -- Simulation started
-]]></system-out>
-  </testcase>
+  <testcase name="testObstacleProjection" classname="com.trafficsimulator.scheduler.SnapshotBuilderTest" time="0.514"/>
+  <testcase name="testEmptyNetwork" classname="com.trafficsimulator.scheduler.SnapshotBuilderTest" time="0.004"/>
+  <testcase name="testTrafficLightDtos" classname="com.trafficsimulator.scheduler.SnapshotBuilderTest" time="0.003"/>
+  <testcase name="testVehicleProjection" classname="com.trafficsimulator.scheduler.SnapshotBuilderTest" time="0.002"/>
+  <testcase name="testStatsCalculation" classname="com.trafficsimulator.scheduler.SnapshotBuilderTest" time="0.001"/>
 </testsuite>

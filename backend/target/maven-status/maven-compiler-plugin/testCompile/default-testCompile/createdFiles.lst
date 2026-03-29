@@ -3,6 +3,7 @@ com/trafficsimulator/engine/ZipperMergeTest.class
 com/trafficsimulator/engine/LaneChangeEngineTest.class
 com/trafficsimulator/engine/PhysicsEngineTest.class
 com/trafficsimulator/engine/CommandQueueTest.class
+com/trafficsimulator/scheduler/SnapshotBuilderTest.class
 com/trafficsimulator/dto/SimulationStateDtoTest.class
 com/trafficsimulator/config/MapLoaderTest.class
 com/trafficsimulator/engine/CommandDispatcherTest.class

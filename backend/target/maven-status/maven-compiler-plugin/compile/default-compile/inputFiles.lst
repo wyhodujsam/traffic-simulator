@@ -42,4 +42,5 @@
 /home/sebastian/traffic-simulator/backend/src/main/java/com/trafficsimulator/model/TrafficLight.java
 /home/sebastian/traffic-simulator/backend/src/main/java/com/trafficsimulator/model/TrafficLightPhase.java
 /home/sebastian/traffic-simulator/backend/src/main/java/com/trafficsimulator/model/Vehicle.java
+/home/sebastian/traffic-simulator/backend/src/main/java/com/trafficsimulator/scheduler/SnapshotBuilder.java
 /home/sebastian/traffic-simulator/backend/src/main/java/com/trafficsimulator/scheduler/TickEmitter.java

@@ -121,12 +121,11 @@ class PhysicsEngineTest {
         // Initial gap = 100 - 85.5 - 4.5 = 10.0 m
 
         // Leader stops instantly
-        leader.setSpeed(0.0);
+        leader.updatePhysics(100.0, 0.0, 0.0);
 
         for (int tick = 0; tick < 200; tick++) {
             // Keep leader stopped
-            leader.setSpeed(0.0);
-            leader.setPosition(100.0);
+            leader.updatePhysics(100.0, 0.0, 0.0);
 
             engine.tick(lane, DT);
 
@@ -186,9 +185,13 @@ class PhysicsEngineTest {
         Vehicle leader = createVehicle("leader", 120.0, 15.0);
         Vehicle follower = createVehicle("follower", 100.0, 20.0);
 
-        // Corrupt parameters to force NaN in IDM formula
-        follower.setAMax(0.0);
-        follower.setB(0.0);
+        // Rebuild follower with corrupt parameters to force NaN in IDM formula
+        lane.removeVehicle(follower);
+        follower = Vehicle.builder()
+            .id("follower").position(100.0).speed(20.0).acceleration(0.0)
+            .lane(lane).length(4.5).v0(MAX_SPEED).aMax(0.0).b(0.0).s0(2.0).T(1.5).spawnedAt(0)
+            .build();
+        lane.addVehicle(follower);
 
         engine.tick(lane, DT);
 
@@ -210,9 +213,12 @@ class PhysicsEngineTest {
     // =========================================================================
     @Test
     void velocityClamp_speedNeverExceedsLaneMaxSpeed() {
-        // Set vehicle speed just below maxSpeed, with high v0 to push past limit
-        Vehicle v = createVehicle("v1", 100.0, MAX_SPEED - 0.01);
-        v.setV0(MAX_SPEED + 10.0); // personal v0 exceeds lane max
+        // Build vehicle with speed just below maxSpeed, with high v0 to push past limit
+        Vehicle v = Vehicle.builder()
+            .id("v1").position(100.0).speed(MAX_SPEED - 0.01).acceleration(0.0)
+            .lane(lane).length(4.5).v0(MAX_SPEED + 10.0).aMax(1.4).b(2.0).s0(2.0).T(1.5).spawnedAt(0)
+            .build();
+        lane.addVehicle(v); // personal v0 exceeds lane max
 
         engine.tick(lane, DT);
 

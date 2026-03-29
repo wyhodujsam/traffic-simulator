@@ -12,6 +12,7 @@ com/trafficsimulator/model/TrafficLight.class
 com/trafficsimulator/engine/SimulationStatus.class
 com/trafficsimulator/engine/command/SimulationCommand$SetLightCycle.class
 com/trafficsimulator/dto/RoadDto$RoadDtoBuilder.class
+com/trafficsimulator/scheduler/SnapshotBuilder.class
 com/trafficsimulator/engine/PhysicsEngine.class
 com/trafficsimulator/dto/StatsDto.class
 com/trafficsimulator/dto/VehicleDto.class

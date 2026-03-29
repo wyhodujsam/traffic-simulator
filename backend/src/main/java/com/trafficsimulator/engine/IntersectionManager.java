@@ -245,10 +245,9 @@ public class IntersectionManager implements IIntersectionManager {
         if (targetLane == null) return;
 
         // Force transfer -- ignores space check
-        victim.setPosition(0.0);
-        victim.setLane(targetLane);
-        victim.setLaneChangeSourceIndex(-1);
-        victim.setLaneChangeProgress(1.0);
+        victim.updatePhysics(0.0, victim.getSpeed(), victim.getAcceleration());
+        victim.setLane(targetLane);  // transfer = special case, not a lane change
+        victim.completeLaneChange();
         targetLane.addVehicle(victim);
     }
 
@@ -284,10 +283,9 @@ public class IntersectionManager implements IIntersectionManager {
 
             // Mark for transfer
             toTransfer.add(v);
-            v.setPosition(0.0);
-            v.setLane(targetLane);
-            v.setLaneChangeSourceIndex(-1);
-            v.setLaneChangeProgress(1.0);
+            v.updatePhysics(0.0, v.getSpeed(), v.getAcceleration());
+            v.setLane(targetLane);  // transfer = special case, not a lane change
+            v.completeLaneChange();
             targetLane.addVehicle(v);
             transferred = true;
 
