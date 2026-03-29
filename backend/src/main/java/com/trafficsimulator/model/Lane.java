@@ -1,19 +1,27 @@
 package com.trafficsimulator.model;
 
 import lombok.Builder;
-import lombok.Data;
+import lombok.EqualsAndHashCode;
+import lombok.Getter;
+import lombok.Setter;
 import lombok.ToString;
 
 import java.util.ArrayList;
+import java.util.Collections;
 import java.util.List;
+import java.util.function.Predicate;
 
-@Data
+@Getter
+@Setter
+@EqualsAndHashCode
+@ToString
 @Builder
 public class Lane {
     private String id;           // globally unique: "r1-lane0"
     private int laneIndex;       // 0-based within parent road
 
     @ToString.Exclude
+    @EqualsAndHashCode.Exclude
     private Road road;           // back-reference to parent road
 
     private double length;       // metres (copied from road)
@@ -21,19 +29,86 @@ public class Lane {
     private boolean active;      // for Phase 7 road narrowing
 
     @Builder.Default
+    @Getter(lombok.AccessLevel.NONE)
+    @Setter(lombok.AccessLevel.NONE)
+    @EqualsAndHashCode.Exclude
+    @ToString.Exclude
     private List<Vehicle> vehicles = new ArrayList<>();
 
     @Builder.Default
+    @Getter(lombok.AccessLevel.NONE)
+    @Setter(lombok.AccessLevel.NONE)
+    @EqualsAndHashCode.Exclude
+    @ToString.Exclude
     private List<Obstacle> obstacles = new ArrayList<>();
+
+    // ── Vehicle collection methods ──────────────────────────────
+
+    /** @deprecated Use {@link #getVehiclesView()}, {@link #addVehicle}, etc. */
+    @Deprecated
+    public List<Vehicle> getVehicles() {
+        return vehicles;
+    }
+
+    /** Returns an unmodifiable view of the vehicles list. */
+    public List<Vehicle> getVehiclesView() {
+        return Collections.unmodifiableList(vehicles);
+    }
+
+    public void addVehicle(Vehicle v) {
+        vehicles.add(v);
+    }
+
+    public void removeVehicle(Vehicle v) {
+        vehicles.remove(v);
+    }
+
+    public void removeVehiclesIf(Predicate<Vehicle> predicate) {
+        vehicles.removeIf(predicate);
+    }
+
+    public int getVehicleCount() {
+        return vehicles.size();
+    }
+
+    public void clearVehicles() {
+        vehicles.clear();
+    }
+
+    // ── Obstacle collection methods ─────────────────────────────
+
+    /** @deprecated Use {@link #getObstaclesView()}, {@link #addObstacle}, etc. */
+    @Deprecated
+    public List<Obstacle> getObstacles() {
+        return obstacles;
+    }
+
+    /** Returns an unmodifiable view of the obstacles list. */
+    public List<Obstacle> getObstaclesView() {
+        return Collections.unmodifiableList(obstacles);
+    }
+
+    public void addObstacle(Obstacle o) {
+        obstacles.add(o);
+    }
+
+    public void removeObstacle(Obstacle o) {
+        obstacles.remove(o);
+    }
+
+    public void removeObstaclesIf(Predicate<Obstacle> predicate) {
+        obstacles.removeIf(predicate);
+    }
+
+    public void clearObstacles() {
+        obstacles.clear();
+    }
+
+    // ── Domain query methods ────────────────────────────────────
 
     /**
      * Returns the vehicle directly ahead of the given vehicle in this lane,
      * or null if none exists.
-     *
-     * <p><b>Performance note:</b> This is an O(n) linear scan over all vehicles in the lane.
-     * With high vehicle counts this becomes a hot path at 20 Hz tick rate.
-     * Must be replaced with a sorted-list (e.g. {@code TreeMap<Double, Vehicle>}) lookup
-     * in Phase 3 (IDM tick implementation) to achieve O(log n) leader lookup.</p>
      */
     public Vehicle getLeader(Vehicle vehicle) {
         Vehicle leader = null;
