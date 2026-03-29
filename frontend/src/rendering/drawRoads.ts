@@ -78,13 +78,21 @@ function drawRoad(ctx: CanvasRenderingContext2D, road: RoadDto, suppressedSides:
   const angle = Math.atan2(dy, dx);
   const roadWidth = road.laneCount * LANE_WIDTH_PX;
 
+  // Clip road rendering at intersection boundaries
+  const clipS = road.clipStart ?? 0;
+  const clipE = road.clipEnd ?? 0;
+  const visibleStart = clipS;
+  const visibleLength = roadLength - clipS - clipE;
+  if (visibleLength <= 0) return; // entire road is inside intersection
+  const visibleEnd = visibleStart + visibleLength;
+
   ctx.save();
   ctx.translate(road.startX, road.startY);
   ctx.rotate(angle);
 
   // Road fill — dark gray
   ctx.fillStyle = '#3a3a3a';
-  ctx.fillRect(0, -roadWidth / 2, roadLength, roadWidth);
+  ctx.fillRect(visibleStart, -roadWidth / 2, visibleLength, roadWidth);
 
   // Closed lane hatching (if lane data available)
   if (road.lanes) {
@@ -92,14 +100,14 @@ function drawRoad(ctx: CanvasRenderingContext2D, road: RoadDto, suppressedSides:
       if (!lane.active) {
         const laneY = -roadWidth / 2 + lane.laneIndex * LANE_WIDTH_PX;
         ctx.fillStyle = 'rgba(255, 60, 60, 0.3)';
-        ctx.fillRect(0, laneY, roadLength, LANE_WIDTH_PX);
+        ctx.fillRect(visibleStart, laneY, visibleLength, LANE_WIDTH_PX);
 
         // Diagonal hatching
         ctx.strokeStyle = 'rgba(255, 60, 60, 0.5)';
         ctx.lineWidth = 1;
         ctx.setLineDash([]);
         const spacing = 12;
-        for (let xPos = 0; xPos < roadLength + LANE_WIDTH_PX; xPos += spacing) {
+        for (let xPos = visibleStart; xPos < visibleEnd + LANE_WIDTH_PX; xPos += spacing) {
           ctx.beginPath();
           ctx.moveTo(xPos, laneY);
           ctx.lineTo(xPos - LANE_WIDTH_PX, laneY + LANE_WIDTH_PX);
@@ -114,12 +122,12 @@ function drawRoad(ctx: CanvasRenderingContext2D, road: RoadDto, suppressedSides:
   ctx.lineWidth = 2;
   ctx.beginPath();
   if (!suppressedSides.has('top')) {
-    ctx.moveTo(0, -roadWidth / 2);
-    ctx.lineTo(roadLength, -roadWidth / 2);
+    ctx.moveTo(visibleStart, -roadWidth / 2);
+    ctx.lineTo(visibleEnd, -roadWidth / 2);
   }
   if (!suppressedSides.has('bottom')) {
-    ctx.moveTo(0, roadWidth / 2);
-    ctx.lineTo(roadLength, roadWidth / 2);
+    ctx.moveTo(visibleStart, roadWidth / 2);
+    ctx.lineTo(visibleEnd, roadWidth / 2);
   }
   ctx.stroke();
 
@@ -130,8 +138,8 @@ function drawRoad(ctx: CanvasRenderingContext2D, road: RoadDto, suppressedSides:
     ctx.setLineDash([10, 10]);
     const y = suppressedSides.has('top') ? -roadWidth / 2 : roadWidth / 2;
     ctx.beginPath();
-    ctx.moveTo(0, y);
-    ctx.lineTo(roadLength, y);
+    ctx.moveTo(visibleStart, y);
+    ctx.lineTo(visibleEnd, y);
     ctx.stroke();
     ctx.setLineDash([]);
   }
@@ -143,8 +151,8 @@ function drawRoad(ctx: CanvasRenderingContext2D, road: RoadDto, suppressedSides:
   for (let i = 1; i < road.laneCount; i++) {
     const y = -roadWidth / 2 + i * LANE_WIDTH_PX;
     ctx.beginPath();
-    ctx.moveTo(0, y);
-    ctx.lineTo(roadLength, y);
+    ctx.moveTo(visibleStart, y);
+    ctx.lineTo(visibleEnd, y);
     ctx.stroke();
   }
   ctx.setLineDash([]);
