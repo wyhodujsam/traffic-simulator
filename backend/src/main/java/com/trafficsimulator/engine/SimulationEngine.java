@@ -17,6 +17,7 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.concurrent.LinkedBlockingQueue;
 import java.util.concurrent.atomic.AtomicLong;
+import java.util.concurrent.locks.ReentrantReadWriteLock;
 
 @Component
 @Slf4j
@@ -24,6 +25,18 @@ public class SimulationEngine {
 
     private final LinkedBlockingQueue<SimulationCommand> commandQueue =
         new LinkedBlockingQueue<>();
+
+    private final ReentrantReadWriteLock networkLock = new ReentrantReadWriteLock();
+
+    /** Returns the read lock for read-only access to road network state. */
+    public ReentrantReadWriteLock.ReadLock readLock() {
+        return networkLock.readLock();
+    }
+
+    /** Returns the write lock for mutating road network state. */
+    public ReentrantReadWriteLock.WriteLock writeLock() {
+        return networkLock.writeLock();
+    }
 
     @Getter @Setter
     private volatile SimulationStatus status = SimulationStatus.STOPPED;
