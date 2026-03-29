@@ -8,6 +8,7 @@ import lombok.ToString;
 
 import java.util.ArrayList;
 import java.util.Collections;
+import java.util.Comparator;
 import java.util.List;
 import java.util.function.Predicate;
 
@@ -50,7 +51,16 @@ public class Lane {
     }
 
     public void addVehicle(Vehicle v) {
-        vehicles.add(v);
+        // Insert maintaining descending position order
+        int insertIdx = 0;
+        for (int i = 0; i < vehicles.size(); i++) {
+            if (vehicles.get(i).getPosition() > v.getPosition()) {
+                insertIdx = i + 1;
+            } else {
+                break;
+            }
+        }
+        vehicles.add(insertIdx, v);
     }
 
     public void removeVehicle(Vehicle v) {
@@ -92,53 +102,60 @@ public class Lane {
         obstacles.clear();
     }
 
+    // ── Sorted list maintenance ────────────────────────────────
+
+    /**
+     * Re-sorts the vehicle list by position descending.
+     * Call once per tick after physics updates positions.
+     */
+    public void resortVehicles() {
+        vehicles.sort(Comparator.comparingDouble(Vehicle::getPosition).reversed());
+    }
+
     // ── Domain query methods ────────────────────────────────────
 
     /**
      * Returns the vehicle directly ahead of the given vehicle in this lane,
      * or null if none exists.
+     * List is sorted descending by position (index 0 = frontmost).
+     * Leader is the vehicle at the previous index (lower index = higher position).
      */
     public Vehicle getLeader(Vehicle vehicle) {
-        Vehicle leader = null;
-        for (Vehicle v : vehicles) {
-            if (v != vehicle && v.getPosition() > vehicle.getPosition()) {
-                if (leader == null || v.getPosition() < leader.getPosition()) {
-                    leader = v;
-                }
-            }
+        int idx = -1;
+        for (int i = 0; i < vehicles.size(); i++) {
+            if (vehicles.get(i) == vehicle) { idx = i; break; }
         }
-        return leader;
+        if (idx <= 0) return null;  // vehicle is at front or not found
+        return vehicles.get(idx - 1);
     }
 
     /**
      * Returns the nearest vehicle ahead of the given position, or null.
      * Used by MOBIL to find the new leader in a target lane.
+     * List is sorted descending — scan from back to find first vehicle with pos > position.
      */
     public Vehicle findLeaderAt(double position) {
-        Vehicle leader = null;
-        for (Vehicle v : vehicles) {
+        for (int i = vehicles.size() - 1; i >= 0; i--) {
+            Vehicle v = vehicles.get(i);
             if (v.getPosition() > position) {
-                if (leader == null || v.getPosition() < leader.getPosition()) {
-                    leader = v;
-                }
+                return v;
             }
         }
-        return leader;
+        return null;
     }
 
     /**
      * Returns the nearest vehicle behind the given position, or null.
      * Used by MOBIL to find the new follower in a target lane.
+     * List is sorted descending — scan from front to find first vehicle with pos < position.
      */
     public Vehicle findFollowerAt(double position) {
-        Vehicle follower = null;
-        for (Vehicle v : vehicles) {
+        for (int i = 0; i < vehicles.size(); i++) {
+            Vehicle v = vehicles.get(i);
             if (v.getPosition() < position) {
-                if (follower == null || v.getPosition() > follower.getPosition()) {
-                    follower = v;
-                }
+                return v;
             }
         }
-        return follower;
+        return null;
     }
 }
