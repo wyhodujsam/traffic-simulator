@@ -223,6 +223,16 @@
 4. Visual polish — paused indicator overlay, WebSocket disconnect banner, lane change smooth lateral animation over 5 ticks
 5. Statistics async computation — stats computed on separate 500 ms schedule thread; WebSocket reconnect state reconciliation
 
+### Phase 11: Architecture Refactoring
+
+**Goal:** [To be planned]
+**Requirements**: TBD
+**Depends on:** Phase 10
+**Plans:** 1/8 plans executed
+
+Plans:
+- [ ] TBD (run /gsd:plan-phase 11 to break down)
+
 ---
 *Roadmap created: 2026-03-27*
 *All 33 v1 requirements mapped across 10 phases*
