@@ -59,6 +59,10 @@ public class SimulationEngine {
     @Getter @Setter
     private volatile double maxSpeed = 33.33;
 
+    /** Last error message (e.g. failed LOAD_MAP), published once then cleared */
+    @Getter @Setter
+    private volatile String lastError;
+
     @Autowired(required = false)
     private MapLoader mapLoader;
 
@@ -72,9 +76,9 @@ public class SimulationEngine {
             return;
         }
         try {
-            RoadNetwork network = mapLoader.loadFromClasspath("maps/straight-road.json");
-            setRoadNetwork(network);
-            log.info("Default map loaded: {}", network.getId());
+            MapLoader.LoadedMap loaded = mapLoader.loadFromClasspath("maps/straight-road.json");
+            setRoadNetwork(loaded.network());
+            log.info("Default map loaded: {}", loaded.network().getId());
         } catch (Exception e) {
             log.error("Failed to load default map: {}", e.getMessage(), e);
         }

@@ -19,7 +19,9 @@ public class MapLoader {
     private final ObjectMapper objectMapper;
     private final MapValidator mapValidator;
 
-    public RoadNetwork loadFromClasspath(String resourcePath) throws IOException {
+    public record LoadedMap(RoadNetwork network, double defaultSpawnRate) {}
+
+    public LoadedMap loadFromClasspath(String resourcePath) throws IOException {
         InputStream is = getClass().getClassLoader().getResourceAsStream(resourcePath);
         if (is == null) {
             throw new IllegalArgumentException("Map resource not found: " + resourcePath);
@@ -33,7 +35,8 @@ public class MapLoader {
             throw new IllegalArgumentException("Map config validation failed: " + errors);
         }
 
-        return buildRoadNetwork(config);
+        RoadNetwork network = buildRoadNetwork(config);
+        return new LoadedMap(network, config.getDefaultSpawnRate());
     }
 
     private RoadNetwork buildRoadNetwork(MapConfig config) {

@@ -222,19 +222,33 @@ public class CommandDispatcher {
             log.warn("MapLoader not available — ignoring LoadMap command");
             return;
         }
-        // Stop simulation first
+        // Stop and clear
         engine.setStatus(SimulationStatus.STOPPED);
         engine.getTickCounter().set(0);
+        engine.clearAllVehicles();
+        if (obstacleManager != null) {
+            RoadNetwork oldNetwork = engine.getRoadNetwork();
+            if (oldNetwork != null) {
+                obstacleManager.clearAll(oldNetwork);
+            }
+        }
         if (vehicleSpawner != null) {
             vehicleSpawner.reset();
         }
 
         try {
-            RoadNetwork network = mapLoader.loadFromClasspath("maps/" + cmd.mapId() + ".json");
-            engine.setRoadNetwork(network);
-            log.info("Map loaded: {}", cmd.mapId());
+            MapLoader.LoadedMap loaded = mapLoader.loadFromClasspath("maps/" + cmd.mapId() + ".json");
+            engine.setRoadNetwork(loaded.network());
+            // Apply default spawn rate from map config
+            engine.setSpawnRate(loaded.defaultSpawnRate());
+            if (vehicleSpawner != null) {
+                vehicleSpawner.setVehiclesPerSecond(loaded.defaultSpawnRate());
+            }
+            engine.setLastError(null); // clear any previous error
+            log.info("Map loaded: {} (spawn rate: {} veh/s)", cmd.mapId(), loaded.defaultSpawnRate());
         } catch (Exception e) {
             log.error("Failed to load map {}: {}", cmd.mapId(), e.getMessage());
+            engine.setLastError("Failed to load map '" + cmd.mapId() + "': " + e.getMessage());
         }
     }
 }
