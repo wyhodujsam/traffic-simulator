@@ -44,7 +44,7 @@ class FullPipelineTest {
 
         // Move vehicle past road end to trigger despawn
         for (Lane lane : road.getLanes()) {
-            lane.getVehiclesView().forEach(v -> v.setPosition(801.0));
+            lane.getVehiclesView().forEach(v -> v.updatePhysics(801.0, v.getSpeed(), v.getAcceleration()));
         }
 
         spawner.despawnVehicles(network);

@@ -2,22 +2,25 @@ package com.trafficsimulator.model;
 
 import lombok.AllArgsConstructor;
 import lombok.Builder;
-import lombok.Data;
+import lombok.Getter;
 import lombok.NoArgsConstructor;
+import lombok.Setter;
 import lombok.ToString;
 
-@Data
+@Getter
 @Builder
 @NoArgsConstructor
 @AllArgsConstructor
+@ToString
 public class Vehicle {
     private String id;
     private double position;      // metres from lane start
     private double speed;         // m/s
     private double acceleration;  // m/s² (transient, updated each tick)
 
+    @Setter
     @ToString.Exclude
-    private Lane lane;            // live reference to current lane
+    private Lane lane;            // live reference to current lane (setter needed for intersection transfers)
 
     private double length;        // metres, default 4.5
 
@@ -32,12 +35,14 @@ public class Vehicle {
 
     // Lane change tracking (Phase 7)
     private long lastLaneChangeTick;     // tick number of last lane change, 0 = never
+    @Setter
     private boolean forceLaneChange;     // true when lane is closed under this vehicle
     private double laneChangeProgress;   // 0.0 = just changed, 1.0 = settled (for animation)
     @Builder.Default
     private int laneChangeSourceIndex = -1;   // source lane index for y-interpolation (-1 = none)
 
     // Zipper merge: set per-tick for the first stopped vehicle behind each obstacle
+    @Setter
     private transient boolean zipperCandidate;
 
     /**

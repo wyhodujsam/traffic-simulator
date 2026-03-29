@@ -176,7 +176,8 @@ class LaneChangeEngineTest {
 
         // Vehicle in lane 1 recently changed (tick 95, current tick 100 = only 5 ticks ago)
         Vehicle recent = createVehicle("recent", 170, 20.0, lane1);
-        recent.setLastLaneChangeTick(95);
+        recent.startLaneChange(lane1, -1, 95);  // simulate recent lane change at tick 95
+        recent.completeLaneChange();
         lane1.addVehicle(recent);
 
         RoadNetwork network = createNetwork(road);
