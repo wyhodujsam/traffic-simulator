@@ -3,6 +3,7 @@ package com.trafficsimulator.scheduler;
 import com.trafficsimulator.dto.ObstacleDto;
 import com.trafficsimulator.dto.SimulationStateDto;
 import com.trafficsimulator.dto.StatsDto;
+import com.trafficsimulator.dto.TrafficLightDto;
 import com.trafficsimulator.dto.VehicleDto;
 import com.trafficsimulator.engine.IntersectionManager;
 import com.trafficsimulator.engine.LaneChangeEngine;
@@ -11,10 +12,12 @@ import com.trafficsimulator.engine.SimulationEngine;
 import com.trafficsimulator.engine.SimulationStatus;
 import com.trafficsimulator.engine.TrafficLightController;
 import com.trafficsimulator.engine.VehicleSpawner;
+import com.trafficsimulator.model.Intersection;
 import com.trafficsimulator.model.Lane;
 import com.trafficsimulator.model.Obstacle;
 import com.trafficsimulator.model.Road;
 import com.trafficsimulator.model.RoadNetwork;
+import com.trafficsimulator.model.TrafficLight;
 import com.trafficsimulator.model.Vehicle;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -146,6 +149,27 @@ public class TickEmitter {
             }
         }
 
+        List<TrafficLightDto> trafficLightDtos = new ArrayList<>();
+        if (network != null) {
+            for (Intersection ixtn : network.getIntersections().values()) {
+                if (ixtn.getTrafficLight() == null) continue;
+                TrafficLight tl = ixtn.getTrafficLight();
+                for (String inRoadId : ixtn.getInboundRoadIds()) {
+                    Road inRoad = network.getRoads().get(inRoadId);
+                    if (inRoad == null) continue;
+                    trafficLightDtos.add(TrafficLightDto.builder()
+                        .intersectionId(ixtn.getId())
+                        .roadId(inRoadId)
+                        .state(tl.getSignalState(inRoadId))
+                        .x(inRoad.getEndX())
+                        .y(inRoad.getEndY())
+                        .angle(Math.atan2(inRoad.getEndY() - inRoad.getStartY(),
+                                           inRoad.getEndX() - inRoad.getStartX()))
+                        .build());
+                }
+            }
+        }
+
         double avgSpeed = vehicleCount > 0 ? totalSpeed / vehicleCount : 0.0;
         double density = totalRoadLength > 0
             ? (vehicleCount / (totalRoadLength / 1000.0))
@@ -164,6 +188,7 @@ public class TickEmitter {
             .status(simulationEngine.getStatus().name())
             .vehicles(vehicleDtos)
             .obstacles(obstacleDtos)
+            .trafficLights(trafficLightDtos)
             .stats(stats)
             .build();
     }
