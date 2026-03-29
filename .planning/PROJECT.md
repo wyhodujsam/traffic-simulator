@@ -12,7 +12,10 @@ Wierna symulacja fizyki ruchu drogowego — samochody realistycznie przyspieszaj
 
 ### Validated
 
-(None yet — ship to validate)
+- ✓ Infrastruktura backend: Java 17 + Spring Boot 3.3.5 + Maven — Phase 1
+- ✓ Infrastruktura frontend: React 18 + TypeScript + Vite 5 — Phase 1
+- ✓ WebSocket STOMP over SockJS — Phase 1
+- ✓ Broadcast stanu symulacji co tick (20 Hz) — Phase 1
 
 ### Active
 
@@ -87,4 +90,4 @@ This document evolves at phase transitions and milestone boundaries.
 4. Update Context with current state
 
 ---
-*Last updated: 2026-03-27 after initialization*
+*Last updated: 2026-03-27 after Phase 1 completion*

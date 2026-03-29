@@ -1,0 +1,21 @@
+/** Pixel width per lane — must match backend LANE_WIDTH_PX */
+export const LANE_WIDTH_PX = 14.0;
+
+/** Vehicle rendering dimensions (slightly exaggerated for visibility) */
+export const VEHICLE_LENGTH_PX = 10;
+export const VEHICLE_WIDTH_PX = 7;
+
+/** Tick interval in ms (20 Hz) */
+export const TICK_INTERVAL_MS = 50;
+
+/** Canvas padding around road network bounds */
+export const CANVAS_PADDING = 60;
+
+/** Default max speed for color gradient (m/s, ~120 km/h) */
+export const DEFAULT_MAX_SPEED = 33.33;
+
+/** Obstacle rendering length along road direction (px) */
+export const OBSTACLE_LENGTH_PX = 8;
+
+/** Hit-test padding for obstacle click detection (px) */
+export const OBSTACLE_HIT_PADDING = 4;
