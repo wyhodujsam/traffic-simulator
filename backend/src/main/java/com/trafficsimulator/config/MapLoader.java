@@ -67,11 +67,11 @@ public class MapLoader {
                     // Perpendicular unit vector
                     double px = -dy / len;
                     double py = dx / len;
-                    // Offset: _in roads shift one way, _out roads shift the other
+                    // Offset: all roads shift the same direction relative to their
+                    // perpendicular. Since in/out roads have opposite direction vectors,
+                    // their perpendiculars are naturally opposite → same offset value
+                    // produces parallel separation.
                     double offset = LANE_WIDTH_PX / 2.0;
-                    if (rc.getId().contains("_in") || rc.getId().contains("_before")) {
-                        offset = -offset;
-                    }
                     // Shift BOTH endpoints by same offset → road stays parallel to original direction
                     startX += px * offset;
                     startY += py * offset;
