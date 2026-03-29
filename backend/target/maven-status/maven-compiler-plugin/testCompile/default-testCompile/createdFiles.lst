@@ -8,12 +8,16 @@ com/trafficsimulator/engine/PhysicsEngineTest.class
 com/trafficsimulator/engine/CommandQueueTest.class
 com/trafficsimulator/engine/ConcurrencySafetyTest.class
 com/trafficsimulator/scheduler/SnapshotBuilderTest.class
+com/trafficsimulator/engine/TrafficLightControllerTest.class
 com/trafficsimulator/dto/SimulationStateDtoTest.class
+com/trafficsimulator/model/TrafficLightTest.class
 com/trafficsimulator/config/MapLoaderTest.class
 com/trafficsimulator/engine/CommandDispatcherTest.class
 com/trafficsimulator/engine/VehicleSpawnerTest.class
+com/trafficsimulator/config/MapLoaderIntersectionTest.class
 com/trafficsimulator/integration/FullPipelineTest.class
 com/trafficsimulator/engine/VehicleDespawnTest.class
 com/trafficsimulator/engine/TickPipelineIntegrationTest.class
+com/trafficsimulator/engine/IntersectionManagerTest.class
 com/trafficsimulator/controller/SimulationControllerMapTest.class
 com/trafficsimulator/model/LaneTest.class

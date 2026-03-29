@@ -1,5 +1,5 @@
 <?xml version="1.0" encoding="UTF-8"?>
-<testsuite xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:noNamespaceSchemaLocation="https://maven.apache.org/surefire/maven-surefire-plugin/xsd/surefire-test-report-3.0.xsd" version="3.0" name="com.trafficsimulator.engine.CommandDispatcherLoadMapTest" time="1.363" tests="5" errors="0" skipped="0" failures="0">
+<testsuite xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:noNamespaceSchemaLocation="https://maven.apache.org/surefire/maven-surefire-plugin/xsd/surefire-test-report-3.0.xsd" version="3.0" name="com.trafficsimulator.engine.CommandDispatcherLoadMapTest" time="1.441" tests="5" errors="0" skipped="0" failures="0">
   <properties>
     <property name="java.specification.version" value="17"/>
     <property name="sun.jnu.encoding" value="UTF-8"/>
@@ -13,7 +13,7 @@
     <property name="sun.java.launcher" value="SUN_STANDARD"/>
     <property name="user.country" value="US"/>
     <property name="sun.boot.library.path" value="/usr/lib/jvm/java-17-openjdk-amd64/lib"/>
-    <property name="sun.java.command" value="/home/sebastian/traffic-simulator/backend/target/surefire/surefirebooter-20260329193111341_3.jar /home/sebastian/traffic-simulator/backend/target/surefire 2026-03-29T19-31-11_288-jvmRun1 surefire-20260329193111341_1tmp surefire_0-20260329193111341_2tmp"/>
+    <property name="sun.java.command" value="/home/sebastian/traffic-simulator/backend/target/surefire/surefirebooter-20260329194018099_3.jar /home/sebastian/traffic-simulator/backend/target/surefire 2026-03-29T19-40-18_047-jvmRun1 surefire-20260329194018099_1tmp surefire_0-20260329194018099_2tmp"/>
     <property name="jdk.debug" value="release"/>
     <property name="surefire.test.class.path" value="/home/sebastian/traffic-simulator/backend/target/test-classes:/home/sebastian/traffic-simulator/backend/target/classes:/home/sebastian/.m2/repository/org/springframework/boot/spring-boot-starter-websocket/3.3.5/spring-boot-starter-websocket-3.3.5.jar:/home/sebastian/.m2/repository/org/springframework/spring-messaging/6.1.14/spring-messaging-6.1.14.jar:/home/sebastian/.m2/repository/org/springframework/spring-beans/6.1.14/spring-beans-6.1.14.jar:/home/sebastian/.m2/repository/org/springframework/spring-websocket/6.1.14/spring-websocket-6.1.14.jar:/home/sebastian/.m2/repository/org/springframework/spring-context/6.1.14/spring-context-6.1.14.jar:/home/sebastian/.m2/repository/org/springframework/boot/spring-boot-starter-web/3.3.5/spring-boot-starter-web-3.3.5.jar:/home/sebastian/.m2/repository/org/springframework/boot/spring-boot-starter/3.3.5/spring-boot-starter-3.3.5.jar:/home/sebastian/.m2/repository/org/springframework/boot/spring-boot/3.3.5/spring-boot-3.3.5.jar:/home/sebastian/.m2/repository/org/springframework/boot/spring-boot-autoconfigure/3.3.5/spring-boot-autoconfigure-3.3.5.jar:/home/sebastian/.m2/repository/org/springframework/boot/spring-boot-starter-logging/3.3.5/spring-boot-starter-logging-3.3.5.jar:/home/sebastian/.m2/repository/ch/qos/logback/logback-classic/1.5.11/logback-classic-1.5.11.jar:/home/sebastian/.m2/repository/ch/qos/logback/logback-core/1.5.11/logback-core-1.5.11.jar:/home/sebastian/.m2/repository/org/apache/logging/log4j/log4j-to-slf4j/2.23.1/log4j-to-slf4j-2.23.1.jar:/home/sebastian/.m2/repository/org/apache/logging/log4j/log4j-api/2.23.1/log4j-api-2.23.1.jar:/home/sebastian/.m2/repository/org/slf4j/jul-to-slf4j/2.0.16/jul-to-slf4j-2.0.16.jar:/home/sebastian/.m2/repository/jakarta/annotation/jakarta.annotation-api/2.1.1/jakarta.annotation-api-2.1.1.jar:/home/sebastian/.m2/repository/org/yaml/snakeyaml/2.2/snakeyaml-2.2.jar:/home/sebastian/.m2/repository/org/springframework/boot/spring-boot-starter-json/3.3.5/spring-boot-starter-json-3.3.5.jar:/home/sebastian/.m2/repository/com/fasterxml/jackson/core/jackson-databind/2.17.2/jackson-databind-2.17.2.jar:/home/sebastian/.m2/repository/com/fasterxml/jackson/core/jackson-annotations/2.17.2/jackson-annotations-2.17.2.jar:/home/sebastian/.m2/repository/com/fasterxml/jackson/core/jackson-core/2.17.2/jackson-core-2.17.2.jar:/home/sebastian/.m2/repository/com/fasterxml/jackson/datatype/jackson-datatype-jdk8/2.17.2/jackson-datatype-jdk8-2.17.2.jar:/home/sebastian/.m2/repository/com/fasterxml/jackson/datatype/jackson-datatype-jsr310/2.17.2/jackson-datatype-jsr310-2.17.2.jar:/home/sebastian/.m2/repository/com/fasterxml/jackson/module/jackson-module-parameter-names/2.17.2/jackson-module-parameter-names-2.17.2.jar:/home/sebastian/.m2/repository/org/springframework/boot/spring-boot-starter-tomcat/3.3.5/spring-boot-starter-tomcat-3.3.5.jar:/home/sebastian/.m2/repository/org/apache/tomcat/embed/tomcat-embed-core/10.1.31/tomcat-embed-core-10.1.31.jar:/home/sebastian/.m2/repository/org/apache/tomcat/embed/tomcat-embed-el/10.1.31/tomcat-embed-el-10.1.31.jar:/home/sebastian/.m2/repository/org/apache/tomcat/embed/tomcat-embed-websocket/10.1.31/tomcat-embed-websocket-10.1.31.jar:/home/sebastian/.m2/repository/org/springframework/spring-web/6.1.14/spring-web-6.1.14.jar:/home/sebastian/.m2/repository/io/micrometer/micrometer-observation/1.13.6/micrometer-observation-1.13.6.jar:/home/sebastian/.m2/repository/io/micrometer/micrometer-commons/1.13.6/micrometer-commons-1.13.6.jar:/home/sebastian/.m2/repository/org/springframework/spring-webmvc/6.1.14/spring-webmvc-6.1.14.jar:/home/sebastian/.m2/repository/org/springframework/spring-aop/6.1.14/spring-aop-6.1.14.jar:/home/sebastian/.m2/repository/org/springframework/spring-expression/6.1.14/spring-expression-6.1.14.jar:/home/sebastian/.m2/repository/org/projectlombok/lombok/1.18.34/lombok-1.18.34.jar:/home/sebastian/.m2/repository/org/springframework/boot/spring-boot-starter-test/3.3.5/spring-boot-starter-test-3.3.5.jar:/home/sebastian/.m2/repository/org/springframework/boot/spring-boot-test/3.3.5/spring-boot-test-3.3.5.jar:/home/sebastian/.m2/repository/org/springframework/boot/spring-boot-test-autoconfigure/3.3.5/spring-boot-test-autoconfigure-3.3.5.jar:/home/sebastian/.m2/repository/com/jayway/jsonpath/json-path/2.9.0/json-path-2.9.0.jar:/home/sebastian/.m2/repository/org/slf4j/slf4j-api/2.0.16/slf4j-api-2.0.16.jar:/home/sebastian/.m2/repository/jakarta/xml/bind/jakarta.xml.bind-api/4.0.2/jakarta.xml.bind-api-4.0.2.jar:/home/sebastian/.m2/repository/jakarta/activation/jakarta.activation-api/2.1.3/jakarta.activation-api-2.1.3.jar:/home/sebastian/.m2/repository/net/minidev/json-smart/2.5.1/json-smart-2.5.1.jar:/home/sebastian/.m2/repository/net/minidev/accessors-smart/2.5.1/accessors-smart-2.5.1.jar:/home/sebastian/.m2/repository/org/ow2/asm/asm/9.6/asm-9.6.jar:/home/sebastian/.m2/repository/org/assertj/assertj-core/3.25.3/assertj-core-3.25.3.jar:/home/sebastian/.m2/repository/net/bytebuddy/byte-buddy/1.14.19/byte-buddy-1.14.19.jar:/home/sebastian/.m2/repository/org/awaitility/awaitility/4.2.2/awaitility-4.2.2.jar:/home/sebastian/.m2/repository/org/hamcrest/hamcrest/2.2/hamcrest-2.2.jar:/home/sebastian/.m2/repository/org/junit/jupiter/junit-jupiter/5.10.5/junit-jupiter-5.10.5.jar:/home/sebastian/.m2/repository/org/junit/jupiter/junit-jupiter-api/5.10.5/junit-jupiter-api-5.10.5.jar:/home/sebastian/.m2/repository/org/opentest4j/opentest4j/1.3.0/opentest4j-1.3.0.jar:/home/sebastian/.m2/repository/org/junit/platform/junit-platform-commons/1.10.5/junit-platform-commons-1.10.5.jar:/home/sebastian/.m2/repository/org/apiguardian/apiguardian-api/1.1.2/apiguardian-api-1.1.2.jar:/home/sebastian/.m2/repository/org/junit/jupiter/junit-jupiter-params/5.10.5/junit-jupiter-params-5.10.5.jar:/home/sebastian/.m2/repository/org/junit/jupiter/junit-jupiter-engine/5.10.5/junit-jupiter-engine-5.10.5.jar:/home/sebastian/.m2/repository/org/junit/platform/junit-platform-engine/1.10.5/junit-platform-engine-1.10.5.jar:/home/sebastian/.m2/repository/org/mockito/mockito-core/5.11.0/mockito-core-5.11.0.jar:/home/sebastian/.m2/repository/net/bytebuddy/byte-buddy-agent/1.14.19/byte-buddy-agent-1.14.19.jar:/home/sebastian/.m2/repository/org/objenesis/objenesis/3.3/objenesis-3.3.jar:/home/sebastian/.m2/repository/org/mockito/mockito-junit-jupiter/5.11.0/mockito-junit-jupiter-5.11.0.jar:/home/sebastian/.m2/repository/org/skyscreamer/jsonassert/1.5.3/jsonassert-1.5.3.jar:/home/sebastian/.m2/repository/com/vaadin/external/google/android-json/0.0.20131108.vaadin1/android-json-0.0.20131108.vaadin1.jar:/home/sebastian/.m2/repository/org/springframework/spring-core/6.1.14/spring-core-6.1.14.jar:/home/sebastian/.m2/repository/org/springframework/spring-jcl/6.1.14/spring-jcl-6.1.14.jar:/home/sebastian/.m2/repository/org/springframework/spring-test/6.1.14/spring-test-6.1.14.jar:/home/sebastian/.m2/repository/org/xmlunit/xmlunit-core/2.9.1/xmlunit-core-2.9.1.jar:"/>
     <property name="sun.cpu.endian" value="little"/>
@@ -30,7 +30,7 @@
     <property name="java.specification.name" value="Java Platform API Specification"/>
     <property name="FILE_LOG_CHARSET" value="UTF-8"/>
     <property name="java.awt.headless" value="true"/>
-    <property name="surefire.real.class.path" value="/home/sebastian/traffic-simulator/backend/target/surefire/surefirebooter-20260329193111341_3.jar"/>
+    <property name="surefire.real.class.path" value="/home/sebastian/traffic-simulator/backend/target/surefire/surefirebooter-20260329194018099_3.jar"/>
     <property name="sun.management.compiler" value="HotSpot 64-Bit Tiered Compilers"/>
     <property name="java.runtime.version" value="17.0.18+8-Ubuntu-124.04.1"/>
     <property name="user.name" value="sebastian"/>
@@ -46,7 +46,7 @@
     <property name="user.dir" value="/home/sebastian/traffic-simulator/backend"/>
     <property name="os.arch" value="amd64"/>
     <property name="java.vm.specification.name" value="Java Virtual Machine Specification"/>
-    <property name="PID" value="560274"/>
+    <property name="PID" value="562954"/>
     <property name="CONSOLE_LOG_CHARSET" value="UTF-8"/>
     <property name="native.encoding" value="UTF-8"/>
     <property name="java.library.path" value="/usr/java/packages/lib:/usr/lib/x86_64-linux-gnu/jni:/lib/x86_64-linux-gnu:/usr/lib/x86_64-linux-gnu:/usr/lib/jni:/lib:/usr/lib"/>
@@ -58,9 +58,9 @@
     <property name="java.class.version" value="61.0"/>
     <property name="LOGGED_APPLICATION_NAME" value="[traffic-simulator] "/>
   </properties>
-  <testcase name="loadMapClearsObstacles" classname="com.trafficsimulator.engine.CommandDispatcherLoadMapTest" time="0.405">
-    <system-out><![CDATA[19:31:12.113 [main] INFO org.springframework.test.context.support.AnnotationConfigContextLoaderUtils -- Could not detect default configuration classes for test class [com.trafficsimulator.engine.CommandDispatcherLoadMapTest]: CommandDispatcherLoadMapTest does not declare any static, non-private, non-final, nested classes annotated with @Configuration.
-19:31:12.166 [main] INFO org.springframework.boot.test.context.SpringBootTestContextBootstrapper -- Found @SpringBootConfiguration com.trafficsimulator.TrafficSimulatorApplication for test class com.trafficsimulator.engine.CommandDispatcherLoadMapTest
+  <testcase name="loadMapClearsObstacles" classname="com.trafficsimulator.engine.CommandDispatcherLoadMapTest" time="0.454">
+    <system-out><![CDATA[19:40:18.864 [main] INFO org.springframework.test.context.support.AnnotationConfigContextLoaderUtils -- Could not detect default configuration classes for test class [com.trafficsimulator.engine.CommandDispatcherLoadMapTest]: CommandDispatcherLoadMapTest does not declare any static, non-private, non-final, nested classes annotated with @Configuration.
+19:40:18.918 [main] INFO org.springframework.boot.test.context.SpringBootTestContextBootstrapper -- Found @SpringBootConfiguration com.trafficsimulator.TrafficSimulatorApplication for test class com.trafficsimulator.engine.CommandDispatcherLoadMapTest
 
   .   ____          _            __ _ _
  /\\ / ___'_ __ _ _(_)_ __  __ _ \ \ \ \
@@ -71,90 +71,91 @@
 
  :: Spring Boot ::                (v3.3.5)
 
-2026-03-29T19:31:12.342+02:00  INFO 560274 --- [traffic-simulator] [           main] c.t.engine.CommandDispatcherLoadMapTest  : Starting CommandDispatcherLoadMapTest using Java 17.0.18 with PID 560274 (started by sebastian in /home/sebastian/traffic-simulator/backend)
-2026-03-29T19:31:12.343+02:00  INFO 560274 --- [traffic-simulator] [           main] c.t.engine.CommandDispatcherLoadMapTest  : No active profile set, falling back to 1 default profile: "default"
-2026-03-29T19:31:12.763+02:00  INFO 560274 --- [traffic-simulator] [           main] com.trafficsimulator.config.MapLoader    : Loaded map config: straight-road (Straight Road — 3 lanes, 800m)
-2026-03-29T19:31:12.763+02:00  INFO 560274 --- [traffic-simulator] [           main] c.trafficsimulator.config.MapValidator   : Map config 'straight-road' validation passed
-2026-03-29T19:31:12.764+02:00  INFO 560274 --- [traffic-simulator] [           main] com.trafficsimulator.config.MapLoader    : Built road network 'straight-road': 1 roads, 3 lanes total, 3 spawn points
-2026-03-29T19:31:12.764+02:00  INFO 560274 --- [traffic-simulator] [           main] c.t.engine.SimulationEngine              : Default map loaded: straight-road
-2026-03-29T19:31:12.812+02:00 DEBUG 560274 --- [traffic-simulator] [           main] o.s.w.s.s.s.WebSocketHandlerMapping      : Patterns [/ws/**] in 'stompWebSocketHandlerMapping'
-2026-03-29T19:31:12.840+02:00 DEBUG 560274 --- [traffic-simulator] [           main] .WebSocketAnnotationMethodMessageHandler : 
+2026-03-29T19:40:19.086+02:00  INFO 562954 --- [traffic-simulator] [           main] c.t.engine.CommandDispatcherLoadMapTest  : Starting CommandDispatcherLoadMapTest using Java 17.0.18 with PID 562954 (started by sebastian in /home/sebastian/traffic-simulator/backend)
+2026-03-29T19:40:19.088+02:00  INFO 562954 --- [traffic-simulator] [           main] c.t.engine.CommandDispatcherLoadMapTest  : No active profile set, falling back to 1 default profile: "default"
+2026-03-29T19:40:19.516+02:00  INFO 562954 --- [traffic-simulator] [           main] com.trafficsimulator.config.MapLoader    : Loaded map config: straight-road (Straight Road — 3 lanes, 800m)
+2026-03-29T19:40:19.516+02:00  INFO 562954 --- [traffic-simulator] [           main] c.trafficsimulator.config.MapValidator   : Map config 'straight-road' validation passed
+2026-03-29T19:40:19.516+02:00  INFO 562954 --- [traffic-simulator] [           main] com.trafficsimulator.config.MapLoader    : Built road network 'straight-road': 1 roads, 3 lanes total, 3 spawn points
+2026-03-29T19:40:19.516+02:00  INFO 562954 --- [traffic-simulator] [           main] c.t.engine.SimulationEngine              : Default map loaded: straight-road
+2026-03-29T19:40:19.567+02:00 DEBUG 562954 --- [traffic-simulator] [           main] o.s.w.s.s.s.WebSocketHandlerMapping      : Patterns [/ws/**] in 'stompWebSocketHandlerMapping'
+2026-03-29T19:40:19.595+02:00 DEBUG 562954 --- [traffic-simulator] [           main] .WebSocketAnnotationMethodMessageHandler : 
 	c.t.c.CommandHandler:
 	{[MESSAGE],[/command]}: handleCommand(CommandDto)
-2026-03-29T19:31:12.842+02:00 DEBUG 560274 --- [traffic-simulator] [           main] .WebSocketAnnotationMethodMessageHandler : 
+2026-03-29T19:40:19.597+02:00 DEBUG 562954 --- [traffic-simulator] [           main] .WebSocketAnnotationMethodMessageHandler : 
 	c.t.c.SimulationController:
 	
-2026-03-29T19:31:12.845+02:00 DEBUG 560274 --- [traffic-simulator] [           main] .WebSocketAnnotationMethodMessageHandler : 
+2026-03-29T19:40:19.601+02:00 DEBUG 562954 --- [traffic-simulator] [           main] .WebSocketAnnotationMethodMessageHandler : 
 	o.s.b.a.w.s.e.BasicErrorController:
 	
-2026-03-29T19:31:12.996+02:00  INFO 560274 --- [traffic-simulator] [           main] o.s.m.s.b.SimpleBrokerMessageHandler     : Starting...
-2026-03-29T19:31:12.997+02:00  INFO 560274 --- [traffic-simulator] [           main] o.s.m.s.b.SimpleBrokerMessageHandler     : BrokerAvailabilityEvent[available=true, SimpleBrokerMessageHandler [org.springframework.messaging.simp.broker.DefaultSubscriptionRegistry@372f0a99]]
-2026-03-29T19:31:12.998+02:00  INFO 560274 --- [traffic-simulator] [           main] o.s.m.s.b.SimpleBrokerMessageHandler     : Started.
-2026-03-29T19:31:13.004+02:00  INFO 560274 --- [traffic-simulator] [           main] c.t.engine.CommandDispatcherLoadMapTest  : Started CommandDispatcherLoadMapTest in 0.783 seconds (process running for 1.635)
-2026-03-29T19:31:13.038+02:00  INFO 560274 --- [traffic-simulator] [MessageBroker-1] c.t.scheduler.TickEmitter                : Tick #0 — status=STOPPED, vehicles=0
-2026-03-29T19:31:13.052+02:00  INFO 560274 --- [traffic-simulator] [MessageBroker-2] c.t.scheduler.TickEmitter                : Tick #0 — status=STOPPED, vehicles=0
-2026-03-29T19:31:13.102+02:00  INFO 560274 --- [traffic-simulator] [MessageBroker-3] c.t.scheduler.TickEmitter                : Tick #0 — status=STOPPED, vehicles=0
-2026-03-29T19:31:13.152+02:00  INFO 560274 --- [traffic-simulator] [MessageBroker-2] c.t.scheduler.TickEmitter                : Tick #0 — status=STOPPED, vehicles=0
-2026-03-29T19:31:13.202+02:00  INFO 560274 --- [traffic-simulator] [MessageBroker-1] c.t.scheduler.TickEmitter                : Tick #0 — status=STOPPED, vehicles=0
-2026-03-29T19:31:13.252+02:00  INFO 560274 --- [traffic-simulator] [MessageBroker-5] c.t.scheduler.TickEmitter                : Tick #0 — status=STOPPED, vehicles=0
-2026-03-29T19:31:13.302+02:00  INFO 560274 --- [traffic-simulator] [MessageBroker-2] c.t.scheduler.TickEmitter                : Tick #0 — status=STOPPED, vehicles=0
-2026-03-29T19:31:13.352+02:00  INFO 560274 --- [traffic-simulator] [MessageBroker-3] c.t.scheduler.TickEmitter                : Tick #0 — status=STOPPED, vehicles=0
-2026-03-29T19:31:13.402+02:00  INFO 560274 --- [traffic-simulator] [MessageBroker-7] c.t.scheduler.TickEmitter                : Tick #0 — status=STOPPED, vehicles=0
-2026-03-29T19:31:13.418+02:00  INFO 560274 --- [traffic-simulator] [           main] c.t.engine.ObstacleManager               : All obstacles cleared
-2026-03-29T19:31:13.418+02:00  INFO 560274 --- [traffic-simulator] [           main] com.trafficsimulator.config.MapLoader    : Loaded map config: straight-road (Straight Road — 3 lanes, 800m)
-2026-03-29T19:31:13.418+02:00  INFO 560274 --- [traffic-simulator] [           main] c.trafficsimulator.config.MapValidator   : Map config 'straight-road' validation passed
-2026-03-29T19:31:13.419+02:00  INFO 560274 --- [traffic-simulator] [           main] com.trafficsimulator.config.MapLoader    : Built road network 'straight-road': 1 roads, 3 lanes total, 3 spawn points
-2026-03-29T19:31:13.419+02:00  INFO 560274 --- [traffic-simulator] [           main] c.t.engine.CommandDispatcher             : Map loaded: straight-road (spawn rate: 1.0 veh/s)
-2026-03-29T19:31:13.419+02:00  INFO 560274 --- [traffic-simulator] [           main] c.t.engine.ObstacleManager               : Obstacle added: id=c6928b0e-a4ea-427a-8f1a-f439a23054ac lane=r1-lane0 position=400.0m
-2026-03-29T19:31:13.419+02:00  INFO 560274 --- [traffic-simulator] [           main] c.t.engine.ObstacleManager               : All obstacles cleared
-2026-03-29T19:31:13.419+02:00  INFO 560274 --- [traffic-simulator] [           main] com.trafficsimulator.config.MapLoader    : Loaded map config: phantom-jam-corridor (Phantom Jam Corridor)
-2026-03-29T19:31:13.419+02:00  INFO 560274 --- [traffic-simulator] [           main] c.trafficsimulator.config.MapValidator   : Map config 'phantom-jam-corridor' validation passed
-2026-03-29T19:31:13.420+02:00  INFO 560274 --- [traffic-simulator] [           main] com.trafficsimulator.config.MapLoader    : Built road network 'phantom-jam-corridor': 1 roads, 2 lanes total, 2 spawn points
-2026-03-29T19:31:13.420+02:00  INFO 560274 --- [traffic-simulator] [           main] c.t.engine.CommandDispatcher             : Map loaded: phantom-jam-corridor (spawn rate: 3.0 veh/s)
+2026-03-29T19:40:19.764+02:00  INFO 562954 --- [traffic-simulator] [           main] o.s.m.s.b.SimpleBrokerMessageHandler     : Starting...
+2026-03-29T19:40:19.765+02:00  INFO 562954 --- [traffic-simulator] [           main] o.s.m.s.b.SimpleBrokerMessageHandler     : BrokerAvailabilityEvent[available=true, SimpleBrokerMessageHandler [org.springframework.messaging.simp.broker.DefaultSubscriptionRegistry@372f0a99]]
+2026-03-29T19:40:19.766+02:00  INFO 562954 --- [traffic-simulator] [           main] o.s.m.s.b.SimpleBrokerMessageHandler     : Started.
+2026-03-29T19:40:19.772+02:00  INFO 562954 --- [traffic-simulator] [           main] c.t.engine.CommandDispatcherLoadMapTest  : Started CommandDispatcherLoadMapTest in 0.801 seconds (process running for 1.64)
+2026-03-29T19:40:19.806+02:00  INFO 562954 --- [traffic-simulator] [MessageBroker-1] c.t.scheduler.TickEmitter                : Tick #0 — status=STOPPED, vehicles=0
+2026-03-29T19:40:19.821+02:00  INFO 562954 --- [traffic-simulator] [MessageBroker-2] c.t.scheduler.TickEmitter                : Tick #0 — status=STOPPED, vehicles=0
+2026-03-29T19:40:19.871+02:00  INFO 562954 --- [traffic-simulator] [MessageBroker-3] c.t.scheduler.TickEmitter                : Tick #0 — status=STOPPED, vehicles=0
+2026-03-29T19:40:19.920+02:00  INFO 562954 --- [traffic-simulator] [MessageBroker-2] c.t.scheduler.TickEmitter                : Tick #0 — status=STOPPED, vehicles=0
+2026-03-29T19:40:19.970+02:00  INFO 562954 --- [traffic-simulator] [MessageBroker-1] c.t.scheduler.TickEmitter                : Tick #0 — status=STOPPED, vehicles=0
+2026-03-29T19:40:20.020+02:00  INFO 562954 --- [traffic-simulator] [MessageBroker-5] c.t.scheduler.TickEmitter                : Tick #0 — status=STOPPED, vehicles=0
+2026-03-29T19:40:20.070+02:00  INFO 562954 --- [traffic-simulator] [MessageBroker-2] c.t.scheduler.TickEmitter                : Tick #0 — status=STOPPED, vehicles=0
+2026-03-29T19:40:20.121+02:00  INFO 562954 --- [traffic-simulator] [MessageBroker-3] c.t.scheduler.TickEmitter                : Tick #0 — status=STOPPED, vehicles=0
+2026-03-29T19:40:20.171+02:00  INFO 562954 --- [traffic-simulator] [MessageBroker-7] c.t.scheduler.TickEmitter                : Tick #0 — status=STOPPED, vehicles=0
+2026-03-29T19:40:20.220+02:00  INFO 562954 --- [traffic-simulator] [MessageBroker-5] c.t.scheduler.TickEmitter                : Tick #0 — status=STOPPED, vehicles=0
+2026-03-29T19:40:20.241+02:00  INFO 562954 --- [traffic-simulator] [           main] c.t.engine.ObstacleManager               : All obstacles cleared
+2026-03-29T19:40:20.242+02:00  INFO 562954 --- [traffic-simulator] [           main] com.trafficsimulator.config.MapLoader    : Loaded map config: straight-road (Straight Road — 3 lanes, 800m)
+2026-03-29T19:40:20.242+02:00  INFO 562954 --- [traffic-simulator] [           main] c.trafficsimulator.config.MapValidator   : Map config 'straight-road' validation passed
+2026-03-29T19:40:20.242+02:00  INFO 562954 --- [traffic-simulator] [           main] com.trafficsimulator.config.MapLoader    : Built road network 'straight-road': 1 roads, 3 lanes total, 3 spawn points
+2026-03-29T19:40:20.242+02:00  INFO 562954 --- [traffic-simulator] [           main] c.t.engine.CommandDispatcher             : Map loaded: straight-road (spawn rate: 1.0 veh/s)
+2026-03-29T19:40:20.242+02:00  INFO 562954 --- [traffic-simulator] [           main] c.t.engine.ObstacleManager               : Obstacle added: id=024b2741-87d8-4491-b811-4a5494e73da8 lane=r1-lane0 position=400.0m
+2026-03-29T19:40:20.242+02:00  INFO 562954 --- [traffic-simulator] [           main] c.t.engine.ObstacleManager               : All obstacles cleared
+2026-03-29T19:40:20.243+02:00  INFO 562954 --- [traffic-simulator] [           main] com.trafficsimulator.config.MapLoader    : Loaded map config: phantom-jam-corridor (Phantom Jam Corridor)
+2026-03-29T19:40:20.243+02:00  INFO 562954 --- [traffic-simulator] [           main] c.trafficsimulator.config.MapValidator   : Map config 'phantom-jam-corridor' validation passed
+2026-03-29T19:40:20.243+02:00  INFO 562954 --- [traffic-simulator] [           main] com.trafficsimulator.config.MapLoader    : Built road network 'phantom-jam-corridor': 1 roads, 2 lanes total, 2 spawn points
+2026-03-29T19:40:20.243+02:00  INFO 562954 --- [traffic-simulator] [           main] c.t.engine.CommandDispatcher             : Map loaded: phantom-jam-corridor (spawn rate: 3.0 veh/s)
 ]]></system-out>
   </testcase>
-  <testcase name="loadMapSetsErrorOnFailure" classname="com.trafficsimulator.engine.CommandDispatcherLoadMapTest" time="0.003">
-    <system-out><![CDATA[2026-03-29T19:31:13.424+02:00  INFO 560274 --- [traffic-simulator] [           main] c.t.engine.ObstacleManager               : All obstacles cleared
-2026-03-29T19:31:13.425+02:00  INFO 560274 --- [traffic-simulator] [           main] com.trafficsimulator.config.MapLoader    : Loaded map config: straight-road (Straight Road — 3 lanes, 800m)
-2026-03-29T19:31:13.425+02:00  INFO 560274 --- [traffic-simulator] [           main] c.trafficsimulator.config.MapValidator   : Map config 'straight-road' validation passed
-2026-03-29T19:31:13.425+02:00  INFO 560274 --- [traffic-simulator] [           main] com.trafficsimulator.config.MapLoader    : Built road network 'straight-road': 1 roads, 3 lanes total, 3 spawn points
-2026-03-29T19:31:13.425+02:00  INFO 560274 --- [traffic-simulator] [           main] c.t.engine.CommandDispatcher             : Map loaded: straight-road (spawn rate: 1.0 veh/s)
-2026-03-29T19:31:13.425+02:00  INFO 560274 --- [traffic-simulator] [           main] c.t.engine.ObstacleManager               : All obstacles cleared
-2026-03-29T19:31:13.425+02:00 ERROR 560274 --- [traffic-simulator] [           main] c.t.engine.CommandDispatcher             : Failed to load map nonexistent-map: Map resource not found: maps/nonexistent-map.json
+  <testcase name="loadMapSetsErrorOnFailure" classname="com.trafficsimulator.engine.CommandDispatcherLoadMapTest" time="0.004">
+    <system-out><![CDATA[2026-03-29T19:40:20.248+02:00  INFO 562954 --- [traffic-simulator] [           main] c.t.engine.ObstacleManager               : All obstacles cleared
+2026-03-29T19:40:20.248+02:00  INFO 562954 --- [traffic-simulator] [           main] com.trafficsimulator.config.MapLoader    : Loaded map config: straight-road (Straight Road — 3 lanes, 800m)
+2026-03-29T19:40:20.248+02:00  INFO 562954 --- [traffic-simulator] [           main] c.trafficsimulator.config.MapValidator   : Map config 'straight-road' validation passed
+2026-03-29T19:40:20.249+02:00  INFO 562954 --- [traffic-simulator] [           main] com.trafficsimulator.config.MapLoader    : Built road network 'straight-road': 1 roads, 3 lanes total, 3 spawn points
+2026-03-29T19:40:20.249+02:00  INFO 562954 --- [traffic-simulator] [           main] c.t.engine.CommandDispatcher             : Map loaded: straight-road (spawn rate: 1.0 veh/s)
+2026-03-29T19:40:20.249+02:00  INFO 562954 --- [traffic-simulator] [           main] c.t.engine.ObstacleManager               : All obstacles cleared
+2026-03-29T19:40:20.249+02:00 ERROR 562954 --- [traffic-simulator] [           main] c.t.engine.CommandDispatcher             : Failed to load map nonexistent-map: Map resource not found: maps/nonexistent-map.json
 ]]></system-out>
   </testcase>
   <testcase name="loadMapClearsErrorOnSuccess" classname="com.trafficsimulator.engine.CommandDispatcherLoadMapTest" time="0.002">
-    <system-out><![CDATA[2026-03-29T19:31:13.427+02:00  INFO 560274 --- [traffic-simulator] [           main] c.t.engine.ObstacleManager               : All obstacles cleared
-2026-03-29T19:31:13.428+02:00  INFO 560274 --- [traffic-simulator] [           main] com.trafficsimulator.config.MapLoader    : Loaded map config: straight-road (Straight Road — 3 lanes, 800m)
-2026-03-29T19:31:13.428+02:00  INFO 560274 --- [traffic-simulator] [           main] c.trafficsimulator.config.MapValidator   : Map config 'straight-road' validation passed
-2026-03-29T19:31:13.428+02:00  INFO 560274 --- [traffic-simulator] [           main] com.trafficsimulator.config.MapLoader    : Built road network 'straight-road': 1 roads, 3 lanes total, 3 spawn points
-2026-03-29T19:31:13.428+02:00  INFO 560274 --- [traffic-simulator] [           main] c.t.engine.CommandDispatcher             : Map loaded: straight-road (spawn rate: 1.0 veh/s)
+    <system-out><![CDATA[2026-03-29T19:40:20.252+02:00  INFO 562954 --- [traffic-simulator] [           main] c.t.engine.ObstacleManager               : All obstacles cleared
+2026-03-29T19:40:20.252+02:00  INFO 562954 --- [traffic-simulator] [           main] com.trafficsimulator.config.MapLoader    : Loaded map config: straight-road (Straight Road — 3 lanes, 800m)
+2026-03-29T19:40:20.253+02:00  INFO 562954 --- [traffic-simulator] [           main] c.trafficsimulator.config.MapValidator   : Map config 'straight-road' validation passed
+2026-03-29T19:40:20.253+02:00  INFO 562954 --- [traffic-simulator] [           main] com.trafficsimulator.config.MapLoader    : Built road network 'straight-road': 1 roads, 3 lanes total, 3 spawn points
+2026-03-29T19:40:20.253+02:00  INFO 562954 --- [traffic-simulator] [           main] c.t.engine.CommandDispatcher             : Map loaded: straight-road (spawn rate: 1.0 veh/s)
 ]]></system-out>
   </testcase>
-  <testcase name="loadMapAppliesDefaultSpawnRate" classname="com.trafficsimulator.engine.CommandDispatcherLoadMapTest" time="0.002">
-    <system-out><![CDATA[2026-03-29T19:31:13.430+02:00  INFO 560274 --- [traffic-simulator] [           main] c.t.engine.ObstacleManager               : All obstacles cleared
-2026-03-29T19:31:13.430+02:00  INFO 560274 --- [traffic-simulator] [           main] com.trafficsimulator.config.MapLoader    : Loaded map config: straight-road (Straight Road — 3 lanes, 800m)
-2026-03-29T19:31:13.430+02:00  INFO 560274 --- [traffic-simulator] [           main] c.trafficsimulator.config.MapValidator   : Map config 'straight-road' validation passed
-2026-03-29T19:31:13.430+02:00  INFO 560274 --- [traffic-simulator] [           main] com.trafficsimulator.config.MapLoader    : Built road network 'straight-road': 1 roads, 3 lanes total, 3 spawn points
-2026-03-29T19:31:13.430+02:00  INFO 560274 --- [traffic-simulator] [           main] c.t.engine.CommandDispatcher             : Map loaded: straight-road (spawn rate: 1.0 veh/s)
-2026-03-29T19:31:13.431+02:00  INFO 560274 --- [traffic-simulator] [           main] c.t.engine.ObstacleManager               : All obstacles cleared
-2026-03-29T19:31:13.431+02:00  INFO 560274 --- [traffic-simulator] [           main] com.trafficsimulator.config.MapLoader    : Loaded map config: phantom-jam-corridor (Phantom Jam Corridor)
-2026-03-29T19:31:13.431+02:00  INFO 560274 --- [traffic-simulator] [           main] c.trafficsimulator.config.MapValidator   : Map config 'phantom-jam-corridor' validation passed
-2026-03-29T19:31:13.431+02:00  INFO 560274 --- [traffic-simulator] [           main] com.trafficsimulator.config.MapLoader    : Built road network 'phantom-jam-corridor': 1 roads, 2 lanes total, 2 spawn points
-2026-03-29T19:31:13.431+02:00  INFO 560274 --- [traffic-simulator] [           main] c.t.engine.CommandDispatcher             : Map loaded: phantom-jam-corridor (spawn rate: 3.0 veh/s)
+  <testcase name="loadMapAppliesDefaultSpawnRate" classname="com.trafficsimulator.engine.CommandDispatcherLoadMapTest" time="0.003">
+    <system-out><![CDATA[2026-03-29T19:40:20.255+02:00  INFO 562954 --- [traffic-simulator] [           main] c.t.engine.ObstacleManager               : All obstacles cleared
+2026-03-29T19:40:20.255+02:00  INFO 562954 --- [traffic-simulator] [           main] com.trafficsimulator.config.MapLoader    : Loaded map config: straight-road (Straight Road — 3 lanes, 800m)
+2026-03-29T19:40:20.255+02:00  INFO 562954 --- [traffic-simulator] [           main] c.trafficsimulator.config.MapValidator   : Map config 'straight-road' validation passed
+2026-03-29T19:40:20.255+02:00  INFO 562954 --- [traffic-simulator] [           main] com.trafficsimulator.config.MapLoader    : Built road network 'straight-road': 1 roads, 3 lanes total, 3 spawn points
+2026-03-29T19:40:20.255+02:00  INFO 562954 --- [traffic-simulator] [           main] c.t.engine.CommandDispatcher             : Map loaded: straight-road (spawn rate: 1.0 veh/s)
+2026-03-29T19:40:20.255+02:00  INFO 562954 --- [traffic-simulator] [           main] c.t.engine.ObstacleManager               : All obstacles cleared
+2026-03-29T19:40:20.256+02:00  INFO 562954 --- [traffic-simulator] [           main] com.trafficsimulator.config.MapLoader    : Loaded map config: phantom-jam-corridor (Phantom Jam Corridor)
+2026-03-29T19:40:20.256+02:00  INFO 562954 --- [traffic-simulator] [           main] c.trafficsimulator.config.MapValidator   : Map config 'phantom-jam-corridor' validation passed
+2026-03-29T19:40:20.256+02:00  INFO 562954 --- [traffic-simulator] [           main] com.trafficsimulator.config.MapLoader    : Built road network 'phantom-jam-corridor': 1 roads, 2 lanes total, 2 spawn points
+2026-03-29T19:40:20.256+02:00  INFO 562954 --- [traffic-simulator] [           main] c.t.engine.CommandDispatcher             : Map loaded: phantom-jam-corridor (spawn rate: 3.0 veh/s)
 ]]></system-out>
   </testcase>
-  <testcase name="loadMapClearsVehiclesFromOldNetwork" classname="com.trafficsimulator.engine.CommandDispatcherLoadMapTest" time="0.004">
-    <system-out><![CDATA[2026-03-29T19:31:13.432+02:00  INFO 560274 --- [traffic-simulator] [           main] c.t.engine.ObstacleManager               : All obstacles cleared
-2026-03-29T19:31:13.433+02:00  INFO 560274 --- [traffic-simulator] [           main] com.trafficsimulator.config.MapLoader    : Loaded map config: straight-road (Straight Road — 3 lanes, 800m)
-2026-03-29T19:31:13.433+02:00  INFO 560274 --- [traffic-simulator] [           main] c.trafficsimulator.config.MapValidator   : Map config 'straight-road' validation passed
-2026-03-29T19:31:13.433+02:00  INFO 560274 --- [traffic-simulator] [           main] com.trafficsimulator.config.MapLoader    : Built road network 'straight-road': 1 roads, 3 lanes total, 3 spawn points
-2026-03-29T19:31:13.433+02:00  INFO 560274 --- [traffic-simulator] [           main] c.t.engine.CommandDispatcher             : Map loaded: straight-road (spawn rate: 1.0 veh/s)
-2026-03-29T19:31:13.433+02:00  INFO 560274 --- [traffic-simulator] [           main] c.t.engine.ObstacleManager               : All obstacles cleared
-2026-03-29T19:31:13.433+02:00  INFO 560274 --- [traffic-simulator] [           main] com.trafficsimulator.config.MapLoader    : Loaded map config: four-way-signal (Four-Way Signalised Intersection)
-2026-03-29T19:31:13.433+02:00  INFO 560274 --- [traffic-simulator] [           main] c.trafficsimulator.config.MapValidator   : Map config 'four-way-signal' validation passed
-2026-03-29T19:31:13.434+02:00  INFO 560274 --- [traffic-simulator] [           main] com.trafficsimulator.config.MapLoader    : Built road network 'four-way-signal': 8 roads, 8 lanes total, 4 spawn points
-2026-03-29T19:31:13.434+02:00  INFO 560274 --- [traffic-simulator] [           main] c.t.engine.CommandDispatcher             : Map loaded: four-way-signal (spawn rate: 0.5 veh/s)
+  <testcase name="loadMapClearsVehiclesFromOldNetwork" classname="com.trafficsimulator.engine.CommandDispatcherLoadMapTest" time="0.005">
+    <system-out><![CDATA[2026-03-29T19:40:20.258+02:00  INFO 562954 --- [traffic-simulator] [           main] c.t.engine.ObstacleManager               : All obstacles cleared
+2026-03-29T19:40:20.259+02:00  INFO 562954 --- [traffic-simulator] [           main] com.trafficsimulator.config.MapLoader    : Loaded map config: straight-road (Straight Road — 3 lanes, 800m)
+2026-03-29T19:40:20.259+02:00  INFO 562954 --- [traffic-simulator] [           main] c.trafficsimulator.config.MapValidator   : Map config 'straight-road' validation passed
+2026-03-29T19:40:20.259+02:00  INFO 562954 --- [traffic-simulator] [           main] com.trafficsimulator.config.MapLoader    : Built road network 'straight-road': 1 roads, 3 lanes total, 3 spawn points
+2026-03-29T19:40:20.259+02:00  INFO 562954 --- [traffic-simulator] [           main] c.t.engine.CommandDispatcher             : Map loaded: straight-road (spawn rate: 1.0 veh/s)
+2026-03-29T19:40:20.259+02:00  INFO 562954 --- [traffic-simulator] [           main] c.t.engine.ObstacleManager               : All obstacles cleared
+2026-03-29T19:40:20.260+02:00  INFO 562954 --- [traffic-simulator] [           main] com.trafficsimulator.config.MapLoader    : Loaded map config: four-way-signal (Four-Way Signalised Intersection)
+2026-03-29T19:40:20.260+02:00  INFO 562954 --- [traffic-simulator] [           main] c.trafficsimulator.config.MapValidator   : Map config 'four-way-signal' validation passed
+2026-03-29T19:40:20.260+02:00  INFO 562954 --- [traffic-simulator] [           main] com.trafficsimulator.config.MapLoader    : Built road network 'four-way-signal': 8 roads, 8 lanes total, 4 spawn points
+2026-03-29T19:40:20.260+02:00  INFO 562954 --- [traffic-simulator] [           main] c.t.engine.CommandDispatcher             : Map loaded: four-way-signal (spawn rate: 0.5 veh/s)
 ]]></system-out>
   </testcase>
 </testsuite>
