@@ -4,7 +4,7 @@ milestone: v1.0
 milestone_name: milestone
 current_phase: 8
 status: Ready to plan
-last_updated: "2026-03-29T08:55:45.921Z"
+last_updated: "2026-03-29T08:53:22.442Z"
 progress:
   total_phases: 10
   completed_phases: 6
@@ -37,7 +37,7 @@ See: .planning/PROJECT.md (updated 2026-03-27)
 | 5 | Canvas Rendering & Basic UI | ◑ In Progress (4/5 plans done) |
 | 6 | Live Obstacle Placement | ◑ In Progress (plan 4 done) |
 | 7 | Lane Changing & Road Narrowing | ◑ In Progress (3/4 plans done) |
-| 8 | Traffic Signals & Intersections | ◑ In Progress (plans 08-01..08-04 done) |
+| 8 | Traffic Signals & Intersections | ◑ In Progress (plan 08-03 done) |
 | 9 | JSON Map Configuration & Predefined Scenarios | ○ Pending |
 | 10 | Roundabouts, Priority Intersections & Polish | ○ Pending |
 

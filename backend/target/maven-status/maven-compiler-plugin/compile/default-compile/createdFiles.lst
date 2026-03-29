@@ -6,12 +6,16 @@ com/trafficsimulator/config/MapLoader.class
 com/trafficsimulator/dto/CommandDto.class
 com/trafficsimulator/config/WebSocketConfig.class
 com/trafficsimulator/config/MapConfig$SpawnPointConfig.class
+com/trafficsimulator/dto/TrafficLightDto$TrafficLightDtoBuilder.class
 com/trafficsimulator/config/MapConfig$NodeConfig.class
+com/trafficsimulator/model/TrafficLight.class
 com/trafficsimulator/engine/SimulationStatus.class
+com/trafficsimulator/engine/command/SimulationCommand$SetLightCycle.class
 com/trafficsimulator/dto/RoadDto$RoadDtoBuilder.class
 com/trafficsimulator/engine/PhysicsEngine.class
 com/trafficsimulator/dto/StatsDto.class
 com/trafficsimulator/dto/VehicleDto.class
+com/trafficsimulator/model/TrafficLightPhase$PhaseType.class
 com/trafficsimulator/dto/StatsDto$StatsDtoBuilder.class
 com/trafficsimulator/dto/ObstacleDto$ObstacleDtoBuilder.class
 com/trafficsimulator/engine/command/SimulationCommand$RemoveObstacle.class
@@ -22,7 +26,9 @@ com/trafficsimulator/model/SpawnPoint.class
 com/trafficsimulator/model/Obstacle.class
 com/trafficsimulator/model/Vehicle$VehicleBuilder.class
 com/trafficsimulator/config/MapValidator.class
+com/trafficsimulator/engine/IntersectionManager.class
 com/trafficsimulator/config/MapConfig$DespawnPointConfig.class
+com/trafficsimulator/config/MapConfig$SignalPhaseConfig.class
 com/trafficsimulator/engine/StatePublisher.class
 com/trafficsimulator/engine/command/SimulationCommand$Start.class
 com/trafficsimulator/engine/command/SimulationCommand$Stop.class
@@ -33,7 +39,9 @@ com/trafficsimulator/model/Intersection$IntersectionBuilder.class
 com/trafficsimulator/engine/command/SimulationCommand$LoadMap.class
 com/trafficsimulator/dto/RoadDto.class
 com/trafficsimulator/model/Lane$LaneBuilder.class
+com/trafficsimulator/engine/TrafficLightController.class
 com/trafficsimulator/controller/SimulationController.class
+com/trafficsimulator/model/TrafficLight$TrafficLightBuilder.class
 com/trafficsimulator/engine/command/SimulationCommand.class
 com/trafficsimulator/config/MapConfig.class
 com/trafficsimulator/engine/command/SimulationCommand$SetSpawnRate.class
@@ -42,10 +50,12 @@ com/trafficsimulator/engine/LaneChangeEngine.class
 com/trafficsimulator/engine/ObstacleManager.class
 com/trafficsimulator/model/IntersectionType.class
 com/trafficsimulator/dto/LaneDto$LaneDtoBuilder.class
+com/trafficsimulator/model/TrafficLightPhase$TrafficLightPhaseBuilder.class
 com/trafficsimulator/controller/CommandHandler.class
 com/trafficsimulator/engine/command/SimulationCommand$Resume.class
 com/trafficsimulator/dto/LaneDto.class
 com/trafficsimulator/dto/SimulationStateDto$SimulationStateDtoBuilder.class
+com/trafficsimulator/model/TrafficLightPhase.class
 com/trafficsimulator/dto/VehicleDto$VehicleDtoBuilder.class
 com/trafficsimulator/TrafficSimulatorApplication.class
 com/trafficsimulator/engine/command/SimulationCommand$CloseLane.class
@@ -60,5 +70,6 @@ com/trafficsimulator/model/DespawnPoint.class
 com/trafficsimulator/dto/ObstacleDto.class
 com/trafficsimulator/model/Road.class
 com/trafficsimulator/dto/TickDto.class
+com/trafficsimulator/dto/TrafficLightDto.class
 com/trafficsimulator/engine/command/SimulationCommand$AddObstacle.class
 com/trafficsimulator/engine/command/SimulationCommand$SetSpeedMultiplier.class
