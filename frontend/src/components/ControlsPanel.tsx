@@ -12,6 +12,7 @@ export function ControlsPanel() {
   const [speedMultiplier, setSpeedMultiplier] = useState(1.0);
   const [spawnRate, setSpawnRate] = useState(1.0);
   const [maxSpeed, setMaxSpeed] = useState(120); // km/h display
+  const [greenDuration, setGreenDuration] = useState(30); // seconds
 
   const send = useCallback(
     (cmd: Parameters<NonNullable<typeof sendCommand>>[0]) => {
@@ -27,6 +28,16 @@ export function ControlsPanel() {
 
   const debouncedSpawnRate = useDebouncedCallback(
     ((value: number) => send({ type: 'SET_SPAWN_RATE', spawnRate: value })) as (...args: unknown[]) => void,
+    DEBOUNCE_MS
+  );
+
+  const debouncedSignalTiming = useDebouncedCallback(
+    ((seconds: number) => send({
+      type: 'SET_LIGHT_CYCLE',
+      intersectionId: 'n_center',
+      greenDurationMs: seconds * 1000,
+      yellowDurationMs: 3000,
+    })) as (...args: unknown[]) => void,
     DEBOUNCE_MS
   );
 
@@ -161,6 +172,27 @@ export function ControlsPanel() {
         >
           📋 Dump State
         </button>
+      </div>
+
+      {/* Signal timing */}
+      <div style={{ marginBottom: '12px', borderTop: '1px solid #444', paddingTop: '12px' }}>
+        <label>
+          Signal green: {greenDuration}s
+          <br />
+          <input
+            type="range"
+            min="5"
+            max="60"
+            step="5"
+            value={greenDuration}
+            onChange={(e) => {
+              const v = parseInt(e.target.value, 10);
+              setGreenDuration(v);
+              debouncedSignalTiming(v);
+            }}
+            style={{ width: '100%' }}
+          />
+        </label>
       </div>
 
       {/* Max speed input */}
