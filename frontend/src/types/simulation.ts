@@ -72,6 +72,8 @@ export interface RoadDto {
   endX: number;
   endY: number;
   lanes?: LaneDto[];     // optional — present when backend sends lane details
+  clipStart: number;     // pixels to trim from road start (near intersection)
+  clipEnd: number;       // pixels to trim from road end (near intersection)
 }
 
 export interface SimulationStatusDto {

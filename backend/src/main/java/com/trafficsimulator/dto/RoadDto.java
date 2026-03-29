@@ -22,4 +22,6 @@ public class RoadDto {
     private double endX;         // pixel X of road end
     private double endY;         // pixel Y of road end
     private List<LaneDto> lanes; // per-lane active status for frontend
+    private double clipStart;    // pixels to trim from road start (near intersection)
+    private double clipEnd;      // pixels to trim from road end (near intersection)
 }
