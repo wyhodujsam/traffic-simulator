@@ -26,7 +26,7 @@ public class SnapshotBuilder {
      */
     public SimulationStateDto buildSnapshot(RoadNetwork network, long tick,
             String status, double spawnRate, double speedMultiplier,
-            IVehicleSpawner vehicleSpawner) {
+            IVehicleSpawner vehicleSpawner, String mapId, String error) {
 
         List<VehicleDto> vehicleDtos = new ArrayList<>();
         List<ObstacleDto> obstacleDtos = new ArrayList<>();
@@ -92,6 +92,8 @@ public class SnapshotBuilder {
             .obstacles(obstacleDtos)
             .trafficLights(trafficLightDtos)
             .stats(stats)
+            .mapId(mapId)
+            .error(error)
             .build();
     }
 

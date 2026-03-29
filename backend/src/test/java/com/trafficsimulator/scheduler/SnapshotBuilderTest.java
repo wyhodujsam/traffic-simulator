@@ -129,7 +129,7 @@ class SnapshotBuilderTest {
             .build();
 
         SimulationStateDto state = snapshotBuilder.buildSnapshot(
-            network, 1L, "RUNNING", 1.0, 1.0, vehicleSpawner);
+            network, 1L, "RUNNING", 1.0, 1.0, vehicleSpawner, "test", null);
 
         assertThat(state.getStats().getVehicleCount()).isEqualTo(3);
         assertThat(state.getStats().getAvgSpeed()).isCloseTo(20.0, within(0.01)); // (10+20+30)/3
@@ -141,7 +141,7 @@ class SnapshotBuilderTest {
     @Test
     void testEmptyNetwork() {
         SimulationStateDto state = snapshotBuilder.buildSnapshot(
-            null, 0L, "STOPPED", 1.0, 1.0, vehicleSpawner);
+            null, 0L, "STOPPED", 1.0, 1.0, vehicleSpawner, null, null);
 
         assertThat(state.getVehicles()).isEmpty();
         assertThat(state.getObstacles()).isEmpty();
@@ -196,7 +196,7 @@ class SnapshotBuilderTest {
             .build();
 
         SimulationStateDto state = snapshotBuilder.buildSnapshot(
-            network, 1L, "RUNNING", 1.0, 1.0, vehicleSpawner);
+            network, 1L, "RUNNING", 1.0, 1.0, vehicleSpawner, "test", null);
 
         assertThat(state.getTrafficLights()).hasSize(1);
         TrafficLightDto tlDto = state.getTrafficLights().get(0);

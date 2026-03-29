@@ -97,11 +97,17 @@ public class TickEmitter {
             }
 
             // 3. Build snapshot and broadcast (under lock to read consistent state)
+            String mapId = network != null ? network.getId() : null;
+            String error = simulationEngine.getLastError();
             SimulationStateDto state = snapshotBuilder.buildSnapshot(
                 network, tick, simulationEngine.getStatus().name(),
                 simulationEngine.getSpawnRate(), simulationEngine.getSpeedMultiplier(),
-                vehicleSpawner);
+                vehicleSpawner, mapId, error);
             statePublisher.broadcast(state);
+            // Clear error after publishing once
+            if (error != null) {
+                simulationEngine.setLastError(null);
+            }
 
             // 4. Tick duration monitoring — warn if tick logic exceeded threshold
             long elapsedMs = (System.nanoTime() - tickStart) / 1_000_000;
