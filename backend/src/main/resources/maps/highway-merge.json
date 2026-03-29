@@ -1,0 +1,57 @@
+{
+  "id": "highway-merge",
+  "name": "Highway Merge",
+  "description": "2-lane highway with a 1-lane on-ramp merging at the 300m mark. Observe how merge points create bottleneck congestion.",
+  "nodes": [
+    { "id": "main_entry",  "type": "ENTRY",        "x": 50.0,   "y": 200.0 },
+    { "id": "ramp_entry",  "type": "ENTRY",        "x": 200.0,  "y": 50.0 },
+    { "id": "merge_point", "type": "INTERSECTION", "x": 350.0,  "y": 200.0 },
+    { "id": "main_exit",   "type": "EXIT",         "x": 1050.0, "y": 200.0 }
+  ],
+  "roads": [
+    {
+      "id": "main_before",
+      "name": "Highway Before Merge",
+      "fromNodeId": "main_entry",
+      "toNodeId": "merge_point",
+      "length": 300.0,
+      "speedLimit": 30.0,
+      "laneCount": 2
+    },
+    {
+      "id": "ramp",
+      "name": "On-Ramp",
+      "fromNodeId": "ramp_entry",
+      "toNodeId": "merge_point",
+      "length": 200.0,
+      "speedLimit": 20.0,
+      "laneCount": 1
+    },
+    {
+      "id": "main_after",
+      "name": "Highway After Merge",
+      "fromNodeId": "merge_point",
+      "toNodeId": "main_exit",
+      "length": 700.0,
+      "speedLimit": 30.0,
+      "laneCount": 2
+    }
+  ],
+  "intersections": [
+    {
+      "nodeId": "merge_point",
+      "type": "PRIORITY",
+      "signalPhases": null
+    }
+  ],
+  "spawnPoints": [
+    { "roadId": "main_before", "laneIndex": 0, "position": 0.0 },
+    { "roadId": "main_before", "laneIndex": 1, "position": 0.0 },
+    { "roadId": "ramp",        "laneIndex": 0, "position": 0.0 }
+  ],
+  "despawnPoints": [
+    { "roadId": "main_after", "laneIndex": 0, "position": 700.0 },
+    { "roadId": "main_after", "laneIndex": 1, "position": 700.0 }
+  ],
+  "defaultSpawnRate": 2.0
+}
