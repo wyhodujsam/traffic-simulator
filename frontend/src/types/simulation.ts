@@ -45,6 +45,14 @@ export interface SimulationStateDto {
   obstacles: ObstacleDto[];
   trafficLights: TrafficLightDto[];
   stats: StatsDto;
+  error: string | null;
+  mapId: string | null;
+}
+
+export interface MapInfo {
+  id: string;
+  name: string;
+  description: string | null;
 }
 
 export interface LaneDto {
