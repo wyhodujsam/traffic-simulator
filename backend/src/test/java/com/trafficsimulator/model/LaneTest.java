@@ -114,8 +114,8 @@ class LaneTest {
         lane.addVehicle(v3);
 
         // Manually change positions (simulating physics update)
-        v1.setPosition(35); // v1 overtakes v3
-        v2.setPosition(25);
+        v1.updatePhysics(35, v1.getSpeed(), 0); // v1 overtakes v3
+        v2.updatePhysics(25, v2.getSpeed(), 0);
 
         lane.resortVehicles();
 

@@ -13,5 +13,7 @@
 /home/sebastian/traffic-simulator/backend/src/test/java/com/trafficsimulator/engine/VehicleSpawnerTest.java
 /home/sebastian/traffic-simulator/backend/src/test/java/com/trafficsimulator/engine/ZipperMergeTest.java
 /home/sebastian/traffic-simulator/backend/src/test/java/com/trafficsimulator/integration/FullPipelineTest.java
+/home/sebastian/traffic-simulator/backend/src/test/java/com/trafficsimulator/model/LaneTest.java
 /home/sebastian/traffic-simulator/backend/src/test/java/com/trafficsimulator/model/TrafficLightTest.java
+/home/sebastian/traffic-simulator/backend/src/test/java/com/trafficsimulator/model/VehicleTest.java
 /home/sebastian/traffic-simulator/backend/src/test/java/com/trafficsimulator/scheduler/SnapshotBuilderTest.java

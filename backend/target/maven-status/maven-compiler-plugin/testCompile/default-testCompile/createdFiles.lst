@@ -1,6 +1,7 @@
 com/trafficsimulator/engine/RoadNarrowingIntegrationTest.class
 com/trafficsimulator/engine/ZipperMergeTest.class
 com/trafficsimulator/engine/LaneChangeEngineTest.class
+com/trafficsimulator/model/VehicleTest.class
 com/trafficsimulator/engine/PhysicsEngineTest.class
 com/trafficsimulator/engine/CommandQueueTest.class
 com/trafficsimulator/scheduler/SnapshotBuilderTest.class
@@ -11,3 +12,4 @@ com/trafficsimulator/engine/VehicleSpawnerTest.class
 com/trafficsimulator/integration/FullPipelineTest.class
 com/trafficsimulator/engine/VehicleDespawnTest.class
 com/trafficsimulator/engine/TickPipelineIntegrationTest.class
+com/trafficsimulator/model/LaneTest.class
