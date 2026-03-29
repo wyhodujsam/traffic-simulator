@@ -1,0 +1,30 @@
+{
+  "id": "phantom-jam-corridor",
+  "name": "Phantom Jam Corridor",
+  "description": "Long 2-lane highway with high traffic density. Watch spontaneous stop-and-go waves emerge from pure car-following physics — no obstacles needed.",
+  "nodes": [
+    { "id": "entry", "type": "ENTRY", "x": 50.0, "y": 200.0 },
+    { "id": "exit",  "type": "EXIT",  "x": 2050.0, "y": 200.0 }
+  ],
+  "roads": [
+    {
+      "id": "corridor",
+      "name": "Highway Corridor",
+      "fromNodeId": "entry",
+      "toNodeId": "exit",
+      "length": 2000.0,
+      "speedLimit": 25.0,
+      "laneCount": 2
+    }
+  ],
+  "intersections": [],
+  "spawnPoints": [
+    { "roadId": "corridor", "laneIndex": 0, "position": 0.0 },
+    { "roadId": "corridor", "laneIndex": 1, "position": 0.0 }
+  ],
+  "despawnPoints": [
+    { "roadId": "corridor", "laneIndex": 0, "position": 2000.0 },
+    { "roadId": "corridor", "laneIndex": 1, "position": 2000.0 }
+  ],
+  "defaultSpawnRate": 3.0
+}

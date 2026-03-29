@@ -69,7 +69,7 @@ public class MapLoader {
                     .road(road)
                     .length(rc.getLength())
                     .maxSpeed(rc.getSpeedLimit())
-                    .active(true)
+                    .active(rc.getClosedLanes() == null || !rc.getClosedLanes().contains(i))
                     .build();
                 road.getLanes().add(lane);
             }

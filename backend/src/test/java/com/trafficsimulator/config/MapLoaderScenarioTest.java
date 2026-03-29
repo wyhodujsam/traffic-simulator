@@ -88,9 +88,13 @@ class MapLoaderScenarioTest {
         RoadNetwork network = loaded.network();
         assertThat(network.getRoads()).hasSize(1);
         assertThat(network.getRoads().get("main_road").getLanes()).hasSize(3);
-        assertThat(network.getSpawnPoints()).hasSize(3);
-        assertThat(loaded.defaultSpawnRate()).isEqualTo(2.5);
-        assertThat(network.getRoads().get("main_road").getSpeedLimit()).isEqualTo(27.8);
+        assertThat(network.getSpawnPoints()).hasSize(1); // only lane 0 spawns
+        assertThat(loaded.defaultSpawnRate()).isEqualTo(2.0);
+        assertThat(network.getRoads().get("main_road").getSpeedLimit()).isEqualTo(22.2);
+        // Lanes 1 and 2 should be pre-closed
+        assertThat(network.getRoads().get("main_road").getLanes().get(0).isActive()).isTrue();
+        assertThat(network.getRoads().get("main_road").getLanes().get(1).isActive()).isFalse();
+        assertThat(network.getRoads().get("main_road").getLanes().get(2).isActive()).isFalse();
     }
 
     @Test

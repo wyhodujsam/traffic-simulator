@@ -245,6 +245,14 @@ public class CommandDispatcher {
                 vehicleSpawner.setVehiclesPerSecond(loaded.defaultSpawnRate());
             }
             engine.setLastError(null); // clear any previous error
+            // Apply closed lanes from map config
+            for (var road : loaded.network().getRoads().values()) {
+                for (var lane : road.getLanes()) {
+                    if (!lane.isActive()) {
+                        log.info("Lane pre-closed by map config: {}", lane.getId());
+                    }
+                }
+            }
             log.info("Map loaded: {} (spawn rate: {} veh/s)", cmd.mapId(), loaded.defaultSpawnRate());
         } catch (Exception e) {
             log.error("Failed to load map {}: {}", cmd.mapId(), e.getMessage());

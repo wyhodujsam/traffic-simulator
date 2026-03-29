@@ -1,8 +1,12 @@
 /home/sebastian/traffic-simulator/backend/src/test/java/com/trafficsimulator/config/MapLoaderIntersectionTest.java
+/home/sebastian/traffic-simulator/backend/src/test/java/com/trafficsimulator/config/MapLoaderScenarioTest.java
 /home/sebastian/traffic-simulator/backend/src/test/java/com/trafficsimulator/config/MapLoaderTest.java
+/home/sebastian/traffic-simulator/backend/src/test/java/com/trafficsimulator/controller/SimulationControllerMapTest.java
 /home/sebastian/traffic-simulator/backend/src/test/java/com/trafficsimulator/dto/SimulationStateDtoTest.java
+/home/sebastian/traffic-simulator/backend/src/test/java/com/trafficsimulator/engine/CommandDispatcherLoadMapTest.java
 /home/sebastian/traffic-simulator/backend/src/test/java/com/trafficsimulator/engine/CommandDispatcherTest.java
 /home/sebastian/traffic-simulator/backend/src/test/java/com/trafficsimulator/engine/CommandQueueTest.java
+/home/sebastian/traffic-simulator/backend/src/test/java/com/trafficsimulator/engine/ConcurrencySafetyTest.java
 /home/sebastian/traffic-simulator/backend/src/test/java/com/trafficsimulator/engine/IntersectionManagerTest.java
 /home/sebastian/traffic-simulator/backend/src/test/java/com/trafficsimulator/engine/LaneChangeEngineTest.java
 /home/sebastian/traffic-simulator/backend/src/test/java/com/trafficsimulator/engine/PhysicsEngineTest.java

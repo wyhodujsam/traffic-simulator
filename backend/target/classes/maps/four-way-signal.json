@@ -1,36 +1,37 @@
 {
   "id": "four-way-signal",
   "name": "Four-Way Signalised Intersection",
+  "description": "4-approach signalised intersection with green/yellow/all-red cycles. Demonstrates signal timing effects on traffic flow.",
   "nodes": [
-    { "id": "n_north", "type": "ENTRY", "x": 400.0, "y": 50.0 },
-    { "id": "n_south", "type": "ENTRY", "x": 400.0, "y": 550.0 },
-    { "id": "n_west",  "type": "ENTRY", "x": 50.0,  "y": 300.0 },
-    { "id": "n_east",  "type": "ENTRY", "x": 750.0, "y": 300.0 },
-    { "id": "n_north_exit", "type": "EXIT", "x": 420.0, "y": 50.0 },
-    { "id": "n_south_exit", "type": "EXIT", "x": 380.0, "y": 550.0 },
-    { "id": "n_west_exit",  "type": "EXIT", "x": 50.0,  "y": 320.0 },
-    { "id": "n_east_exit",  "type": "EXIT", "x": 750.0, "y": 280.0 },
-    { "id": "n_center", "type": "INTERSECTION", "x": 400.0, "y": 300.0 }
+    { "id": "n_north",      "type": "ENTRY", "x": 390.0, "y": 50.0 },
+    { "id": "n_south",      "type": "ENTRY", "x": 410.0, "y": 550.0 },
+    { "id": "n_west",       "type": "ENTRY", "x": 50.0,  "y": 310.0 },
+    { "id": "n_east",       "type": "ENTRY", "x": 750.0, "y": 290.0 },
+    { "id": "n_north_exit", "type": "EXIT",  "x": 410.0, "y": 50.0 },
+    { "id": "n_south_exit", "type": "EXIT",  "x": 390.0, "y": 550.0 },
+    { "id": "n_west_exit",  "type": "EXIT",  "x": 50.0,  "y": 290.0 },
+    { "id": "n_east_exit",  "type": "EXIT",  "x": 750.0, "y": 310.0 },
+    { "id": "n_center",     "type": "INTERSECTION", "x": 400.0, "y": 300.0 }
   ],
   "roads": [
-    { "id": "r_north_in",  "name": "North Approach",  "fromNodeId": "n_north",      "toNodeId": "n_center",     "length": 250.0, "speedLimit": 13.9, "laneCount": 1 },
-    { "id": "r_south_in",  "name": "South Approach",  "fromNodeId": "n_south",      "toNodeId": "n_center",     "length": 250.0, "speedLimit": 13.9, "laneCount": 1 },
-    { "id": "r_west_in",   "name": "West Approach",   "fromNodeId": "n_west",       "toNodeId": "n_center",     "length": 350.0, "speedLimit": 13.9, "laneCount": 1 },
-    { "id": "r_east_in",   "name": "East Approach",   "fromNodeId": "n_east",       "toNodeId": "n_center",     "length": 350.0, "speedLimit": 13.9, "laneCount": 1 },
-    { "id": "r_north_out", "name": "North Exit",      "fromNodeId": "n_center",     "toNodeId": "n_north_exit", "length": 250.0, "speedLimit": 13.9, "laneCount": 1 },
-    { "id": "r_south_out", "name": "South Exit",      "fromNodeId": "n_center",     "toNodeId": "n_south_exit", "length": 250.0, "speedLimit": 13.9, "laneCount": 1 },
-    { "id": "r_west_out",  "name": "West Exit",       "fromNodeId": "n_center",     "toNodeId": "n_west_exit",  "length": 350.0, "speedLimit": 13.9, "laneCount": 1 },
-    { "id": "r_east_out",  "name": "East Exit",       "fromNodeId": "n_center",     "toNodeId": "n_east_exit",  "length": 350.0, "speedLimit": 13.9, "laneCount": 1 }
+    { "id": "r_north_in",  "name": "North Inbound",  "fromNodeId": "n_north",      "toNodeId": "n_center",     "length": 230.0, "speedLimit": 13.9, "laneCount": 1 },
+    { "id": "r_south_in",  "name": "South Inbound",  "fromNodeId": "n_south",      "toNodeId": "n_center",     "length": 230.0, "speedLimit": 13.9, "laneCount": 1 },
+    { "id": "r_west_in",   "name": "West Inbound",   "fromNodeId": "n_west",       "toNodeId": "n_center",     "length": 330.0, "speedLimit": 13.9, "laneCount": 1 },
+    { "id": "r_east_in",   "name": "East Inbound",   "fromNodeId": "n_east",       "toNodeId": "n_center",     "length": 330.0, "speedLimit": 13.9, "laneCount": 1 },
+    { "id": "r_north_out", "name": "North Outbound",  "fromNodeId": "n_center",     "toNodeId": "n_north_exit", "length": 230.0, "speedLimit": 13.9, "laneCount": 1 },
+    { "id": "r_south_out", "name": "South Outbound",  "fromNodeId": "n_center",     "toNodeId": "n_south_exit", "length": 230.0, "speedLimit": 13.9, "laneCount": 1 },
+    { "id": "r_west_out",  "name": "West Outbound",   "fromNodeId": "n_center",     "toNodeId": "n_west_exit",  "length": 330.0, "speedLimit": 13.9, "laneCount": 1 },
+    { "id": "r_east_out",  "name": "East Outbound",   "fromNodeId": "n_center",     "toNodeId": "n_east_exit",  "length": 330.0, "speedLimit": 13.9, "laneCount": 1 }
   ],
   "intersections": [
     {
       "nodeId": "n_center",
       "type": "SIGNAL",
       "signalPhases": [
-        { "greenRoadIds": ["r_north_in", "r_south_in"], "durationMs": 30000, "type": "GREEN" },
+        { "greenRoadIds": ["r_north_in", "r_south_in"], "durationMs": 25000, "type": "GREEN" },
         { "greenRoadIds": ["r_north_in", "r_south_in"], "durationMs": 3000,  "type": "YELLOW" },
         { "greenRoadIds": [],                           "durationMs": 2000,  "type": "ALL_RED" },
-        { "greenRoadIds": ["r_west_in", "r_east_in"],   "durationMs": 30000, "type": "GREEN" },
+        { "greenRoadIds": ["r_west_in", "r_east_in"],   "durationMs": 25000, "type": "GREEN" },
         { "greenRoadIds": ["r_west_in", "r_east_in"],   "durationMs": 3000,  "type": "YELLOW" },
         { "greenRoadIds": [],                           "durationMs": 2000,  "type": "ALL_RED" }
       ]
@@ -43,10 +44,10 @@
     { "roadId": "r_east_in",  "laneIndex": 0, "position": 0.0 }
   ],
   "despawnPoints": [
-    { "roadId": "r_north_out", "laneIndex": 0, "position": 250.0 },
-    { "roadId": "r_south_out", "laneIndex": 0, "position": 250.0 },
-    { "roadId": "r_west_out",  "laneIndex": 0, "position": 350.0 },
-    { "roadId": "r_east_out",  "laneIndex": 0, "position": 350.0 }
+    { "roadId": "r_north_out", "laneIndex": 0, "position": 230.0 },
+    { "roadId": "r_south_out", "laneIndex": 0, "position": 230.0 },
+    { "roadId": "r_west_out",  "laneIndex": 0, "position": 330.0 },
+    { "roadId": "r_east_out",  "laneIndex": 0, "position": 330.0 }
   ],
   "defaultSpawnRate": 0.5
 }

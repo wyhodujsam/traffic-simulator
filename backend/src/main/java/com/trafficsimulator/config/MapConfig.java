@@ -36,6 +36,7 @@ public class MapConfig {
         private double length;
         private double speedLimit;
         private int laneCount;
+        private List<Integer> closedLanes;  // lane indexes to close at load (optional)
     }
 
     @Data @NoArgsConstructor

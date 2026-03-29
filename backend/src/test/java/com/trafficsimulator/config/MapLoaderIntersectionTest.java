@@ -55,7 +55,7 @@ class MapLoaderIntersectionTest {
         TrafficLightPhase phase0 = light.getPhases().get(0);
         assertThat(phase0.getType()).isEqualTo(TrafficLightPhase.PhaseType.GREEN);
         assertThat(phase0.getGreenRoadIds()).contains("r_north_in", "r_south_in");
-        assertThat(phase0.getDurationMs()).isEqualTo(30000);
+        assertThat(phase0.getDurationMs()).isEqualTo(25000);
 
         // Phase 1: YELLOW, north and south
         TrafficLightPhase phase1 = light.getPhases().get(1);
