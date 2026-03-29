@@ -93,8 +93,7 @@ public class LaneChangeEngine implements ILaneChangeEngine {
 
                     // Cooldown check (skip for forced and zipper candidates)
                     if (!vehicle.isForceLaneChange() && !vehicle.isZipperCandidate()) {
-                        long ticksSince = currentTick - vehicle.getLastLaneChangeTick();
-                        if (vehicle.getLastLaneChangeTick() > 0 && ticksSince < cooldownTicks) {
+                        if (!vehicle.canChangeLane(currentTick, cooldownTicks)) {
                             continue;
                         }
                     }
@@ -371,10 +370,9 @@ public class LaneChangeEngine implements ILaneChangeEngine {
             // Move vehicle from source to target lane
             source.removeVehicle(vehicle);
             target.addVehicle(vehicle);
-            vehicle.setLane(target);
 
-            // Record cooldown
-            vehicle.setLastLaneChangeTick(currentTick);
+            // Domain method: sets lane, animation tracking, and cooldown
+            vehicle.startLaneChange(target, source.getLaneIndex(), currentTick);
 
             // Clear force flag if was forced
             vehicle.setForceLaneChange(false);
@@ -391,10 +389,6 @@ public class LaneChangeEngine implements ILaneChangeEngine {
                 }
                 vehicle.setZipperCandidate(false);
             }
-
-            // Initialize animation: track source lane index, progress = 0
-            vehicle.setLaneChangeSourceIndex(source.getLaneIndex());
-            vehicle.setLaneChangeProgress(0.0);
 
             log.debug("Lane change: vehicle={} from lane {} to lane {}",
                 vehicle.getId(), source.getId(), target.getId());
@@ -463,10 +457,9 @@ public class LaneChangeEngine implements ILaneChangeEngine {
             for (Lane lane : road.getLanes()) {
                 for (Vehicle v : lane.getVehiclesView()) {
                     if (v.getLaneChangeProgress() < 1.0 && v.getLaneChangeSourceIndex() >= 0) {
-                        v.setLaneChangeProgress(
-                            Math.min(1.0, v.getLaneChangeProgress() + progressStep));
+                        v.advanceLaneChangeProgress(progressStep);
                         if (v.getLaneChangeProgress() >= 1.0) {
-                            v.setLaneChangeSourceIndex(-1); // animation done
+                            v.completeLaneChange();
                         }
                     }
                 }
