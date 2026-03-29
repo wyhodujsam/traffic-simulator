@@ -233,6 +233,16 @@
 Plans:
 - [x] TBD (run /gsd:plan-phase 11 to break down) (completed 2026-03-29)
 
+### Phase 12: Intersection Rendering Refactor
+
+**Goal:** [To be planned]
+**Requirements**: TBD
+**Depends on:** Phase 11
+**Plans:** 1/5 plans executed
+
+Plans:
+- [ ] TBD (run /gsd:plan-phase 12 to break down)
+
 ---
 *Roadmap created: 2026-03-27*
 *All 33 v1 requirements mapped across 10 phases*
