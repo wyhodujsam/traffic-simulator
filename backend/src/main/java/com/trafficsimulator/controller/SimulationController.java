@@ -114,6 +114,7 @@ public class SimulationController {
             case "ADD_OBSTACLE"        -> new com.trafficsimulator.engine.command.SimulationCommand.AddObstacle(dto.getRoadId(), dto.getLaneIndex(), dto.getPosition());
             case "REMOVE_OBSTACLE"     -> new com.trafficsimulator.engine.command.SimulationCommand.RemoveObstacle(dto.getObstacleId());
             case "CLOSE_LANE"          -> new com.trafficsimulator.engine.command.SimulationCommand.CloseLane(dto.getRoadId(), dto.getLaneIndex());
+            case "LOAD_MAP"            -> new com.trafficsimulator.engine.command.SimulationCommand.LoadMap(dto.getMapId());
             default -> throw new IllegalArgumentException("Unknown: " + dto.getType());
         };
         simulationEngine.enqueue(command);
