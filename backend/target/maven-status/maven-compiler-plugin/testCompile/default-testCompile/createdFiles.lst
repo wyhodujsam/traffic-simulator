@@ -9,4 +9,3 @@ com/trafficsimulator/engine/PhysicsEngineTest.class
 com/trafficsimulator/engine/VehicleDespawnTest.class
 com/trafficsimulator/engine/CommandQueueTest.class
 com/trafficsimulator/engine/TickPipelineIntegrationTest.class
-com/trafficsimulator/engine/ZipperYieldDebugTest.class

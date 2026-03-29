@@ -2,7 +2,6 @@ package com.trafficsimulator.engine;
 
 import com.trafficsimulator.model.Lane;
 import com.trafficsimulator.model.Obstacle;
-import com.trafficsimulator.model.Road;
 import com.trafficsimulator.model.Vehicle;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Component;
@@ -16,8 +15,7 @@ public class PhysicsEngine {
 
     private static final double DELTA = 4.0;   // IDM acceleration exponent
     private static final double S_MIN = 1.0;    // minimum gap guard (metres)
-    private static final double ZIPPER_YIELD_DISTANCE = 60.0; // metres ahead to start yielding
-    private static final double ZIPPER_YIELD_SPEED = 10.0;    // m/s — virtual leader speed at yield point
+    // Zipper yield removed — was causing adjacent lane congestion at merge point
 
     /**
      * Advances all vehicles in the lane by one time step using the IDM model.
@@ -84,22 +82,6 @@ public class PhysicsEngine {
                 leaderSpeed = 0;
                 leaderLength = 0;
                 hasLeader = false;
-            }
-
-            // Zipper yield: if adjacent lane has obstacle with stuck vehicles,
-            // treat the obstacle position as a slow virtual leader to create merge gaps
-            Road road = lane.getRoad();
-            if (road != null) {
-                double zipperLeaderPos = findZipperYieldPoint(vehicle, lane, road);
-                if (zipperLeaderPos < Double.MAX_VALUE) {
-                    // Only yield if this virtual leader is closer than the real one
-                    if (!hasLeader || zipperLeaderPos < leaderPos) {
-                        leaderPos = zipperLeaderPos;
-                        leaderSpeed = ZIPPER_YIELD_SPEED;
-                        leaderLength = 3.0;
-                        hasLeader = true;
-                    }
-                }
             }
 
             double acceleration = computeAcceleration(vehicle, leaderPos, leaderSpeed, leaderLength, hasLeader);
@@ -199,42 +181,4 @@ public class PhysicsEngine {
         return computeAcceleration(vehicle, 0, 0, 0, false);
     }
 
-    /**
-     * Finds a zipper yield point: if an adjacent lane has an obstacle with a
-     * stuck zipper candidate behind it, returns the obstacle position so this
-     * vehicle slows down and creates a merge gap.
-     *
-     * @return obstacle position to yield at, or Double.MAX_VALUE if no yield needed
-     */
-    private double findZipperYieldPoint(Vehicle vehicle, Lane currentLane, Road road) {
-        double pos = vehicle.getPosition();
-        double bestYieldPos = Double.MAX_VALUE;
-
-        // Check adjacent lanes
-        for (Lane neighbor : new Lane[]{road.getLeftNeighbor(currentLane), road.getRightNeighbor(currentLane)}) {
-            if (neighbor == null) continue;
-
-            for (Obstacle obs : neighbor.getObstacles()) {
-                double dist = obs.getPosition() - pos;
-                // Only yield if obstacle is ahead, within yield distance,
-                // AND vehicle is far enough to decelerate gracefully (not already at the obstacle)
-                if (dist > 15.0 && dist < ZIPPER_YIELD_DISTANCE) {
-                    // Check if there's actually a stuck vehicle behind this obstacle
-                    boolean hasStuckVehicle = false;
-                    for (Vehicle v : neighbor.getVehicles()) {
-                        double vDist = obs.getPosition() - v.getPosition();
-                        if (vDist > 0 && vDist < 30.0 && v.getSpeed() < 2.0) {
-                            hasStuckVehicle = true;
-                            break;
-                        }
-                    }
-                    if (hasStuckVehicle && obs.getPosition() < bestYieldPos) {
-                        bestYieldPos = obs.getPosition();
-                    }
-                }
-            }
-        }
-
-        return bestYieldPos;
-    }
 }

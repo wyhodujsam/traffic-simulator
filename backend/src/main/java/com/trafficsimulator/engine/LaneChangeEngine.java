@@ -160,20 +160,27 @@ public class LaneChangeEngine {
         }
 
         // Gap check: ensure minimum gap to vehicles in target lane
-        // Zipper candidates use a tighter minimum gap (just vehicle length)
-        double minGapAhead = isZipper ? subject.getLength() : subject.getS0() + subject.getLength();
-        double minGapBehind = isZipper ? subject.getLength() : (newFollower != null ? newFollower.getS0() : 0);
-
-        if (newLeader != null) {
-            double gapAhead = newLeader.getPosition() - subjectPos - newLeader.getLength();
-            if (gapAhead < minGapAhead) {
-                return null; // not enough space ahead
+        if (isZipper) {
+            // Zipper: only check ahead gap (must not land on top of leader).
+            // Skip behind check — follower will brake naturally via IDM after merge.
+            if (newLeader != null) {
+                double gapAhead = newLeader.getPosition() - subjectPos - newLeader.getLength();
+                if (gapAhead < subject.getLength()) {
+                    return null;
+                }
             }
-        }
-        if (newFollower != null) {
-            double gapBehind = subjectPos - newFollower.getPosition() - subject.getLength();
-            if (gapBehind < minGapBehind) {
-                return null; // not enough space behind
+        } else {
+            if (newLeader != null) {
+                double gapAhead = newLeader.getPosition() - subjectPos - newLeader.getLength();
+                if (gapAhead < subject.getS0() + subject.getLength()) {
+                    return null;
+                }
+            }
+            if (newFollower != null) {
+                double gapBehind = subjectPos - newFollower.getPosition() - subject.getLength();
+                if (gapBehind < newFollower.getS0()) {
+                    return null;
+                }
             }
         }
 
