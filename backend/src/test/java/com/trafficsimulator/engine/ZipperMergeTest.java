@@ -249,7 +249,60 @@ class ZipperMergeTest {
     }
 
     // =========================================================================
-    // Test 7: Vehicle NOT near obstacle is NOT a zipper candidate
+    // Test 7: Free-lane vehicles slow down near zipper point (yield zone)
+    // =========================================================================
+    @Test
+    void zipperMerge_freeLaneVehiclesSlowDown_nearObstacleOnAdjacentLane() {
+        createObstacle(lane1, 400.0);
+        // Multiple stuck vehicles so yield zone stays active even after first merges
+        createVehicle("stuck1", lane1, 392.0, 0.0);
+        createVehicle("stuck2", lane1, 382.0, 0.0);
+        createVehicle("stuck3", lane1, 372.0, 0.0);
+
+        // Free lane vehicle approaching the obstacle zone
+        Vehicle freeLane = createVehicle("free", lane0, 340.0, 25.0);
+
+        // Run physics only (no lane change engine) to isolate yield behavior
+        for (int tick = 0; tick < 40; tick++) {
+            physicsEngine.tick(lane0, DT);
+            physicsEngine.tick(lane1, DT);
+        }
+
+        // Vehicle should have slowed significantly near the obstacle zone
+        assertThat(freeLane.getSpeed()).as("free lane vehicle slows near zipper point")
+            .isLessThan(15.0);
+    }
+
+    // =========================================================================
+    // Test 8: Alternating merge — blocked and free lane vehicles interleave
+    // =========================================================================
+    @Test
+    void zipperMerge_alternatingMerge_blockedAndFreeInterleave() {
+        lane2.setActive(false); // force single merge direction
+
+        createObstacle(lane1, 400.0);
+        Vehicle stuck1 = createVehicle("stuck1", lane1, 392.0, 0.0);
+        Vehicle stuck2 = createVehicle("stuck2", lane1, 382.0, 0.0);
+
+        // Free lane has steady flow approaching the merge zone
+        Vehicle free1 = createVehicle("free1", lane0, 360.0, 20.0);
+        Vehicle free2 = createVehicle("free2", lane0, 330.0, 20.0);
+        Vehicle free3 = createVehicle("free3", lane0, 300.0, 20.0);
+
+        // Track merge events — which vehicles end up on lane0 in order of position
+        for (int tick = 1; tick <= 400; tick++) {
+            physicsEngine.tick(lane0, DT);
+            physicsEngine.tick(lane1, DT);
+            laneChangeEngine.tick(network, tick);
+        }
+
+        // Both stuck vehicles should have merged
+        assertThat(stuck1.getLane()).as("stuck1 merged to free lane").isEqualTo(lane0);
+        assertThat(stuck2.getLane()).as("stuck2 merged to free lane").isEqualTo(lane0);
+    }
+
+    // =========================================================================
+    // Test 9: Vehicle NOT near obstacle is NOT a zipper candidate
     // =========================================================================
     @Test
     void vehicleFarFromObstacle_isNotZipperCandidate() {
