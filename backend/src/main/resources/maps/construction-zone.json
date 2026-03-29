@@ -1,0 +1,32 @@
+{
+  "id": "construction-zone",
+  "name": "Construction Zone",
+  "description": "3-lane road with high traffic. Click on lane 2 near the middle to simulate a construction zone — watch how a single lane closure creates cascading congestion.",
+  "nodes": [
+    { "id": "entry", "type": "ENTRY", "x": 50.0, "y": 200.0 },
+    { "id": "exit",  "type": "EXIT",  "x": 650.0, "y": 200.0 }
+  ],
+  "roads": [
+    {
+      "id": "main_road",
+      "name": "Highway",
+      "fromNodeId": "entry",
+      "toNodeId": "exit",
+      "length": 600.0,
+      "speedLimit": 27.8,
+      "laneCount": 3
+    }
+  ],
+  "intersections": [],
+  "spawnPoints": [
+    { "roadId": "main_road", "laneIndex": 0, "position": 0.0 },
+    { "roadId": "main_road", "laneIndex": 1, "position": 0.0 },
+    { "roadId": "main_road", "laneIndex": 2, "position": 0.0 }
+  ],
+  "despawnPoints": [
+    { "roadId": "main_road", "laneIndex": 0, "position": 600.0 },
+    { "roadId": "main_road", "laneIndex": 1, "position": 600.0 },
+    { "roadId": "main_road", "laneIndex": 2, "position": 600.0 }
+  ],
+  "defaultSpawnRate": 2.5
+}
