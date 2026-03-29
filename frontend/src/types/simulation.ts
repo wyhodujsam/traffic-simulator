@@ -12,6 +12,15 @@ export interface VehicleDto {
   laneChangeProgress?: number;        // 0..1, undefined = not changing
 }
 
+export interface TrafficLightDto {
+  intersectionId: string;
+  roadId: string;
+  state: 'GREEN' | 'YELLOW' | 'RED';
+  x: number;
+  y: number;
+  angle: number;
+}
+
 export interface ObstacleDto {
   id: string;
   laneId: string;
@@ -36,6 +45,7 @@ export interface SimulationStateDto {
   status: SimulationStatus;
   vehicles: VehicleDto[];
   obstacles: ObstacleDto[];
+  trafficLights: TrafficLightDto[];
   stats: StatsDto;
 }
 
@@ -74,7 +84,8 @@ export type CommandType =
   | 'START' | 'STOP' | 'PAUSE' | 'RESUME'
   | 'SET_SPAWN_RATE' | 'SET_SPEED_MULTIPLIER' | 'SET_MAX_SPEED' | 'LOAD_MAP'
   | 'ADD_OBSTACLE' | 'REMOVE_OBSTACLE'
-  | 'CLOSE_LANE';
+  | 'CLOSE_LANE'
+  | 'SET_LIGHT_CYCLE';
 
 export interface CommandDto {
   type: CommandType;
@@ -88,6 +99,9 @@ export interface CommandDto {
   obstacleId?: string;   // REMOVE_OBSTACLE
   closeLaneRoadId?: string;   // CLOSE_LANE
   closeLaneIndex?: number;    // CLOSE_LANE
+  intersectionId?: string;       // SET_LIGHT_CYCLE
+  greenDurationMs?: number;      // SET_LIGHT_CYCLE
+  yellowDurationMs?: number;     // SET_LIGHT_CYCLE
 }
 
 // ---- Snapshot wrapper for interpolation ----
