@@ -22,12 +22,14 @@ public class LaneChangeEngine {
 
     // MOBIL parameters
     private static final double B_SAFE = 4.0;          // safe braking limit m/s^2
+    private static final double B_SAFE_ZIPPER = 5.5;   // relaxed braking limit for zipper merge
     private static final double POLITENESS = 0.3;       // weight for neighbors' disadvantage
     private static final double A_THRESHOLD_LEFT = 0.3; // threshold for moving left (overtake)
     private static final double A_THRESHOLD_RIGHT = 0.1;// threshold for moving right (keep-right)
     private static final double COOLDOWN_SECONDS = 3.0; // seconds between lane changes
     private static final double BASE_DT = 0.05;         // 50ms tick
     private static final int    TRANSITION_TICKS = 10;   // ticks for lane change animation
+    private static final double OBSTACLE_PROXIMITY = 30.0; // metres — "stuck behind obstacle" threshold
 
     private final PhysicsEngine physicsEngine;
 
@@ -49,6 +51,9 @@ public class LaneChangeEngine {
 
         // Update lane change animation progress for vehicles mid-transition
         updateLaneChangeProgress(network);
+
+        // Mark zipper merge candidates: first stopped vehicle behind each obstacle
+        markZipperCandidates(network);
 
         // Phase 1: Collect intents
         List<LaneChangeIntent> intents = collectIntents(network, currentTick);
@@ -74,8 +79,8 @@ public class LaneChangeEngine {
                 if (!lane.isActive()) continue;
 
                 for (Vehicle vehicle : lane.getVehicles()) {
-                    // Cooldown check
-                    if (!vehicle.isForceLaneChange()) {
+                    // Cooldown check (skip for forced and zipper candidates)
+                    if (!vehicle.isForceLaneChange() && !vehicle.isZipperCandidate()) {
                         long ticksSince = currentTick - vehicle.getLastLaneChangeTick();
                         if (vehicle.getLastLaneChangeTick() > 0 && ticksSince < cooldownTicks) {
                             continue;
@@ -138,9 +143,11 @@ public class LaneChangeEngine {
         double aSubjectTarget = computeIdmAccelInLane(subject, newLeader, targetLane);
 
         // Safety criterion: new follower must not brake harder than b_safe
+        // Zipper merge candidates get a relaxed threshold to allow cooperative merging
+        double effectiveBSafe = subject.isZipperCandidate() ? B_SAFE_ZIPPER : B_SAFE;
         if (newFollower != null) {
             double aNewFollowerAfter = computeIdmAccelWithLeader(newFollower, subject);
-            if (aNewFollowerAfter < -B_SAFE) {
+            if (aNewFollowerAfter < -effectiveBSafe) {
                 return null; // unsafe
             }
         }
@@ -168,10 +175,11 @@ public class LaneChangeEngine {
             }
         }
 
-        // For forced lane changes (lane closed), skip incentive check
-        if (subject.isForceLaneChange()) {
+        // For forced lane changes (lane closed) or zipper merge, skip incentive check
+        if (subject.isForceLaneChange() || subject.isZipperCandidate()) {
+            double score = subject.isForceLaneChange() ? Double.MAX_VALUE : 100.0;
             return new LaneChangeIntent(subject, currentLane, targetLane,
-                subjectPos, Double.MAX_VALUE);
+                subjectPos, score);
         }
 
         // Incentive criterion:
@@ -343,6 +351,37 @@ public class LaneChangeEngine {
 
             log.debug("Lane change: vehicle={} from lane {} to lane {}",
                 vehicle.getId(), source.getId(), target.getId());
+        }
+    }
+
+    /**
+     * Marks the first stopped/slow vehicle behind each obstacle as a zipper merge candidate.
+     * Only one vehicle per obstacle gets zipper status → 1-by-1 merge.
+     */
+    private void markZipperCandidates(RoadNetwork network) {
+        for (Road road : network.getRoads().values()) {
+            for (Lane lane : road.getLanes()) {
+                // Clear previous marks
+                for (Vehicle v : lane.getVehicles()) {
+                    v.setZipperCandidate(false);
+                }
+
+                // For each obstacle, find the first vehicle behind it that is slow/stopped
+                for (Obstacle obs : lane.getObstacles()) {
+                    Vehicle closest = null;
+                    double closestDist = Double.MAX_VALUE;
+                    for (Vehicle v : lane.getVehicles()) {
+                        double dist = obs.getPosition() - v.getPosition();
+                        if (dist > 0 && dist < OBSTACLE_PROXIMITY && dist < closestDist) {
+                            closest = v;
+                            closestDist = dist;
+                        }
+                    }
+                    if (closest != null && closest.getSpeed() < 2.0) {
+                        closest.setZipperCandidate(true);
+                    }
+                }
+            }
         }
     }
 

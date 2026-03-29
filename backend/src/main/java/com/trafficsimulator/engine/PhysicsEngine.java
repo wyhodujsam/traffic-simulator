@@ -107,6 +107,15 @@ public class PhysicsEngine {
 
             double newPosition = vehicle.getPosition() + newSpeed * dt;
 
+            // Guard 6: Position clamp — never pass the effective leader
+            if (hasLeader) {
+                double maxPosition = leaderPos - leaderLength - S_MIN;
+                if (newPosition > maxPosition) {
+                    newPosition = maxPosition;
+                    newSpeed = 0.0;
+                }
+            }
+
             // Write back
             vehicle.setAcceleration(acceleration);
             vehicle.setSpeed(newSpeed);
