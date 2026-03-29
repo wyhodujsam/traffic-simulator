@@ -87,6 +87,7 @@ public class SimulationEngine {
     /**
      * Called each tick BEFORE any simulation logic.
      * Drains all pending commands and dispatches them via CommandDispatcher.
+     * Acquires writeLock internally — use when caller does NOT already hold the lock.
      */
     public void drainCommands() {
         List<SimulationCommand> pending = new ArrayList<>();
@@ -100,6 +101,18 @@ public class SimulationEngine {
             }
         } finally {
             writeLock().unlock();
+        }
+    }
+
+    /**
+     * Drains pending commands WITHOUT acquiring the lock.
+     * Use when the caller already holds writeLock (e.g., TickEmitter).
+     */
+    public void drainCommandsUnlocked() {
+        List<SimulationCommand> pending = new ArrayList<>();
+        commandQueue.drainTo(pending);
+        for (SimulationCommand cmd : pending) {
+            commandDispatcher.dispatch(cmd);
         }
     }
 
