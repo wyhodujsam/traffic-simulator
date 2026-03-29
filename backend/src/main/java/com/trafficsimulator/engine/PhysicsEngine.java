@@ -216,8 +216,9 @@ public class PhysicsEngine {
 
             for (Obstacle obs : neighbor.getObstacles()) {
                 double dist = obs.getPosition() - pos;
-                // Only yield if obstacle is ahead and within yield distance
-                if (dist > 0 && dist < ZIPPER_YIELD_DISTANCE) {
+                // Only yield if obstacle is ahead, within yield distance,
+                // AND vehicle is far enough to decelerate gracefully (not already at the obstacle)
+                if (dist > 15.0 && dist < ZIPPER_YIELD_DISTANCE) {
                     // Check if there's actually a stuck vehicle behind this obstacle
                     boolean hasStuckVehicle = false;
                     for (Vehicle v : neighbor.getVehicles()) {
