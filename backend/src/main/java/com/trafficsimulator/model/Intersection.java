@@ -21,5 +21,8 @@ public class Intersection {
     @Builder.Default
     private List<String> outboundRoadIds = new ArrayList<>();  // roads whose fromNodeId = this intersection
 
+    @Builder.Default
+    private double intersectionSize = 0;  // pixel radius of intersection box (0 = auto)
+
     private TrafficLight trafficLight;  // null for non-SIGNAL types
 }

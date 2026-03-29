@@ -76,6 +76,7 @@ public class SimulationController {
             return List.of();
         }
         List<RoadDto> result = new ArrayList<>();
+        Map<String, Intersection> intersections = network.getIntersections();
         for (Road road : network.getRoads().values()) {
             List<LaneDto> laneDtos = road.getLanes().stream()
                 .map(lane -> LaneDto.builder()
@@ -84,6 +85,19 @@ public class SimulationController {
                     .active(lane.isActive())
                     .build())
                 .toList();
+
+            // Compute clip distances based on intersection sizes
+            double clipStart = 0;
+            double clipEnd = 0;
+            Intersection fromIxtn = intersections.get(road.getFromNodeId());
+            Intersection toIxtn = intersections.get(road.getToNodeId());
+            if (fromIxtn != null && fromIxtn.getIntersectionSize() > 0) {
+                clipStart = fromIxtn.getIntersectionSize() / 2.0;
+            }
+            if (toIxtn != null && toIxtn.getIntersectionSize() > 0) {
+                clipEnd = toIxtn.getIntersectionSize() / 2.0;
+            }
+
             result.add(RoadDto.builder()
                 .id(road.getId())
                 .name(road.getName())
@@ -95,6 +109,8 @@ public class SimulationController {
                 .endX(road.getEndX())
                 .endY(road.getEndY())
                 .lanes(laneDtos)
+                .clipStart(clipStart)
+                .clipEnd(clipEnd)
                 .build());
         }
         return result;

@@ -96,6 +96,7 @@ public class MapLoader {
                 Intersection ixtn = Intersection.builder()
                     .id(ic.getNodeId())
                     .type(IntersectionType.valueOf(ic.getType()))
+                    .intersectionSize(ic.getIntersectionSize())
                     .build();
                 intersections.put(ixtn.getId(), ixtn);
             }
