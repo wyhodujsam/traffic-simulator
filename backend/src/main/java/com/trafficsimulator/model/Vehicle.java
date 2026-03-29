@@ -39,4 +39,51 @@ public class Vehicle {
 
     // Zipper merge: set per-tick for the first stopped vehicle behind each obstacle
     private transient boolean zipperCandidate;
+
+    /**
+     * Single mutation point for physics state. Validates invariants.
+     * Clamps position to >= 0, speed to [0, v0 * 1.1], acceleration unclamped.
+     */
+    public void updatePhysics(double position, double speed, double acceleration) {
+        this.position = Math.max(0.0, position);
+        this.speed = Math.max(0.0, Math.min(speed, v0 * 1.1));  // allow 10% overshoot for IDM transients
+        this.acceleration = acceleration;
+    }
+
+    /**
+     * Initiates a lane change to the target lane.
+     * Sets animation tracking fields.
+     */
+    public void startLaneChange(Lane targetLane, int sourceIndex, long currentTick) {
+        this.lane = targetLane;
+        this.laneChangeProgress = 0.0;
+        this.laneChangeSourceIndex = sourceIndex;
+        this.lastLaneChangeTick = currentTick;
+    }
+
+    /**
+     * Advances lane change animation progress by increment, clamped to [0, 1].
+     */
+    public void advanceLaneChangeProgress(double increment) {
+        this.laneChangeProgress = Math.min(1.0, this.laneChangeProgress + increment);
+    }
+
+    /**
+     * Completes lane change — resets animation tracking.
+     */
+    public void completeLaneChange() {
+        this.laneChangeSourceIndex = -1;
+        this.laneChangeProgress = 0.0;
+    }
+
+    /** Returns true if vehicle is currently mid-lane-change. */
+    public boolean isInLaneChange() {
+        return laneChangeSourceIndex != -1;
+    }
+
+    /** Returns true if enough time has passed since last lane change. */
+    public boolean canChangeLane(long currentTick, double cooldownTicks) {
+        if (lastLaneChangeTick == 0) return true;
+        return (currentTick - lastLaneChangeTick) >= cooldownTicks;
+    }
 }
