@@ -27,7 +27,7 @@ class TickPipelineIntegrationTest {
     @BeforeEach
     void setUp() throws Exception {
         MapLoader loader = new MapLoader(new ObjectMapper(), new MapValidator());
-        network = loader.loadFromClasspath("maps/straight-road.json");
+        network = loader.loadFromClasspath("maps/straight-road.json").network();
         spawner = new VehicleSpawner();
         spawner.setVehiclesPerSecond(2.0);
         physics = new PhysicsEngine();

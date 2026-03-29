@@ -18,7 +18,7 @@ class MapLoaderIntersectionTest {
 
     @Test
     void loadsFourWaySignalMap() throws Exception {
-        RoadNetwork network = mapLoader.loadFromClasspath("maps/four-way-signal.json");
+        RoadNetwork network = mapLoader.loadFromClasspath("maps/four-way-signal.json").network();
 
         assertThat(network).isNotNull();
         assertThat(network.getId()).isEqualTo("four-way-signal");
@@ -47,7 +47,7 @@ class MapLoaderIntersectionTest {
 
     @Test
     void trafficLightPhasesMatchConfig() throws Exception {
-        RoadNetwork network = mapLoader.loadFromClasspath("maps/four-way-signal.json");
+        RoadNetwork network = mapLoader.loadFromClasspath("maps/four-way-signal.json").network();
         Intersection ixtn = network.getIntersections().get("n_center");
         TrafficLight light = ixtn.getTrafficLight();
 
@@ -75,7 +75,7 @@ class MapLoaderIntersectionTest {
 
     @Test
     void straightRoadStillLoadsCorrectly() throws Exception {
-        RoadNetwork network = mapLoader.loadFromClasspath("maps/straight-road.json");
+        RoadNetwork network = mapLoader.loadFromClasspath("maps/straight-road.json").network();
 
         assertThat(network.getRoads()).hasSize(1);
         assertThat(network.getIntersections()).isEmpty();
