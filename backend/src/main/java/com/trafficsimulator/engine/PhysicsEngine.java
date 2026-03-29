@@ -26,6 +26,19 @@ public class PhysicsEngine {
      * @param dt   time step in seconds (e.g. 0.05 for 20 Hz)
      */
     public void tick(Lane lane, double dt) {
+        tick(lane, dt, -1.0);  // no stop line
+    }
+
+    /**
+     * Advances vehicles with an optional stop line acting as a virtual stationary leader.
+     * Used for red traffic lights and box-blocking prevention.
+     *
+     * @param lane             the lane containing vehicles
+     * @param dt               time step in seconds
+     * @param stopLinePosition if >= 0, acts as a stationary virtual leader at this position;
+     *                         if < 0, no stop line (normal behavior)
+     */
+    public void tick(Lane lane, double dt, double stopLinePosition) {
         List<Vehicle> vehicles = lane.getVehicles();
         if (vehicles.isEmpty()) return;
 
@@ -51,10 +64,11 @@ public class PhysicsEngine {
                 }
             }
 
-            // Determine effective leader: vehicle or obstacle, whichever is closer
+            // Determine effective leader candidates: vehicle, obstacle, stop line
             double leaderPos, leaderSpeed, leaderLength;
             boolean hasLeader;
 
+            // Start with existing logic for vehicle + obstacle
             if (vehicleLeader != null && nearestObstacle != null) {
                 // Both exist — pick the closer one
                 if (vehicleLeader.getPosition() <= nearestObstaclePos) {
@@ -82,6 +96,16 @@ public class PhysicsEngine {
                 leaderSpeed = 0;
                 leaderLength = 0;
                 hasLeader = false;
+            }
+
+            // Stop line as virtual stationary leader (position = stopLinePosition, speed = 0, length = 0)
+            if (stopLinePosition >= 0 && stopLinePosition > vehicle.getPosition()) {
+                if (!hasLeader || stopLinePosition < leaderPos) {
+                    leaderPos = stopLinePosition;
+                    leaderSpeed = 0.0;
+                    leaderLength = 0.0;
+                    hasLeader = true;
+                }
             }
 
             double acceleration = computeAcceleration(vehicle, leaderPos, leaderSpeed, leaderLength, hasLeader);

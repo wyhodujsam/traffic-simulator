@@ -18,7 +18,8 @@ class VehicleDespawnTest {
         return RoadNetwork.builder()
             .id("test").roads(roads)
             .intersections(new LinkedHashMap<>())
-            .spawnPoints(List.of()).despawnPoints(List.of())
+            .spawnPoints(List.of())
+            .despawnPoints(List.of(new DespawnPoint("r1", 0, 800.0)))
             .build();
     }
 

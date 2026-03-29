@@ -9,8 +9,10 @@ import org.springframework.stereotype.Component;
 import java.util.ArrayDeque;
 import java.util.Deque;
 import java.util.List;
+import java.util.Set;
 import java.util.UUID;
 import java.util.concurrent.ThreadLocalRandom;
+import java.util.stream.Collectors;
 
 @Component
 @Slf4j
@@ -117,10 +119,17 @@ public class VehicleSpawner {
 
     /**
      * Despawns vehicles that have reached or passed the end of their lane.
+     * Only despawns on roads ending at EXIT nodes (roads with despawn points).
      * Called at the end of each tick after physics update.
      */
     public void despawnVehicles(RoadNetwork network) {
+        // Build set of road IDs that are exit roads (have despawn points)
+        Set<String> exitRoadIds = network.getDespawnPoints().stream()
+            .map(DespawnPoint::roadId)
+            .collect(Collectors.toSet());
+
         for (Road road : network.getRoads().values()) {
+            if (!exitRoadIds.contains(road.getId())) continue;  // skip non-exit roads
             for (Lane lane : road.getLanes()) {
                 lane.getVehicles().removeIf(v -> {
                     if (v.getPosition() >= lane.getLength()) {
