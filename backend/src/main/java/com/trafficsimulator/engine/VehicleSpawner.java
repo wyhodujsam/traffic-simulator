@@ -75,7 +75,7 @@ public class VehicleSpawner {
 
             if (isSpawnPositionClear(lane, sp.position())) {
                 Vehicle vehicle = createVehicle(lane, sp.position(), currentTick);
-                lane.getVehicles().add(vehicle);
+                lane.addVehicle(vehicle);
                 log.debug("Spawned vehicle {} on lane {} at position {}",
                     vehicle.getId(), lane.getId(), sp.position());
                 return true;
@@ -86,7 +86,7 @@ public class VehicleSpawner {
     }
 
     private boolean isSpawnPositionClear(Lane lane, double spawnPosition) {
-        return lane.getVehicles().stream()
+        return lane.getVehiclesView().stream()
             .noneMatch(v -> Math.abs(v.getPosition() - spawnPosition) < MIN_SAFE_GAP);
     }
 
@@ -131,7 +131,7 @@ public class VehicleSpawner {
         for (Road road : network.getRoads().values()) {
             if (!exitRoadIds.contains(road.getId())) continue;  // skip non-exit roads
             for (Lane lane : road.getLanes()) {
-                lane.getVehicles().removeIf(v -> {
+                lane.removeVehiclesIf(v -> {
                     if (v.getPosition() >= lane.getLength()) {
                         despawnTimestamps.addLast(System.currentTimeMillis());
                         log.debug("Vehicle {} despawned at position {} (lane length {})",
