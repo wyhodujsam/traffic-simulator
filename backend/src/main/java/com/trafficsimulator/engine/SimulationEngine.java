@@ -96,8 +96,8 @@ public class SimulationEngine {
         if (roadNetwork == null) return;
         for (Road road : roadNetwork.getRoads().values()) {
             for (Lane lane : road.getLanes()) {
-                lane.getVehicles().clear();
-                lane.getObstacles().clear();
+                lane.clearVehicles();
+                lane.clearObstacles();
                 lane.setActive(true);  // Reset lane status on stop
             }
         }

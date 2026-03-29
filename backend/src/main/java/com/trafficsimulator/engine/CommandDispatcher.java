@@ -172,12 +172,12 @@ public class CommandDispatcher {
             lane.setActive(false);
 
             // Flag all vehicles in the closed lane for forced lane change
-            for (Vehicle v : lane.getVehicles()) {
+            for (Vehicle v : lane.getVehiclesView()) {
                 v.setForceLaneChange(true);
             }
 
             log.info("Lane closed: road={} lane={} — {} vehicles flagged for merge",
-                cmd.roadId(), cmd.laneIndex(), lane.getVehicles().size());
+                cmd.roadId(), cmd.laneIndex(), lane.getVehicleCount());
         } else {
             log.warn("Cannot close lane: road={} laneIndex={} not found",
                 cmd.roadId(), cmd.laneIndex());

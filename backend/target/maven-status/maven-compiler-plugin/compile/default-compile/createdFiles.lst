@@ -38,6 +38,7 @@ com/trafficsimulator/model/RoadNetwork.class
 com/trafficsimulator/model/Intersection$IntersectionBuilder.class
 com/trafficsimulator/engine/command/SimulationCommand$LoadMap.class
 com/trafficsimulator/dto/RoadDto.class
+com/trafficsimulator/engine/CommandDispatcher.class
 com/trafficsimulator/model/Lane$LaneBuilder.class
 com/trafficsimulator/engine/TrafficLightController.class
 com/trafficsimulator/controller/SimulationController.class
