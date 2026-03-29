@@ -70,6 +70,19 @@ public class ObstacleManager {
     }
 
     /**
+     * Removes all obstacles from all lanes in the network.
+     * Called during map loading to clear obstacles from the old network.
+     */
+    public void clearAll(RoadNetwork network) {
+        for (Road road : network.getRoads().values()) {
+            for (Lane lane : road.getLanes()) {
+                lane.clearObstacles();
+            }
+        }
+        log.info("All obstacles cleared");
+    }
+
+    /**
      * Returns all obstacles across all lanes (for snapshot building).
      */
     public List<Obstacle> getAllObstacles(RoadNetwork network) {
