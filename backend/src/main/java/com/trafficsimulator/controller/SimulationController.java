@@ -3,10 +3,12 @@ package com.trafficsimulator.controller;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.trafficsimulator.config.MapConfig;
 import com.trafficsimulator.dto.LaneDto;
+import com.trafficsimulator.dto.IntersectionDto;
 import com.trafficsimulator.dto.MapInfoDto;
 import com.trafficsimulator.dto.RoadDto;
 import com.trafficsimulator.dto.SimulationStatusDto;
 import com.trafficsimulator.engine.SimulationEngine;
+import com.trafficsimulator.model.Intersection;
 import com.trafficsimulator.model.Lane;
 import com.trafficsimulator.model.Obstacle;
 import com.trafficsimulator.model.Road;
@@ -93,6 +95,45 @@ public class SimulationController {
                 .endX(road.getEndX())
                 .endY(road.getEndY())
                 .lanes(laneDtos)
+                .build());
+        }
+        return result;
+    }
+
+    /**
+     * Returns intersection geometry for the currently loaded map.
+     * Used by frontend to render intersection boxes on canvas.
+     */
+    @GetMapping("/intersections")
+    public List<IntersectionDto> getIntersections() {
+        RoadNetwork network = simulationEngine.getRoadNetwork();
+        if (network == null) return List.of();
+
+        List<IntersectionDto> result = new ArrayList<>();
+        for (Intersection ixtn : network.getIntersections().values()) {
+            double cx = 0, cy = 0;
+            boolean found = false;
+            int maxLaneCount = 1;
+            for (String roadId : ixtn.getConnectedRoadIds()) {
+                Road road = network.getRoads().get(roadId);
+                if (road == null) continue;
+                if (!found) {
+                    if (road.getToNodeId().equals(ixtn.getId())) {
+                        cx = road.getEndX(); cy = road.getEndY(); found = true;
+                    } else if (road.getFromNodeId().equals(ixtn.getId())) {
+                        cx = road.getStartX(); cy = road.getStartY(); found = true;
+                    }
+                }
+                maxLaneCount = Math.max(maxLaneCount, road.getLanes().size());
+            }
+            if (!found) continue;
+
+            // Size = widest connected road width in pixels (laneCount * 14px lane width)
+            double size = maxLaneCount * 14.0;
+            result.add(IntersectionDto.builder()
+                .id(ixtn.getId())
+                .x(cx).y(cy)
+                .size(size)
                 .build());
         }
         return result;
