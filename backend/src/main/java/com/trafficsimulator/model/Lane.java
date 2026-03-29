@@ -44,13 +44,7 @@ public class Lane {
 
     // ── Vehicle collection methods ──────────────────────────────
 
-    /** @deprecated Use {@link #getVehiclesView()}, {@link #addVehicle}, etc. */
-    @Deprecated
-    public List<Vehicle> getVehicles() {
-        return vehicles;
-    }
-
-    /** Returns an unmodifiable view of the vehicles list. */
+/** Returns an unmodifiable view of the vehicles list. */
     public List<Vehicle> getVehiclesView() {
         return Collections.unmodifiableList(vehicles);
     }
@@ -77,13 +71,7 @@ public class Lane {
 
     // ── Obstacle collection methods ─────────────────────────────
 
-    /** @deprecated Use {@link #getObstaclesView()}, {@link #addObstacle}, etc. */
-    @Deprecated
-    public List<Obstacle> getObstacles() {
-        return obstacles;
-    }
-
-    /** Returns an unmodifiable view of the obstacles list. */
+/** Returns an unmodifiable view of the obstacles list. */
     public List<Obstacle> getObstaclesView() {
         return Collections.unmodifiableList(obstacles);
     }

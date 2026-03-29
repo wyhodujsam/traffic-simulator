@@ -58,12 +58,12 @@ class RoadNarrowingIntegrationTest {
 
         Vehicle v1 = createVehicle("v1", 200, 15.0, lane0);
         Vehicle v2 = createVehicle("v2", 400, 15.0, lane0);
-        lane0.getVehicles().add(v1);
-        lane0.getVehicles().add(v2);
+        lane0.addVehicle(v1);
+        lane0.addVehicle(v2);
 
         // Simulate CloseLane command effect
         lane0.setActive(false);
-        for (Vehicle v : lane0.getVehicles()) {
+        for (Vehicle v : lane0.getVehiclesView()) {
             v.setForceLaneChange(true);
         }
 
@@ -83,11 +83,11 @@ class RoadNarrowingIntegrationTest {
         // Keep lane active initially so vehicles are evaluated by the engine
         Vehicle v1 = createVehicle("v1", 200, 15.0, lane0);
         v1.setForceLaneChange(true);
-        lane0.getVehicles().add(v1);
+        lane0.addVehicle(v1);
 
         Vehicle v2 = createVehicle("v2", 500, 15.0, lane0);
         v2.setForceLaneChange(true);
-        lane0.getVehicles().add(v2);
+        lane0.addVehicle(v2);
 
         RoadNetwork network = createNetwork(road);
 
@@ -101,9 +101,9 @@ class RoadNarrowingIntegrationTest {
         }
 
         // Both vehicles should be in lane 1 now
-        assertThat(lane1.getVehicles()).extracting(Vehicle::getId)
+        assertThat(lane1.getVehiclesView()).extracting(Vehicle::getId)
             .containsExactlyInAnyOrder("v1", "v2");
-        assertThat(lane0.getVehicles()).isEmpty();
+        assertThat(lane0.getVehiclesView()).isEmpty();
     }
 
     @Test
@@ -117,11 +117,11 @@ class RoadNarrowingIntegrationTest {
         // Populate both lanes with vehicles
         for (int i = 0; i < 8; i++) {
             Vehicle v = createVehicle("l0-v" + i, 50 + i * 40, 25.0, lane0);
-            lane0.getVehicles().add(v);
+            lane0.addVehicle(v);
         }
         for (int i = 0; i < 8; i++) {
             Vehicle v = createVehicle("l1-v" + i, 50 + i * 40, 25.0, lane1);
-            lane1.getVehicles().add(v);
+            lane1.addVehicle(v);
         }
 
         // Run 50 ticks to establish baseline
@@ -134,12 +134,12 @@ class RoadNarrowingIntegrationTest {
 
         // Measure baseline average speed
         double baselineAvg = road.getLanes().stream()
-            .flatMap(l -> l.getVehicles().stream())
+            .flatMap(l -> l.getVehiclesView().stream())
             .mapToDouble(Vehicle::getSpeed)
             .average().orElse(0);
 
         // Flag vehicles in lane 0 for forced merge (keep lane active so engine processes them)
-        for (Vehicle v : lane0.getVehicles()) {
+        for (Vehicle v : lane0.getVehiclesView()) {
             v.setForceLaneChange(true);
         }
 
@@ -152,7 +152,7 @@ class RoadNarrowingIntegrationTest {
         }
 
         // Measure post-merge average speed (lane 1 has more vehicles now)
-        double postAvg = lane1.getVehicles().stream()
+        double postAvg = lane1.getVehiclesView().stream()
             .mapToDouble(Vehicle::getSpeed)
             .average().orElse(0);
 

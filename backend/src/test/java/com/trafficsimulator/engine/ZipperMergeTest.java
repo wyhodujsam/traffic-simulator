@@ -71,7 +71,7 @@ class ZipperMergeTest {
             .v0(MAX_SPEED).aMax(1.4).b(2.0).s0(2.0).T(1.5)
             .spawnedAt(0).laneChangeSourceIndex(-1)
             .build();
-        lane.getVehicles().add(v);
+        lane.addVehicle(v);
         return v;
     }
 
@@ -80,7 +80,7 @@ class ZipperMergeTest {
             .id("obs-" + lane.getId() + "-" + position)
             .laneId(lane.getId()).position(position).length(3.0).createdAtTick(0)
             .build();
-        lane.getObstacles().add(obs);
+        lane.addObstacle(obs);
         return obs;
     }
 
