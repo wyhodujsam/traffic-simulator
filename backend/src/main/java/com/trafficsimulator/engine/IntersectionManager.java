@@ -9,7 +9,7 @@ import java.util.concurrent.ThreadLocalRandom;
 
 @Component
 @Slf4j
-public class IntersectionManager {
+public class IntersectionManager implements IIntersectionManager {
 
     private static final double STOP_LINE_BUFFER = 2.0;  // metres before road end
     private static final double MIN_ENTRY_GAP = 7.0;     // vehicle length + s0
@@ -26,6 +26,7 @@ public class IntersectionManager {
      * Builds a map of laneId -> stopLinePosition for all lanes that should have
      * a red-light or box-blocking stop. Called each tick before physics.
      */
+    @Override
     public Map<String, Double> computeStopLines(RoadNetwork network) {
         Map<String, Double> stopLines = new HashMap<>();
         for (Intersection ixtn : network.getIntersections().values()) {
@@ -140,6 +141,7 @@ public class IntersectionManager {
      * Transfers vehicles that have reached the end of inbound roads through intersections
      * to outbound roads. Called each tick after physics, before despawn.
      */
+    @Override
     public void processTransfers(RoadNetwork network, long currentTick) {
         for (Intersection ixtn : network.getIntersections().values()) {
             boolean transferredAny = false;

@@ -19,7 +19,7 @@ import java.util.stream.Collectors;
 @Component
 @RequiredArgsConstructor
 @Slf4j
-public class LaneChangeEngine {
+public class LaneChangeEngine implements ILaneChangeEngine {
 
     // MOBIL parameters
     private static final double B_SAFE = 4.0;          // safe braking limit m/s^2
@@ -51,6 +51,7 @@ public class LaneChangeEngine {
      * Main tick: evaluates MOBIL for all vehicles, resolves conflicts, commits moves.
      * Called once per tick AFTER physics, BEFORE despawn.
      */
+    @Override
     public void tick(RoadNetwork network, long currentTick) {
         if (network == null) return;
 

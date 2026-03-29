@@ -11,7 +11,7 @@ import java.util.List;
 
 @Component
 @Slf4j
-public class PhysicsEngine {
+public class PhysicsEngine implements IPhysicsEngine {
 
     private static final double DELTA = 4.0;   // IDM acceleration exponent
     private static final double S_MIN = 1.0;    // minimum gap guard (metres)
@@ -25,6 +25,7 @@ public class PhysicsEngine {
      * @param lane the lane containing vehicles to update
      * @param dt   time step in seconds (e.g. 0.05 for 20 Hz)
      */
+    @Override
     public void tick(Lane lane, double dt) {
         tick(lane, dt, -1.0);  // no stop line
     }
@@ -38,6 +39,7 @@ public class PhysicsEngine {
      * @param stopLinePosition if >= 0, acts as a stationary virtual leader at this position;
      *                         if < 0, no stop line (normal behavior)
      */
+    @Override
     public void tick(Lane lane, double dt, double stopLinePosition) {
         List<Vehicle> vehicles = lane.getVehicles();
         if (vehicles.isEmpty()) return;
@@ -162,6 +164,7 @@ public class PhysicsEngine {
      * @param leaderLength   leader's length (metres)
      * @param hasLeader      true if a leader exists
      */
+    @Override
     public double computeAcceleration(Vehicle vehicle, double leaderPosition,
                                         double leaderSpeed, double leaderLength,
                                         boolean hasLeader) {
@@ -201,6 +204,7 @@ public class PhysicsEngine {
     /**
      * Computes IDM free-flow acceleration (no leader).
      */
+    @Override
     public double computeFreeFlowAcceleration(Vehicle vehicle) {
         return computeAcceleration(vehicle, 0, 0, 0, false);
     }
