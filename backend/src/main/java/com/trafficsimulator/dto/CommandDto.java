@@ -54,4 +54,13 @@ public class CommandDto {
 
     /** Obstacle ID — used by REMOVE_OBSTACLE. */
     private String obstacleId;
+
+    /** Intersection ID — used by SET_LIGHT_CYCLE. */
+    private String intersectionId;
+
+    /** Green phase duration in ms — used by SET_LIGHT_CYCLE. */
+    private Long greenDurationMs;
+
+    /** Yellow phase duration in ms — used by SET_LIGHT_CYCLE. */
+    private Long yellowDurationMs;
 }

@@ -21,7 +21,7 @@ public class CommandHandler {
     private static final Set<String> VALID_TYPES = Set.of(
         "START", "STOP", "PAUSE", "RESUME",
         "SET_SPAWN_RATE", "SET_SPEED_MULTIPLIER", "LOAD_MAP", "SET_MAX_SPEED",
-        "ADD_OBSTACLE", "REMOVE_OBSTACLE", "CLOSE_LANE"
+        "ADD_OBSTACLE", "REMOVE_OBSTACLE", "CLOSE_LANE", "SET_LIGHT_CYCLE"
     );
 
     private final SimulationEngine simulationEngine;
@@ -41,6 +41,10 @@ public class CommandHandler {
             case "ADD_OBSTACLE"         -> new SimulationCommand.AddObstacle(dto.getRoadId(), dto.getLaneIndex(), dto.getPosition());
             case "REMOVE_OBSTACLE"      -> new SimulationCommand.RemoveObstacle(dto.getObstacleId());
             case "CLOSE_LANE"           -> new SimulationCommand.CloseLane(dto.getRoadId(), dto.getLaneIndex());
+            case "SET_LIGHT_CYCLE"      -> new SimulationCommand.SetLightCycle(
+                dto.getIntersectionId(),
+                dto.getGreenDurationMs() != null ? dto.getGreenDurationMs() : 30000,
+                dto.getYellowDurationMs() != null ? dto.getYellowDurationMs() : 3000);
             default -> throw new IllegalArgumentException(
                 "Unknown command type: '" + dto.getType() + "'. " +
                 "Valid types are: " + VALID_TYPES.stream().sorted().collect(Collectors.joining(", "))

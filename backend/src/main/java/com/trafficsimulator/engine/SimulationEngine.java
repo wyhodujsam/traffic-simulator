@@ -2,9 +2,12 @@ package com.trafficsimulator.engine;
 
 import com.trafficsimulator.config.MapLoader;
 import com.trafficsimulator.engine.command.SimulationCommand;
+import com.trafficsimulator.model.Intersection;
 import com.trafficsimulator.model.Lane;
 import com.trafficsimulator.model.Road;
 import com.trafficsimulator.model.RoadNetwork;
+import com.trafficsimulator.model.TrafficLight;
+import com.trafficsimulator.model.TrafficLightPhase;
 import com.trafficsimulator.model.Vehicle;
 import jakarta.annotation.PostConstruct;
 import lombok.Getter;
@@ -13,7 +16,9 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Component;
 
 import java.util.ArrayList;
+import java.util.LinkedHashSet;
 import java.util.List;
+import java.util.Set;
 import java.util.concurrent.LinkedBlockingQueue;
 import java.util.concurrent.atomic.AtomicLong;
 
@@ -185,6 +190,37 @@ public class SimulationEngine {
                 } else {
                     log.warn("Cannot close lane: road={} laneIndex={} not found",
                         closeLane.roadId(), closeLane.laneIndex());
+                }
+            }
+
+        } else if (cmd instanceof SimulationCommand.SetLightCycle slc) {
+            if (roadNetwork != null) {
+                Intersection ixtn = roadNetwork.getIntersections().get(slc.intersectionId());
+                if (ixtn != null && ixtn.getTrafficLight() != null) {
+                    TrafficLight tl = ixtn.getTrafficLight();
+                    List<TrafficLightPhase> newPhases = new ArrayList<>();
+                    Set<Set<String>> seenGroups = new LinkedHashSet<>();
+                    for (TrafficLightPhase p : tl.getPhases()) {
+                        if (p.getType() == TrafficLightPhase.PhaseType.GREEN) {
+                            if (seenGroups.add(p.getGreenRoadIds())) {
+                                newPhases.add(TrafficLightPhase.builder()
+                                    .greenRoadIds(p.getGreenRoadIds())
+                                    .durationMs(slc.greenDurationMs())
+                                    .type(TrafficLightPhase.PhaseType.GREEN).build());
+                                newPhases.add(TrafficLightPhase.builder()
+                                    .greenRoadIds(p.getGreenRoadIds())
+                                    .durationMs(slc.yellowDurationMs())
+                                    .type(TrafficLightPhase.PhaseType.YELLOW).build());
+                                newPhases.add(TrafficLightPhase.builder()
+                                    .greenRoadIds(Set.of())
+                                    .durationMs(2000)
+                                    .type(TrafficLightPhase.PhaseType.ALL_RED).build());
+                            }
+                        }
+                    }
+                    tl.replacePhases(newPhases);
+                    log.info("Signal timing updated: intersection={} green={}ms yellow={}ms",
+                        slc.intersectionId(), slc.greenDurationMs(), slc.yellowDurationMs());
                 }
             }
 
