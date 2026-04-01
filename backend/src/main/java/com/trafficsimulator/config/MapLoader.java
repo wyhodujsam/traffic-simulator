@@ -123,10 +123,14 @@ public class MapLoader {
         Map<String, Intersection> intersections = new LinkedHashMap<>();
         if (config.getIntersections() != null) {
             for (MapConfig.IntersectionConfig ic : config.getIntersections()) {
+                MapConfig.NodeConfig node = nodes.get(ic.getNodeId());
                 Intersection ixtn = Intersection.builder()
                     .id(ic.getNodeId())
                     .type(IntersectionType.valueOf(ic.getType()))
                     .intersectionSize(ic.getIntersectionSize())
+                    .roundaboutCapacity(ic.getRoundaboutCapacity())
+                    .centerX(node != null ? node.getX() : 0)
+                    .centerY(node != null ? node.getY() : 0)
                     .build();
                 intersections.put(ixtn.getId(), ixtn);
             }

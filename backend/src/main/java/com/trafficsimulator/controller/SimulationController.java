@@ -127,22 +127,27 @@ public class SimulationController {
 
         List<IntersectionDto> result = new ArrayList<>();
         for (Intersection ixtn : network.getIntersections().values()) {
-            double cx = 0, cy = 0;
-            boolean found = false;
+            double sumX = 0, sumY = 0;
+            int count = 0;
             int maxLaneCount = 1;
             for (String roadId : ixtn.getConnectedRoadIds()) {
                 Road road = network.getRoads().get(roadId);
                 if (road == null) continue;
-                if (!found) {
-                    if (road.getToNodeId().equals(ixtn.getId())) {
-                        cx = road.getEndX(); cy = road.getEndY(); found = true;
-                    } else if (road.getFromNodeId().equals(ixtn.getId())) {
-                        cx = road.getStartX(); cy = road.getStartY(); found = true;
-                    }
+                if (road.getToNodeId().equals(ixtn.getId())) {
+                    sumX += road.getEndX(); sumY += road.getEndY(); count++;
+                } else if (road.getFromNodeId().equals(ixtn.getId())) {
+                    sumX += road.getStartX(); sumY += road.getStartY(); count++;
                 }
                 maxLaneCount = Math.max(maxLaneCount, road.getLanes().size());
             }
-            if (!found) continue;
+            double cx, cy;
+            if (count == 0) {
+                cx = ixtn.getCenterX();
+                cy = ixtn.getCenterY();
+            } else {
+                cx = sumX / count;
+                cy = sumY / count;
+            }
 
             // Use explicit intersectionSize from config if set, otherwise derive from widest road
             double size = ixtn.getIntersectionSize() > 0
@@ -150,9 +155,34 @@ public class SimulationController {
                 : maxLaneCount * 14.0;
             result.add(IntersectionDto.builder()
                 .id(ixtn.getId())
+                .type(ixtn.getType().name())
                 .x(cx).y(cy)
                 .size(size)
                 .build());
+        }
+        return result;
+    }
+
+    @GetMapping("/debug/traffic-lights")
+    public List<Map<String, Object>> debugTrafficLights() {
+        RoadNetwork network = simulationEngine.getRoadNetwork();
+        if (network == null) return List.of();
+        List<Map<String, Object>> result = new ArrayList<>();
+        for (Intersection ixtn : network.getIntersections().values()) {
+            if (ixtn.getTrafficLight() == null) continue;
+            var tl = ixtn.getTrafficLight();
+            var phase = tl.getCurrentPhase();
+            Map<String, Object> info = new LinkedHashMap<>();
+            info.put("intersectionId", ixtn.getId());
+            info.put("phaseIndex", tl.getCurrentPhaseIndex());
+            info.put("phaseType", phase.getType().name());
+            info.put("greenRoads", phase.getGreenRoadIds());
+            info.put("elapsedMs", tl.getPhaseElapsedMs());
+            info.put("durationMs", phase.getDurationMs());
+            for (String inRoadId : ixtn.getInboundRoadIds()) {
+                info.put("signal_" + inRoadId, tl.getSignalState(inRoadId));
+            }
+            result.add(info);
         }
         return result;
     }

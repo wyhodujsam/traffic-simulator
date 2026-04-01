@@ -1,0 +1,54 @@
+{
+  "id": "roundabout",
+  "name": "Roundabout — 4 Approaches",
+  "description": "4-arm roundabout with ring roads. Vehicles circulate counterclockwise, yielding on entry. Demonstrates roundabout traffic flow.",
+  "nodes": [
+    { "id": "n_north",      "type": "ENTRY", "x": 400.0, "y": 50.0 },
+    { "id": "n_south",      "type": "ENTRY", "x": 400.0, "y": 550.0 },
+    { "id": "n_west",       "type": "ENTRY", "x": 50.0,  "y": 300.0 },
+    { "id": "n_east",       "type": "ENTRY", "x": 750.0, "y": 300.0 },
+    { "id": "n_north_exit", "type": "EXIT",  "x": 400.0, "y": 50.0 },
+    { "id": "n_south_exit", "type": "EXIT",  "x": 400.0, "y": 550.0 },
+    { "id": "n_west_exit",  "type": "EXIT",  "x": 50.0,  "y": 300.0 },
+    { "id": "n_east_exit",  "type": "EXIT",  "x": 750.0, "y": 300.0 },
+    { "id": "n_ring_n",     "type": "INTERSECTION", "x": 400.0, "y": 272.0 },
+    { "id": "n_ring_e",     "type": "INTERSECTION", "x": 428.0, "y": 300.0 },
+    { "id": "n_ring_s",     "type": "INTERSECTION", "x": 400.0, "y": 328.0 },
+    { "id": "n_ring_w",     "type": "INTERSECTION", "x": 372.0, "y": 300.0 }
+  ],
+  "roads": [
+    { "id": "r_north_in",  "name": "North Approach",   "fromNodeId": "n_north",  "toNodeId": "n_ring_n",     "length": 200.0, "speedLimit": 11.1, "laneCount": 1 },
+    { "id": "r_south_in",  "name": "South Approach",   "fromNodeId": "n_south",  "toNodeId": "n_ring_s",     "length": 200.0, "speedLimit": 11.1, "laneCount": 1 },
+    { "id": "r_west_in",   "name": "West Approach",    "fromNodeId": "n_west",   "toNodeId": "n_ring_w",     "length": 300.0, "speedLimit": 11.1, "laneCount": 1 },
+    { "id": "r_east_in",   "name": "East Approach",    "fromNodeId": "n_east",   "toNodeId": "n_ring_e",     "length": 300.0, "speedLimit": 11.1, "laneCount": 1 },
+
+    { "id": "r_north_out", "name": "North Departure",  "fromNodeId": "n_ring_n", "toNodeId": "n_north_exit", "length": 200.0, "speedLimit": 11.1, "laneCount": 1 },
+    { "id": "r_south_out", "name": "South Departure",  "fromNodeId": "n_ring_s", "toNodeId": "n_south_exit", "length": 200.0, "speedLimit": 11.1, "laneCount": 1 },
+    { "id": "r_west_out",  "name": "West Departure",   "fromNodeId": "n_ring_w", "toNodeId": "n_west_exit",  "length": 300.0, "speedLimit": 11.1, "laneCount": 1 },
+    { "id": "r_east_out",  "name": "East Departure",   "fromNodeId": "n_ring_e", "toNodeId": "n_east_exit",  "length": 300.0, "speedLimit": 11.1, "laneCount": 1 },
+
+    { "id": "r_ring_nw",   "name": "Ring N→W",         "fromNodeId": "n_ring_n", "toNodeId": "n_ring_w",     "length": 22.0,  "speedLimit": 8.3,  "laneCount": 1 },
+    { "id": "r_ring_ws",   "name": "Ring W→S",         "fromNodeId": "n_ring_w", "toNodeId": "n_ring_s",     "length": 22.0,  "speedLimit": 8.3,  "laneCount": 1 },
+    { "id": "r_ring_se",   "name": "Ring S→E",         "fromNodeId": "n_ring_s", "toNodeId": "n_ring_e",     "length": 22.0,  "speedLimit": 8.3,  "laneCount": 1 },
+    { "id": "r_ring_en",   "name": "Ring E→N",         "fromNodeId": "n_ring_e", "toNodeId": "n_ring_n",     "length": 22.0,  "speedLimit": 8.3,  "laneCount": 1 }
+  ],
+  "intersections": [
+    { "nodeId": "n_ring_n", "type": "ROUNDABOUT", "intersectionSize": 12, "roundaboutCapacity": 8 },
+    { "nodeId": "n_ring_e", "type": "ROUNDABOUT", "intersectionSize": 12, "roundaboutCapacity": 8 },
+    { "nodeId": "n_ring_s", "type": "ROUNDABOUT", "intersectionSize": 12, "roundaboutCapacity": 8 },
+    { "nodeId": "n_ring_w", "type": "ROUNDABOUT", "intersectionSize": 12, "roundaboutCapacity": 8 }
+  ],
+  "spawnPoints": [
+    { "roadId": "r_north_in", "laneIndex": 0, "position": 0.0 },
+    { "roadId": "r_south_in", "laneIndex": 0, "position": 0.0 },
+    { "roadId": "r_west_in",  "laneIndex": 0, "position": 0.0 },
+    { "roadId": "r_east_in",  "laneIndex": 0, "position": 0.0 }
+  ],
+  "despawnPoints": [
+    { "roadId": "r_north_out", "laneIndex": 0, "position": 200.0 },
+    { "roadId": "r_south_out", "laneIndex": 0, "position": 200.0 },
+    { "roadId": "r_west_out",  "laneIndex": 0, "position": 300.0 },
+    { "roadId": "r_east_out",  "laneIndex": 0, "position": 300.0 }
+  ],
+  "defaultSpawnRate": 0.6
+}

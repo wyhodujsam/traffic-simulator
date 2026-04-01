@@ -18,7 +18,7 @@
 | 7 | Lane Changing & Road Narrowing | MOBIL lane-change model and live lane reduction | ROAD-02, ROAD-03, ROAD-04 | 4 | 3 |
 | 8 | Traffic Signals & Intersections | Signalised intersections with deadlock prevention | IXTN-01, IXTN-02, IXTN-03, IXTN-04, IXTN-07, VIS-04 | 5 | 4 |
 | 9 | JSON Map Config & Predefined Scenarios | Decoupled map loading and scenario selector | CTRL-05 | 4 | 3 |
-| 10 | Roundabouts, Priority Intersections & Polish | Complete intersection taxonomy and visual polish | IXTN-05, IXTN-06, VIS-06 | 5 | 4 |
+| 10 | Roundabouts, Priority Intersections & Polish | ✓ Roundabout yield/gating, visual polish, disconnect banner | IXTN-05, IXTN-06, VIS-06 | 3 | 4 |
 
 ## Phase Details
 
@@ -235,13 +235,17 @@ Plans:
 
 ### Phase 12: Intersection Rendering Refactor
 
-**Goal:** [To be planned]
-**Requirements**: TBD
+**Goal:** Clean intersection rendering — clip roads at intersection boundary, draw intersection boxes, parallel in/out roads via perpendicular offset
+**Requirements**: VIS-04
 **Depends on:** Phase 11
-**Plans:** 4/5 plans executed
+**Plans:** 5/5 plans complete ✓
 
 Plans:
-- [ ] TBD (run /gsd:plan-phase 12 to break down)
+- [x] 12.1: Clip roads at intersection boundary (completed 2026-03-29)
+- [x] 12.2: Draw intersection boxes (completed 2026-03-29)
+- [x] 12.3: Parallel in/out roads via perpendicular offset (completed 2026-03-29)
+- [x] 12.4: Paired road boundary suppression + yellow center lines (completed 2026-03-29)
+- [x] 12.5: Visual verification and tuning (completed 2026-04-01)
 
 ---
 *Roadmap created: 2026-03-27*

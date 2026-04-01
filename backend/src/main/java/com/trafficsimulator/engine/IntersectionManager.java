@@ -11,9 +11,11 @@ import java.util.concurrent.ThreadLocalRandom;
 @Slf4j
 public class IntersectionManager implements IIntersectionManager {
 
-    private static final double STOP_LINE_BUFFER = 2.0;  // metres before road end
+    private static final double STOP_LINE_BUFFER_DEFAULT = 2.0;  // metres before road end (fallback)
     private static final double MIN_ENTRY_GAP = 7.0;     // vehicle length + s0
     private static final int DEADLOCK_THRESHOLD_TICKS = 200;  // 200 ticks = 10s at 20Hz
+    private static final double ROUNDABOUT_YIELD_ZONE = 15.0; // metres — check circulating vehicles within this distance
+    private static final double ROUNDABOUT_GATING_RATIO = 0.8; // 80% capacity triggers entry gating
 
     private final Map<String, IntersectionState> intersectionStates = new HashMap<>();
 
@@ -37,7 +39,8 @@ public class IntersectionManager implements IIntersectionManager {
                 boolean canEnter = canEnterIntersection(ixtn, inboundRoadId, network);
 
                 if (!canEnter) {
-                    double stopPos = inboundRoad.getLength() - STOP_LINE_BUFFER;
+                    double buffer = computeStopLineBuffer(ixtn, inboundRoad);
+                    double stopPos = Math.max(0, inboundRoad.getLength() - buffer);
                     for (Lane lane : inboundRoad.getLanes()) {
                         stopLines.put(lane.getId(), stopPos);
                     }
@@ -48,8 +51,24 @@ public class IntersectionManager implements IIntersectionManager {
     }
 
     /**
+     * Computes stop line buffer in domain units based on the intersection's pixel size
+     * and the road's pixel-to-domain ratio. This ensures vehicles stop at the visual
+     * edge of the intersection box, not inside it.
+     */
+    private double computeStopLineBuffer(Intersection ixtn, Road road) {
+        if (ixtn.getIntersectionSize() <= 0) return STOP_LINE_BUFFER_DEFAULT;
+        double halfSizePx = ixtn.getIntersectionSize() / 2.0;
+        double pixelLength = Math.sqrt(
+            Math.pow(road.getEndX() - road.getStartX(), 2) +
+            Math.pow(road.getEndY() - road.getStartY(), 2));
+        if (pixelLength < 1) return STOP_LINE_BUFFER_DEFAULT;
+        // Convert pixel half-size to domain units using the road's scale
+        return halfSizePx * (road.getLength() / pixelLength) + 1.0; // +1m margin
+    }
+
+    /**
      * Checks if a vehicle on the given inbound road can enter the intersection.
-     * Considers: traffic light state, right-of-way priority, and box-blocking (outbound road capacity).
+     * Considers: traffic light state, right-of-way priority, roundabout yield, and box-blocking.
      */
     private boolean canEnterIntersection(Intersection ixtn, String inboundRoadId, RoadNetwork network) {
         // 1. Traffic light check for SIGNAL intersections
@@ -66,16 +85,24 @@ public class IntersectionManager implements IIntersectionManager {
             }
         }
 
-        // 3. Box-blocking check: at least one outbound road must have space at entry
+        // 3. Roundabout: yield to circulating traffic + entry gating at high capacity
+        if (ixtn.getType() == IntersectionType.ROUNDABOUT) {
+            if (isRoundaboutEntryBlocked(ixtn, inboundRoadId, network)) {
+                return false;
+            }
+        }
+
+        // 4. Box-blocking check: at least one outbound road must have space at clip edge entry
         boolean anyOutboundHasSpace = false;
         for (String outRoadId : ixtn.getOutboundRoadIds()) {
             if (outRoadId.equals(reverseRoadId(inboundRoadId))) continue; // skip U-turn
             Road outRoad = network.getRoads().get(outRoadId);
             if (outRoad == null) continue;
+            double outBuffer = computeStopLineBuffer(ixtn, outRoad);
             for (Lane outLane : outRoad.getLanes()) {
                 if (!outLane.isActive()) continue;
-                Vehicle first = outLane.findLeaderAt(-1.0);
-                if (first == null || first.getPosition() >= MIN_ENTRY_GAP) {
+                Vehicle first = outLane.findLeaderAt(outBuffer - 1.0);
+                if (first == null || first.getPosition() >= outBuffer + MIN_ENTRY_GAP) {
                     anyOutboundHasSpace = true;
                     break;
                 }
@@ -84,6 +111,80 @@ public class IntersectionManager implements IIntersectionManager {
         }
 
         return anyOutboundHasSpace;
+    }
+
+    /**
+     * Roundabout entry check. Returns true if entry should be BLOCKED.
+     * Approach roads (from outside) yield to ring roads (circulating traffic).
+     * Ring roads never yield — they have priority.
+     */
+    private boolean isRoundaboutEntryBlocked(Intersection ixtn, String inboundRoadId, RoadNetwork network) {
+        Road myRoad = network.getRoads().get(inboundRoadId);
+        if (myRoad == null) return false;
+
+        // Ring traffic has priority — never blocked by yield
+        boolean isRingRoad = network.getIntersections().containsKey(myRoad.getFromNodeId());
+        if (isRingRoad) {
+            return false; // only box-blocking applies (checked in canEnterIntersection)
+        }
+
+        // Approach traffic: yield to any ring road that has vehicles near this intersection
+        for (String otherInboundId : ixtn.getInboundRoadIds()) {
+            if (otherInboundId.equals(inboundRoadId)) continue;
+            Road otherRoad = network.getRoads().get(otherInboundId);
+            if (otherRoad == null) continue;
+
+            // Only yield to ring roads (roads coming from another intersection node)
+            boolean otherIsRing = network.getIntersections().containsKey(otherRoad.getFromNodeId());
+            if (!otherIsRing) continue;
+
+            // Check for vehicles near intersection on ring road
+            double threshold = otherRoad.getLength() - ROUNDABOUT_YIELD_ZONE;
+            for (Lane lane : otherRoad.getLanes()) {
+                for (Vehicle v : lane.getVehiclesView()) {
+                    if (v.getPosition() >= threshold) {
+                        return true; // circulating ring traffic — yield
+                    }
+                }
+            }
+        }
+
+        // Capacity gating: count all ring road vehicles across all ring nodes
+        int occupancy = countRoundaboutOccupancy(ixtn, network);
+        int capacity = ixtn.getRoundaboutCapacity();
+        if (capacity > 0 && occupancy >= (int)(capacity * ROUNDABOUT_GATING_RATIO)) {
+            return true;
+        }
+
+        return false;
+    }
+
+    /**
+     * Counts vehicles on ring roads connected to this intersection (circulating traffic).
+     */
+    int countRoundaboutOccupancy(Intersection ixtn, RoadNetwork network) {
+        int count = 0;
+        // Count vehicles on all ring inbound roads
+        for (String inRoadId : ixtn.getInboundRoadIds()) {
+            Road inRoad = network.getRoads().get(inRoadId);
+            if (inRoad == null) continue;
+            boolean isRing = network.getIntersections().containsKey(inRoad.getFromNodeId());
+            if (!isRing) continue;
+            for (Lane lane : inRoad.getLanes()) {
+                count += lane.getVehicleCount();
+            }
+        }
+        // Count vehicles on all ring outbound roads
+        for (String outRoadId : ixtn.getOutboundRoadIds()) {
+            Road outRoad = network.getRoads().get(outRoadId);
+            if (outRoad == null) continue;
+            boolean isRing = network.getIntersections().containsKey(outRoad.getToNodeId());
+            if (!isRing) continue;
+            for (Lane lane : outRoad.getLanes()) {
+                count += lane.getVehicleCount();
+            }
+        }
+        return count;
     }
 
     /**
@@ -105,7 +206,7 @@ public class IntersectionManager implements IIntersectionManager {
 
             // Check if other road has a vehicle near the intersection
             boolean hasWaitingVehicle = false;
-            double threshold = otherRoad.getLength() - STOP_LINE_BUFFER - 10.0;
+            double threshold = otherRoad.getLength() - STOP_LINE_BUFFER_DEFAULT - 10.0;
             for (Lane lane : otherRoad.getLanes()) {
                 for (Vehicle v : lane.getVehiclesView()) {
                     if (v.getPosition() >= threshold) {
@@ -152,7 +253,8 @@ public class IntersectionManager implements IIntersectionManager {
                 if (inboundRoad == null) continue;
 
                 // Count vehicles waiting at stop lines across all inbound roads
-                double waitThreshold = inboundRoad.getLength() - STOP_LINE_BUFFER - 5.0;
+                double buffer = computeStopLineBuffer(ixtn, inboundRoad);
+                double waitThreshold = inboundRoad.getLength() - buffer - 5.0;
                 for (Lane lane : inboundRoad.getLanes()) {
                     for (Vehicle v : lane.getVehiclesView()) {
                         if (v.getPosition() >= waitThreshold && v.getSpeed() < 0.5) {
@@ -214,7 +316,8 @@ public class IntersectionManager implements IIntersectionManager {
         for (String inRoadId : ixtn.getInboundRoadIds()) {
             Road inRoad = network.getRoads().get(inRoadId);
             if (inRoad == null) continue;
-            double threshold = inRoad.getLength() - STOP_LINE_BUFFER - 5.0;
+            double buffer = computeStopLineBuffer(ixtn, inRoad);
+            double threshold = inRoad.getLength() - buffer - 5.0;
             for (Lane lane : inRoad.getLanes()) {
                 for (Vehicle v : lane.getVehiclesView()) {
                     if (v.getPosition() >= threshold && v.getSpeed() < 0.5) {
@@ -244,8 +347,10 @@ public class IntersectionManager implements IIntersectionManager {
         Lane targetLane = pickTargetLane(outRoad);
         if (targetLane == null) return;
 
-        // Force transfer -- ignores space check
-        victim.updatePhysics(0.0, victim.getSpeed(), victim.getAcceleration());
+        // Force transfer -- ignores space check; start at clip edge
+        double outBuffer = computeStopLineBuffer(
+            ixtn, outRoad);
+        victim.updatePhysics(outBuffer, victim.getSpeed(), victim.getAcceleration());
         victim.setLane(targetLane);  // transfer = special case, not a lane change
         victim.completeLaneChange();
         targetLane.addVehicle(victim);
@@ -258,7 +363,9 @@ public class IntersectionManager implements IIntersectionManager {
     private boolean transferVehiclesFromLane(Intersection ixtn, String inboundRoadId,
                                            Lane inLane, RoadNetwork network) {
         boolean transferred = false;
-        double threshold = inLane.getLength() - STOP_LINE_BUFFER;
+        Road inboundRoad = network.getRoads().get(inboundRoadId);
+        double buffer = inboundRoad != null ? computeStopLineBuffer(ixtn, inboundRoad) : STOP_LINE_BUFFER_DEFAULT;
+        double threshold = inLane.getLength() - buffer;
         List<Vehicle> toTransfer = new ArrayList<>();
 
         for (Vehicle v : inLane.getVehiclesView()) {
@@ -275,15 +382,14 @@ public class IntersectionManager implements IIntersectionManager {
             Lane targetLane = pickTargetLane(outRoad);
             if (targetLane == null) continue;
 
-            // Check space on target lane
-            Vehicle firstOnTarget = targetLane.findLeaderAt(-1.0);
-            if (firstOnTarget != null && firstOnTarget.getPosition() < MIN_ENTRY_GAP) {
+            // Check space on target lane at the clip edge entry point
+            double outBuffer = computeStopLineBuffer(ixtn, outRoad);
+            Vehicle firstOnTarget = targetLane.findLeaderAt(outBuffer - 1.0);
+            if (firstOnTarget != null && firstOnTarget.getPosition() < outBuffer + MIN_ENTRY_GAP) {
                 continue; // no space
             }
-
-            // Mark for transfer
             toTransfer.add(v);
-            v.updatePhysics(0.0, v.getSpeed(), v.getAcceleration());
+            v.updatePhysics(outBuffer, v.getSpeed(), v.getAcceleration());
             v.setLane(targetLane);  // transfer = special case, not a lane change
             v.completeLaneChange();
             targetLane.addVehicle(v);
