@@ -46,6 +46,7 @@ export function useWebSocket() {
       heartbeatOutgoing: 4000,
       onConnect: () => {
         console.log('[WS] Connected to simulation broker');
+        useSimulationStore.getState().setConnected(true);
         client.subscribe('/topic/simulation', (message: IMessage) => {
           const data = JSON.parse(message.body);
           useSimulationStore.getState().setTick(data);
@@ -62,6 +63,7 @@ export function useWebSocket() {
       },
       onDisconnect: () => {
         console.warn('[WS] Disconnected from simulation broker');
+        useSimulationStore.getState().setConnected(false);
         useSimulationStore.getState().setSendCommand(null);
       },
       onStompError: (frame) => {

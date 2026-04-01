@@ -24,5 +24,11 @@ public class Intersection {
     @Builder.Default
     private double intersectionSize = 0;  // pixel radius of intersection box (0 = auto)
 
+    @Builder.Default
+    private int roundaboutCapacity = 8;  // max vehicles in roundabout zone (for ROUNDABOUT type)
+
+    private double centerX;  // node X coordinate (for rendering intersections with no roads)
+    private double centerY;  // node Y coordinate
+
     private TrafficLight trafficLight;  // null for non-SIGNAL types
 }

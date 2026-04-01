@@ -37,6 +37,7 @@ export interface StatsDto {
 
 export interface IntersectionDto {
   id: string;
+  type: 'SIGNAL' | 'ROUNDABOUT' | 'PRIORITY' | 'NONE';
   x: number;
   y: number;
   size: number;

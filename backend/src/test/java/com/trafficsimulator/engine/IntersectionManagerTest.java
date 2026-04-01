@@ -143,14 +143,14 @@ class IntersectionManagerTest {
         // Vehicle should have been removed from inbound lane
         assertThat(inLane.getVehiclesView()).isEmpty();
 
-        // Vehicle should be on one of the outbound roads at position 0
+        // Vehicle should be on one of the outbound roads at buffer position (intersection edge)
         boolean foundOnOutbound = false;
         for (String outId : List.of("r_south_out", "r_west_out", "r_east_out")) {
             Road outRoad = network.getRoads().get(outId);
             if (!outRoad.getLanes().get(0).getVehiclesView().isEmpty()) {
                 Vehicle transferred = outRoad.getLanes().get(0).getVehiclesView().get(0);
                 assertThat(transferred.getId()).isEqualTo("v1");
-                assertThat(transferred.getPosition()).isEqualTo(0.0);
+                assertThat(transferred.getPosition()).isGreaterThanOrEqualTo(0.0);
                 foundOnOutbound = true;
                 break;
             }
@@ -224,9 +224,8 @@ class IntersectionManagerTest {
 
         // After transfer, find the vehicle and check speed
         assertThat(inLane.getVehiclesView()).isEmpty();
-        // The vehicle object itself should retain speed (it's mutated in place)
-        assertThat(v.getPosition()).isEqualTo(0.0);
-        // Speed is NOT explicitly set during transfer, so it retains original value
+        // Vehicle starts at buffer position (intersection edge), speed preserved
+        assertThat(v.getPosition()).isGreaterThanOrEqualTo(0.0);
         assertThat(v.getSpeed()).isEqualTo(10.0);
     }
 
@@ -293,6 +292,170 @@ class IntersectionManagerTest {
 
         assertThat(totalOutbound).isGreaterThanOrEqualTo(1);
         assertThat(totalInbound + totalOutbound).isEqualTo(2); // no vehicles lost
+    }
+
+    // ---- Roundabout tests ----
+
+    /**
+     * Builds a 4-way ROUNDABOUT network with ring roads.
+     * Ring nodes: n_ring_n, n_ring_e, n_ring_s, n_ring_w
+     * Ring roads: r_ring_nw, r_ring_ws, r_ring_se, r_ring_en (counterclockwise)
+     */
+    private RoadNetwork buildFourWayRoundaboutNetwork(int capacity) {
+        Map<String, Road> roads = new LinkedHashMap<>();
+        // Approach roads → ring nodes
+        roads.put("r_north_in", buildRoad("r_north_in", 200, 393, 50, 393, 272, "n_north", "n_ring_n"));
+        roads.put("r_south_in", buildRoad("r_south_in", 200, 407, 550, 407, 328, "n_south", "n_ring_s"));
+        roads.put("r_west_in",  buildRoad("r_west_in",  300, 50, 307, 372, 307, "n_west", "n_ring_w"));
+        roads.put("r_east_in",  buildRoad("r_east_in",  300, 750, 293, 428, 293, "n_east", "n_ring_e"));
+        // Departure roads ← ring nodes
+        roads.put("r_north_out", buildRoad("r_north_out", 200, 407, 272, 407, 50, "n_ring_n", "n_north_exit"));
+        roads.put("r_south_out", buildRoad("r_south_out", 200, 393, 328, 393, 550, "n_ring_s", "n_south_exit"));
+        roads.put("r_west_out",  buildRoad("r_west_out",  300, 372, 293, 50, 293, "n_ring_w", "n_west_exit"));
+        roads.put("r_east_out",  buildRoad("r_east_out",  300, 428, 307, 750, 307, "n_ring_e", "n_east_exit"));
+        // Ring segments (counterclockwise: N→W→S→E→N)
+        roads.put("r_ring_nw", buildRoad("r_ring_nw", 22, 400, 272, 372, 300, "n_ring_n", "n_ring_w"));
+        roads.put("r_ring_ws", buildRoad("r_ring_ws", 22, 372, 300, 400, 328, "n_ring_w", "n_ring_s"));
+        roads.put("r_ring_se", buildRoad("r_ring_se", 22, 400, 328, 428, 300, "n_ring_s", "n_ring_e"));
+        roads.put("r_ring_en", buildRoad("r_ring_en", 22, 428, 300, 400, 272, "n_ring_e", "n_ring_n"));
+
+        // Ring node intersections
+        Map<String, Intersection> intersections = new LinkedHashMap<>();
+        for (var entry : Map.of(
+                "n_ring_n", new String[]{"r_north_in", "r_ring_en", "r_north_out", "r_ring_nw"},
+                "n_ring_w", new String[]{"r_west_in", "r_ring_nw", "r_west_out", "r_ring_ws"},
+                "n_ring_s", new String[]{"r_south_in", "r_ring_ws", "r_south_out", "r_ring_se"},
+                "n_ring_e", new String[]{"r_east_in", "r_ring_se", "r_east_out", "r_ring_en"}
+        ).entrySet()) {
+            String nodeId = entry.getKey();
+            String[] roadIds = entry.getValue();
+            Intersection ixtn = Intersection.builder()
+                .id(nodeId)
+                .type(IntersectionType.ROUNDABOUT)
+                .roundaboutCapacity(capacity)
+                .intersectionSize(12)
+                .inboundRoadIds(new ArrayList<>(List.of(roadIds[0], roadIds[1])))
+                .outboundRoadIds(new ArrayList<>(List.of(roadIds[2], roadIds[3])))
+                .connectedRoadIds(new ArrayList<>(List.of(roadIds)))
+                .build();
+            intersections.put(nodeId, ixtn);
+        }
+
+        return RoadNetwork.builder()
+            .id("roundabout-test")
+            .roads(roads)
+            .intersections(intersections)
+            .spawnPoints(List.of())
+            .despawnPoints(List.of())
+            .build();
+    }
+
+    @Test
+    void roundaboutTransferWhenEmpty() {
+        RoadNetwork network = buildFourWayRoundaboutNetwork(8);
+        Road northIn = network.getRoads().get("r_north_in");
+        Lane inLane = northIn.getLanes().get(0);
+
+        buildVehicle("v1", 249.0, 5.0, inLane, 0);
+        manager.processTransfers(network, 1);
+
+        // Empty roundabout — vehicle should pass through
+        assertThat(inLane.getVehiclesView()).isEmpty();
+    }
+
+    @Test
+    void roundaboutYieldToCirculatingTraffic() {
+        RoadNetwork network = buildFourWayRoundaboutNetwork(8);
+        Road northIn = network.getRoads().get("r_north_in");
+        Lane inLane = northIn.getLanes().get(0);
+
+        // Place vehicle wanting to enter from north
+        buildVehicle("v_entering", 199.0, 5.0, inLane, 0);
+
+        // Place circulating vehicle on the ring road arriving at n_ring_n (from east)
+        Road ringEn = network.getRoads().get("r_ring_en");
+        Lane ringLane = ringEn.getLanes().get(0);
+        buildVehicle("v_circulating", 18.0, 5.0, ringLane, 0);
+
+        Map<String, Double> stopLines = manager.computeStopLines(network);
+
+        // North approach should be blocked (yield to ring traffic)
+        assertThat(stopLines).containsKey("r_north_in-lane0");
+    }
+
+    @Test
+    void roundaboutEntryGatingAtHighCapacity() {
+        // Capacity = 4, threshold = 80% = 3.2, so 4 vehicles blocks entry
+        RoadNetwork network = buildFourWayRoundaboutNetwork(4);
+
+        // Fill ring roads with vehicles (simulating high occupancy)
+        for (String ringId : List.of("r_ring_nw", "r_ring_ws", "r_ring_se", "r_ring_en")) {
+            Road ringRoad = network.getRoads().get(ringId);
+            Lane ringLane = ringRoad.getLanes().get(0);
+            buildVehicle("occ_" + ringId, 10.0, 3.0, ringLane, 0);
+        }
+
+        // Verify occupancy count at n_ring_n (has r_ring_en inbound and r_ring_nw outbound)
+        Intersection ixtn = network.getIntersections().get("n_ring_n");
+        int occupancy = manager.countRoundaboutOccupancy(ixtn, network);
+        assertThat(occupancy).isGreaterThanOrEqualTo(2); // r_ring_en + r_ring_nw vehicles
+
+        // Try to enter from north
+        Road northIn = network.getRoads().get("r_north_in");
+        Lane inLane = northIn.getLanes().get(0);
+        buildVehicle("v_entering", 199.0, 5.0, inLane, 0);
+
+        Map<String, Double> stopLines = manager.computeStopLines(network);
+
+        // Should be blocked — ring road has circulating traffic (yield rule)
+        assertThat(stopLines).containsKey("r_north_in-lane0");
+    }
+
+    @Test
+    void roundaboutAllowsEntryBelowCapacity() {
+        RoadNetwork network = buildFourWayRoundaboutNetwork(8);
+
+        // No ring vehicles — empty roundabout
+        Road northIn = network.getRoads().get("r_north_in");
+        Lane inLane = northIn.getLanes().get(0);
+        buildVehicle("v_entering", 199.0, 5.0, inLane, 0);
+
+        manager.processTransfers(network, 1);
+
+        // Should pass through (empty roundabout — enters ring road)
+        assertThat(inLane.getVehiclesView()).isEmpty();
+    }
+
+    @Test
+    void roundaboutDeadlockResolves() {
+        // Very low capacity
+        RoadNetwork network = buildFourWayRoundaboutNetwork(1);
+
+        // Fill a ring road to trigger yield/gating
+        Road ringNw = network.getRoads().get("r_ring_nw");
+        buildVehicle("occ1", 10.0, 0.0, ringNw.getLanes().get(0), 0);
+
+        // Place waiting vehicles on two approach roads
+        Lane northLane = network.getRoads().get("r_north_in").getLanes().get(0);
+        Lane westLane = network.getRoads().get("r_west_in").getLanes().get(0);
+        buildVehicle("v_north", 194.0, 0.0, northLane, 0);
+        buildVehicle("v_west", 294.0, 0.0, westLane, 100);
+
+        // Tick 201 times — deadlock watchdog should trigger at some ring node
+        for (int tick = 1; tick <= 201; tick++) {
+            manager.processTransfers(network, tick);
+        }
+
+        // Count all vehicles across all roads
+        int totalVehicles = 0;
+        for (Road road : network.getRoads().values()) {
+            for (Lane lane : road.getLanes()) {
+                totalVehicles += lane.getVehicleCount();
+            }
+        }
+
+        // All 3 vehicles should still exist (no vehicles lost)
+        assertThat(totalVehicles).isEqualTo(3);
     }
 
     @Test

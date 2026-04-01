@@ -43,6 +43,9 @@ interface SimulationStore {
   // --- Command sending ---
   sendCommand: ((cmd: CommandDto) => void) | null;
 
+  // --- Connection status ---
+  connected: boolean;
+
   // --- Map selection ---
   availableMaps: MapInfo[];
   currentMapId: string | null;
@@ -50,6 +53,7 @@ interface SimulationStore {
   refetchRoads: (() => void) | null;
 
   // --- Actions ---
+  setConnected: (connected: boolean) => void;
   setTick: (state: SimulationStateDto) => void;
   setSendCommand: (fn: ((cmd: CommandDto) => void) | null) => void;
   setRoads: (roads: RoadDto[]) => void;
@@ -73,6 +77,7 @@ export const useSimulationStore = create<SimulationStore>((set, get) => ({
   roadsLoaded: false,
   intersections: [],
   sendCommand: null,
+  connected: false,
   availableMaps: [],
   currentMapId: null,
   mapError: null,
@@ -98,6 +103,7 @@ export const useSimulationStore = create<SimulationStore>((set, get) => ({
     }));
   },
 
+  setConnected: (connected) => set({ connected }),
   setSendCommand: (fn) => set({ sendCommand: fn }),
 
   setRoads: (roads) => set({ roads, roadsLoaded: true }),

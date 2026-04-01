@@ -48,8 +48,21 @@ export function SimulationCanvas() {
     drawIntersections(ctx, intersections);
   }, [roads, roadsLoaded, intersections]);
 
+  // Pause animation when tab is hidden (saves CPU, prevents stale interpolation)
+  const visibleRef = useRef(true);
+  useEffect(() => {
+    const handler = () => { visibleRef.current = !document.hidden; };
+    document.addEventListener('visibilitychange', handler);
+    return () => document.removeEventListener('visibilitychange', handler);
+  }, []);
+
   // Animation loop for vehicles layer
   const renderLoop = useCallback(() => {
+    rafRef.current = requestAnimationFrame(renderLoop);
+
+    // Skip rendering when tab is hidden
+    if (!visibleRef.current) return;
+
     const canvas = vehiclesCanvasRef.current;
     if (!canvas) return;
     const ctx = canvas.getContext('2d');
@@ -72,8 +85,6 @@ export function SimulationCanvas() {
     } else {
       ctx.clearRect(0, 0, canvas.width, canvas.height);
     }
-
-    rafRef.current = requestAnimationFrame(renderLoop);
   }, []);
 
   useEffect(() => {

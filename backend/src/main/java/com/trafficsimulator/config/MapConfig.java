@@ -45,6 +45,7 @@ public class MapConfig {
         private String type;   // "SIGNAL", "ROUNDABOUT", "PRIORITY"
         private List<SignalPhaseConfig> signalPhases;  // nullable, only for SIGNAL type
         private double intersectionSize;  // pixel radius of intersection box (default 0 = auto)
+        private int roundaboutCapacity = 8;  // max vehicles in roundabout zone (for ROUNDABOUT type)
     }
 
     @Data @NoArgsConstructor
