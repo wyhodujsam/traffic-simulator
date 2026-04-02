@@ -64,7 +64,7 @@ export function SimulationCanvas() {
   // Compute CSS scale factor to fill container while preserving aspect ratio
   const scaleX = containerSize.width / width;
   const scaleY = containerSize.height / height;
-  const finalScale = Math.max(0.3, Math.min(scaleX, scaleY, 2.0));
+  const finalScale = Math.max(0.3, Math.min(scaleX, scaleY, 3.0));
 
   // Draw static roads layer once when roads are loaded
   useEffect(() => {
@@ -152,6 +152,11 @@ export function SimulationCanvas() {
     }
   }, [roads]);
 
+  // Scaled dimensions for layout — transform doesn't affect layout box,
+  // so we set the outer wrapper to the scaled size and use transformOrigin top-left
+  const scaledWidth = Math.ceil(width * finalScale);
+  const scaledHeight = Math.ceil(height * finalScale);
+
   return (
     <div
       ref={containerRef}
@@ -165,26 +170,34 @@ export function SimulationCanvas() {
       }}
     >
       <div style={{
-        position: 'relative',
-        width,
-        height,
+        width: scaledWidth,
+        height: scaledHeight,
         flexShrink: 0,
-        transform: `scale(${finalScale})`,
-        transformOrigin: 'center center',
+        position: 'relative',
       }}>
-        <canvas
-          ref={roadsCanvasRef}
-          width={width}
-          height={height}
-          style={{ position: 'absolute', top: 0, left: 0 }}
-        />
-        <canvas
-          ref={vehiclesCanvasRef}
-          width={width}
-          height={height}
-          onClick={handleCanvasClick}
-          style={{ position: 'absolute', top: 0, left: 0, cursor: 'crosshair' }}
-        />
+        <div style={{
+          position: 'absolute',
+          top: 0,
+          left: 0,
+          width,
+          height,
+          transform: `scale(${finalScale})`,
+          transformOrigin: 'top left',
+        }}>
+          <canvas
+            ref={roadsCanvasRef}
+            width={width}
+            height={height}
+            style={{ position: 'absolute', top: 0, left: 0 }}
+          />
+          <canvas
+            ref={vehiclesCanvasRef}
+            width={width}
+            height={height}
+            onClick={handleCanvasClick}
+            style={{ position: 'absolute', top: 0, left: 0, cursor: 'crosshair' }}
+          />
+        </div>
       </div>
     </div>
   );

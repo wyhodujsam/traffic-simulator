@@ -102,7 +102,7 @@ function App() {
           minWidth: 0,
           display: 'flex',
           padding: '16px',
-          overflow: 'auto',
+          overflow: 'hidden',
           position: 'relative',
           maxHeight: isMobile ? '50vh' : undefined,
         }}>

@@ -2,8 +2,8 @@ import { describe, it, expect } from 'vitest';
 import WebSocket from 'ws';
 import { Client } from '@stomp/stompjs';
 
-const BACKEND_URL = 'http://localhost:8085';
-const WS_URL = 'ws://localhost:8085/ws/websocket';
+const BACKEND_URL = 'http://localhost:8086';
+const WS_URL = 'ws://localhost:8086/ws/websocket';
 
 describe('E2E: Backend health', () => {
   it('should have /ws/info endpoint returning SockJS info', async () => {
