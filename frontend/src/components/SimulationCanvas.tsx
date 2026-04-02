@@ -123,7 +123,7 @@ export function SimulationCanvas() {
   }, [roads]);
 
   return (
-    <div style={{ position: 'relative', width, height }}>
+    <div style={{ position: 'relative', width, height, margin: 'auto', flexShrink: 0 }}>
       <canvas
         ref={roadsCanvasRef}
         width={width}

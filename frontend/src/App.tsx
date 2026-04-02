@@ -78,9 +78,8 @@ function App() {
         {/* Canvas area */}
         <main style={{
           flex: 1,
+          minWidth: 0,
           display: 'flex',
-          alignItems: 'center',
-          justifyContent: 'center',
           padding: '16px',
           overflow: 'auto',
           position: 'relative',
