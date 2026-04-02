@@ -6,6 +6,7 @@ import org.springframework.stereotype.Component;
 
 import java.util.*;
 import java.util.concurrent.ThreadLocalRandom;
+import java.util.Comparator;
 
 @Component
 @Slf4j
@@ -379,7 +380,7 @@ public class IntersectionManager implements IIntersectionManager {
             if (outRoad == null) continue;
 
             // Pick a lane on the outbound road that has space
-            Lane targetLane = pickTargetLane(outRoad);
+            Lane targetLane = pickTargetLane(outRoad, inboundRoad);
             if (targetLane == null) continue;
 
             // Check space on target lane at the clip edge entry point
@@ -427,12 +428,26 @@ public class IntersectionManager implements IIntersectionManager {
         return candidates.get(ThreadLocalRandom.current().nextInt(candidates.size()));
     }
 
-    private Lane pickTargetLane(Road road) {
-        List<Lane> active = road.getLanes().stream()
+    private Lane pickTargetLane(Road outRoad, Road inboundRoad) {
+        List<Lane> active = outRoad.getLanes().stream()
             .filter(Lane::isActive)
             .toList();
         if (active.isEmpty()) return null;
+
+        // Merge scenario: inbound has fewer lanes than outbound -> target rightmost lane (index 0)
+        if (inboundRoad != null && inboundRoad.getLanes().size() < outRoad.getLanes().size()) {
+            // Pick rightmost active lane (lowest index)
+            return active.stream()
+                .min(Comparator.comparingInt(lane -> outRoad.getLanes().indexOf(lane)))
+                .orElse(active.get(0));
+        }
+
+        // Default: random active lane
         return active.get(ThreadLocalRandom.current().nextInt(active.size()));
+    }
+
+    private Lane pickTargetLane(Road road) {
+        return pickTargetLane(road, null);
     }
 
     /**
