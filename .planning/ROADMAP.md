@@ -253,10 +253,10 @@ Plans:
 **Requirements**: FIX-01, FIX-02, FIX-03
 **Depends on:** Phase 12
 
-**Plans:** 3 plans
+**Plans:** 1/3 plans executed
 
 Plans:
-- [ ] 13-01-PLAN.md — Fix canvas layout overflow (FIX-01)
+- [x] 13-01-PLAN.md — Fix canvas layout overflow (FIX-01)
 - [ ] 13-02-PLAN.md — Fix traffic light visual confusion and box-blocking indicator (FIX-02)
 - [ ] 13-03-PLAN.md — Fix highway merge ramp lane targeting (FIX-03)
 

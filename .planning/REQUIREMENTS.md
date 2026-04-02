@@ -76,7 +76,7 @@ Requirements for initial release. Each maps to roadmap phases.
 
 ### Bugfixes (Phase 13)
 
-- [ ] **FIX-01**: Canvas area must scroll instead of expanding the page when map is wider than viewport (e.g. phantom-jam-corridor at 2100px). Sidebar with controls must always remain visible.
+- [x] **FIX-01**: Canvas area must scroll instead of expanding the page when map is wider than viewport (e.g. phantom-jam-corridor at 2100px). Sidebar with controls must always remain visible.
 - [ ] **FIX-02**: Traffic lights on four-way-signal map — investigate and fix visual confusion where cars appear to stop on green and drive on red. Likely caused by box-blocking preventing movement on green, or traffic light rendering angle mismatch.
 - [ ] **FIX-03**: Highway merge — vehicles from on-ramp must merge onto the rightmost lane (lane 0) of the target road, not a random lane. pickTargetLane must respect merge semantics.
 
