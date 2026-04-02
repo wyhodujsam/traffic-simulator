@@ -82,7 +82,7 @@ Requirements for initial release. Each maps to roadmap phases.
 
 ### Playwright Bug Fixes (Phase 14)
 
-- [ ] **BUG-1**: Merge vehicle overlap — pojazdy nakładają się w punkcie merge (highway-merge, spawn rate >= 2.0). Brak cross-road gap checking przy transferze.
+- [x] **BUG-1**: Merge vehicle overlap — pojazdy nakładają się w punkcie merge (highway-merge, spawn rate >= 2.0). Brak cross-road gap checking przy transferze.
 - [ ] **BUG-2**: Brak responsywności mobilnej — na viewport 375x667 panel Controls niewidoczny, canvas zajmuje cały viewport, brak sterowania.
 - [ ] **BUG-3**: Panel Controls obcięty w Straight Road — canvas wypycha sidebar poza viewport na 1280x720.
 - [ ] **BUG-4**: Canvas nie skaluje się do dostępnej przestrzeni — na Full HD (1920x1080) canvas ma ~630px, reszta pusta.

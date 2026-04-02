@@ -266,11 +266,11 @@ Plans:
 **Requirements**: BUG-1, BUG-2, BUG-3, BUG-4, BUG-5, BUG-6
 **Depends on:** Phase 13
 
-**Plans:** 1/3 plans executed
+**Plans:** 3/3 plans complete
 
 Plans:
-- [ ] 14-01-PLAN.md — Fix merge vehicle overlap with same-tick gap tracking (BUG-1)
-- [ ] 14-02-PLAN.md — Responsive layout + canvas scaling (BUG-2, BUG-3, BUG-4)
+- [x] 14-01-PLAN.md — Fix merge vehicle overlap with same-tick gap tracking (BUG-1)
+- [x] 14-02-PLAN.md — Responsive layout + canvas scaling (BUG-2, BUG-3, BUG-4)
 - [x] 14-03-PLAN.md — Page title + button layout fix (BUG-5, BUG-6)
 
 ---
