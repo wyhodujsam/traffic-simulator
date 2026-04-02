@@ -1,9 +1,9 @@
 /** Pixel width per lane — used by frontend projection */
 export const LANE_WIDTH_PX = 14.0;
 
-/** Vehicle rendering dimensions (slightly exaggerated for visibility) */
-export const VEHICLE_LENGTH_PX = 10;
-export const VEHICLE_WIDTH_PX = 7;
+/** Vehicle rendering dimensions (matches physics model: 4.5m length) */
+export const VEHICLE_LENGTH_PX = 5;
+export const VEHICLE_WIDTH_PX = 4;
 
 /** Tick interval in ms (20 Hz) */
 export const TICK_INTERVAL_MS = 50;

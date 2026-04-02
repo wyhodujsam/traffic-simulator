@@ -6,6 +6,7 @@ import org.springframework.stereotype.Component;
 
 import java.util.*;
 import java.util.concurrent.ThreadLocalRandom;
+import java.util.Comparator;
 
 @Component
 @Slf4j
@@ -248,6 +249,10 @@ public class IntersectionManager implements IIntersectionManager {
             boolean transferredAny = false;
             int waitingCount = 0;
 
+            // Shared map tracking the last placed position per target lane ID within this tick.
+            // Prevents same-tick multi-road transfers from placing vehicles at the same position.
+            Map<String, Double> lastPlaced = new HashMap<>();
+
             for (String inboundRoadId : ixtn.getInboundRoadIds()) {
                 Road inboundRoad = network.getRoads().get(inboundRoadId);
                 if (inboundRoad == null) continue;
@@ -266,7 +271,7 @@ public class IntersectionManager implements IIntersectionManager {
                 if (!canEnterIntersection(ixtn, inboundRoadId, network)) continue;
 
                 for (Lane inLane : inboundRoad.getLanes()) {
-                    if (transferVehiclesFromLane(ixtn, inboundRoadId, inLane, network)) {
+                    if (transferVehiclesFromLane(ixtn, inboundRoadId, inLane, network, lastPlaced)) {
                         transferredAny = true;
                     }
                 }
@@ -359,9 +364,15 @@ public class IntersectionManager implements IIntersectionManager {
     /**
      * Transfers vehicles from a lane through an intersection.
      * Returns true if at least one vehicle was transferred.
+     *
+     * @param lastPlacedPosition shared map (laneId -> last placed position) across all
+     *                           transferVehiclesFromLane calls within one processTransfers tick.
+     *                           Prevents vehicles from different inbound roads from being placed
+     *                           at the same position on the same target lane.
      */
     private boolean transferVehiclesFromLane(Intersection ixtn, String inboundRoadId,
-                                           Lane inLane, RoadNetwork network) {
+                                           Lane inLane, RoadNetwork network,
+                                           Map<String, Double> lastPlacedPosition) {
         boolean transferred = false;
         Road inboundRoad = network.getRoads().get(inboundRoadId);
         double buffer = inboundRoad != null ? computeStopLineBuffer(ixtn, inboundRoad) : STOP_LINE_BUFFER_DEFAULT;
@@ -379,24 +390,37 @@ public class IntersectionManager implements IIntersectionManager {
             if (outRoad == null) continue;
 
             // Pick a lane on the outbound road that has space
-            Lane targetLane = pickTargetLane(outRoad);
+            Lane targetLane = pickTargetLane(outRoad, inboundRoad);
             if (targetLane == null) continue;
 
-            // Check space on target lane at the clip edge entry point
+            // Compute effective entry position: must be at least MIN_ENTRY_GAP beyond last placed vehicle
             double outBuffer = computeStopLineBuffer(ixtn, outRoad);
-            Vehicle firstOnTarget = targetLane.findLeaderAt(outBuffer - 1.0);
-            if (firstOnTarget != null && firstOnTarget.getPosition() < outBuffer + MIN_ENTRY_GAP) {
+            double lastPos = lastPlacedPosition.getOrDefault(targetLane.getId(), -1.0);
+            double effectivePosition = (lastPos >= outBuffer)
+                ? lastPos + MIN_ENTRY_GAP
+                : outBuffer;
+
+            // If target lane is too congested (no room even 3 gaps beyond entry), skip
+            if (effectivePosition > outBuffer + 3 * MIN_ENTRY_GAP) {
+                continue;
+            }
+
+            // Check space on target lane at the effective entry point
+            Vehicle firstOnTarget = targetLane.findLeaderAt(effectivePosition - 1.0);
+            if (firstOnTarget != null && firstOnTarget.getPosition() < effectivePosition + MIN_ENTRY_GAP) {
                 continue; // no space
             }
+
             toTransfer.add(v);
-            v.updatePhysics(outBuffer, v.getSpeed(), v.getAcceleration());
+            v.updatePhysics(effectivePosition, v.getSpeed(), v.getAcceleration());
             v.setLane(targetLane);  // transfer = special case, not a lane change
             v.completeLaneChange();
             targetLane.addVehicle(v);
+            lastPlacedPosition.put(targetLane.getId(), effectivePosition);
             transferred = true;
 
-            log.debug("Vehicle {} transferred through intersection {} from {} to {}",
-                v.getId(), ixtn.getId(), inLane.getId(), targetLane.getId());
+            log.debug("Vehicle {} transferred through intersection {} from {} to {} at pos {}",
+                v.getId(), ixtn.getId(), inLane.getId(), targetLane.getId(), effectivePosition);
         }
 
         // Remove transferred vehicles from inbound lane
@@ -427,12 +451,26 @@ public class IntersectionManager implements IIntersectionManager {
         return candidates.get(ThreadLocalRandom.current().nextInt(candidates.size()));
     }
 
-    private Lane pickTargetLane(Road road) {
-        List<Lane> active = road.getLanes().stream()
+    private Lane pickTargetLane(Road outRoad, Road inboundRoad) {
+        List<Lane> active = outRoad.getLanes().stream()
             .filter(Lane::isActive)
             .toList();
         if (active.isEmpty()) return null;
+
+        // Merge scenario: inbound has fewer lanes than outbound -> target rightmost lane (index 0)
+        if (inboundRoad != null && inboundRoad.getLanes().size() < outRoad.getLanes().size()) {
+            // Pick rightmost active lane (lowest index)
+            return active.stream()
+                .min(Comparator.comparingInt(lane -> outRoad.getLanes().indexOf(lane)))
+                .orElse(active.get(0));
+        }
+
+        // Default: random active lane
         return active.get(ThreadLocalRandom.current().nextInt(active.size()));
+    }
+
+    private Lane pickTargetLane(Road road) {
+        return pickTargetLane(road, null);
     }
 
     /**

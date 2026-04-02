@@ -16,4 +16,5 @@ public class TrafficLightDto {
     private double x;              // pixel x at stop line
     private double y;              // pixel y at stop line
     private double angle;          // road direction for orientation
+    private boolean boxBlocked;    // true when GREEN but box-blocking prevents entry
 }

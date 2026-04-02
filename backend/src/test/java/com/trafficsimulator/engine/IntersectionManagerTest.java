@@ -501,4 +501,111 @@ class IntersectionManagerTest {
 
         assertThat(stopLines).containsKey("r_west_in-lane0");
     }
+
+    // ---- Merge lane targeting tests ----
+
+    /**
+     * Helper: build a road with a given number of lanes.
+     */
+    private static Road buildMultiLaneRoad(String id, double length, int laneCount,
+                                           String fromNode, String toNode) {
+        Road road = Road.builder()
+            .id(id).name(id).length(length).speedLimit(13.9)
+            .startX(0).startY(0).endX(length).endY(0)
+            .fromNodeId(fromNode).toNodeId(toNode)
+            .lanes(new ArrayList<>())
+            .build();
+        for (int i = 0; i < laneCount; i++) {
+            Lane lane = Lane.builder()
+                .id(id + "-lane" + i).laneIndex(i).road(road)
+                .length(length).maxSpeed(13.9).active(true)
+                .build();
+            road.getLanes().add(lane);
+        }
+        return road;
+    }
+
+    /**
+     * Builds a highway-merge-like network: 1-lane ramp + 2-lane main highway merging
+     * at a PRIORITY intersection, with a 2-lane outbound road.
+     */
+    private RoadNetwork buildMergeNetwork() {
+        Map<String, Road> roads = new LinkedHashMap<>();
+        // 2-lane main highway before merge
+        roads.put("main_before", buildMultiLaneRoad("main_before", 300, 2, "main_entry", "merge_point"));
+        // 1-lane on-ramp
+        roads.put("ramp", buildMultiLaneRoad("ramp", 200, 1, "ramp_entry", "merge_point"));
+        // 2-lane highway after merge
+        roads.put("main_after", buildMultiLaneRoad("main_after", 700, 2, "merge_point", "main_exit"));
+
+        Intersection ixtn = Intersection.builder()
+            .id("merge_point")
+            .type(IntersectionType.PRIORITY)
+            .inboundRoadIds(new ArrayList<>(List.of("main_before", "ramp")))
+            .outboundRoadIds(new ArrayList<>(List.of("main_after")))
+            .connectedRoadIds(new ArrayList<>(roads.keySet()))
+            .build();
+
+        Map<String, Intersection> intersections = new LinkedHashMap<>();
+        intersections.put(ixtn.getId(), ixtn);
+
+        return RoadNetwork.builder()
+            .id("merge-test")
+            .roads(roads)
+            .intersections(intersections)
+            .spawnPoints(List.of())
+            .despawnPoints(List.of())
+            .build();
+    }
+
+    @Test
+    void mergeRampVehicleTargetsLane0OfOutboundRoad() {
+        // Scenario: 1-lane ramp merges onto 2-lane main_after
+        // Vehicle from ramp should land on lane 0 (rightmost), NOT a random lane
+        RoadNetwork network = buildMergeNetwork();
+
+        Lane rampLane = network.getRoads().get("ramp").getLanes().get(0);
+        Lane mainAfterLane0 = network.getRoads().get("main_after").getLanes().get(0);
+        Lane mainAfterLane1 = network.getRoads().get("main_after").getLanes().get(1);
+
+        // Place ramp vehicle past threshold
+        buildVehicle("v_ramp", 199.0, 5.0, rampLane, 0);
+
+        manager.processTransfers(network, 1);
+
+        // Vehicle should be transferred off ramp
+        assertThat(rampLane.getVehiclesView()).isEmpty();
+
+        // Vehicle must land on lane 0 specifically (merge onto rightmost)
+        assertThat(mainAfterLane0.getVehiclesView()).hasSize(1);
+        assertThat(mainAfterLane0.getVehiclesView().get(0).getId()).isEqualTo("v_ramp");
+        assertThat(mainAfterLane1.getVehiclesView()).isEmpty();
+    }
+
+    @Test
+    void equalLaneTransferRemainsRandom() {
+        // Scenario: 2-lane main_before onto 2-lane main_after
+        // Equal lane counts -> random lane selection (both lanes should be reachable)
+        RoadNetwork network = buildMergeNetwork();
+
+        // Run many transfers and collect which lanes received vehicles
+        Set<Integer> lanesUsed = new HashSet<>();
+        for (int i = 0; i < 50; i++) {
+            // Fresh network each time
+            RoadNetwork net = buildMergeNetwork();
+            Lane inLane0 = net.getRoads().get("main_before").getLanes().get(0);
+            buildVehicle("v" + i, 299.0, 5.0, inLane0, i);
+
+            manager.processTransfers(net, i + 1);
+
+            Road mainAfter = net.getRoads().get("main_after");
+            for (int li = 0; li < mainAfter.getLanes().size(); li++) {
+                if (!mainAfter.getLanes().get(li).getVehiclesView().isEmpty()) {
+                    lanesUsed.add(li);
+                }
+            }
+        }
+        // Both lanes should have been used across 50 trials (random distribution)
+        assertThat(lanesUsed).contains(0, 1);
+    }
 }

@@ -78,8 +78,8 @@ export function ControlsPanel() {
   };
 
   const buttonStyle = (enabled: boolean): React.CSSProperties => ({
-    padding: '8px 16px',
-    margin: '4px',
+    padding: '6px 10px',
+    margin: '0',
     cursor: enabled ? 'pointer' : 'not-allowed',
     opacity: enabled ? 1 : 0.4,
     border: '1px solid #555',
@@ -87,7 +87,9 @@ export function ControlsPanel() {
     background: '#2a2a3e',
     color: '#e0e0e0',
     fontFamily: 'monospace',
-    fontSize: '14px',
+    fontSize: '13px',
+    flex: '1',
+    whiteSpace: 'nowrap',
   });
 
   const startLabel: Record<SimulationStatus, string> = {
@@ -151,7 +153,7 @@ export function ControlsPanel() {
       )}
 
       {/* Simulation state buttons */}
-      <div style={{ marginBottom: '16px' }}>
+      <div style={{ display: 'flex', gap: '4px', marginBottom: '16px', flexWrap: 'nowrap' }}>
         <button
           style={buttonStyle(status === 'STOPPED' || status === 'PAUSED')}
           onClick={handleStart}

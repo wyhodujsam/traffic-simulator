@@ -2,29 +2,29 @@
 gsd_state_version: 1.0
 milestone: v1.0
 milestone_name: milestone
-current_phase: done
-status: All v1.0 phases complete
-last_updated: "2026-04-01T08:25:00.000Z"
+current_phase: 14
+status: Milestone complete
+last_updated: "2026-04-02T21:07:14.175Z"
 progress:
-  total_phases: 12
+  total_phases: 14
   completed_phases: 12
-  total_plans: 55
-  completed_plans: 55
+  total_plans: 58
+  completed_plans: 60
 ---
 
 # Project State
 
 **Project:** Traffic Simulator
 **Milestone:** v1.0
-**Current Phase:** 12
-**Last Updated:** 2026-03-28
+**Current Phase:** 14
+**Last Updated:** 2026-04-02
 
 ## Project Reference
 
 See: .planning/PROJECT.md (updated 2026-03-27)
 
 **Core value:** Wierna symulacja fizyki ruchu drogowego
-**Current focus:** All v1.0 phases complete
+**Current focus:** Phase 14 — Playwright Bug Fixes & Responsive Layout
 
 ## Phase Status
 
@@ -59,3 +59,7 @@ See: .planning/PROJECT.md (updated 2026-03-27)
 - 2026-03-28: Phase 5 Plan 5.5 complete — StatsPanel component with live statistics (vehicles, avg speed km/h, density, throughput, tick count); reads from Zustand store; tsc --noEmit passes
 - 2026-03-28: Phase 5 Plan 5.7 complete — 15 frontend tests: interpolation (6), Zustand store (6), StatsPanel rendering (3); all pass; tsc --noEmit clean
 - 2026-03-28: Phase 7 Plan 7.4 complete — 12 tests: LaneChangeEngineTest (9 MOBIL safety/correctness tests), RoadNarrowingIntegrationTest (3 integration tests); 56 total tests pass
+- 2026-04-02: Phase 13 Plan 13-01 complete — Fixed canvas layout overflow: removed flex centering from App.tsx main, added margin:auto + flexShrink:0 to SimulationCanvas; wide maps now scroll instead of breaking layout; tsc --noEmit passes
+- 2026-04-02: Phase 13 Plan 13-03 complete — Merge-aware lane targeting: ramp vehicles (1-lane inbound) now target lane 0 of multi-lane outbound road; pickTargetLane overloaded with inboundRoad parameter; 140 tests pass; FIX-03 satisfied
+- 2026-04-02: Phase 14 Plan 14-01 complete — BUG-1 fix: shared lastPlacedPosition map prevents same-tick vehicle overlap at merge intersections; effectivePosition = max(outBuffer, lastPlaced + MIN_ENTRY_GAP); all 140 tests pass
+- 2026-04-02: Phase 14 Plan 14-02 complete — Responsive flex layout (useIsMobile hook, 768px breakpoint), flexShrink:0 on sidebar (BUG-3 fix), CSS transform:scale canvas fill with ResizeObserver (BUG-4 fix), mobile stacked layout with 50vh canvas cap (BUG-2 fix); tsc --noEmit passes

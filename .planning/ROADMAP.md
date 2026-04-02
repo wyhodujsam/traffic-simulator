@@ -247,6 +247,32 @@ Plans:
 - [x] 12.4: Paired road boundary suppression + yellow center lines (completed 2026-03-29)
 - [x] 12.5: Visual verification and tuning (completed 2026-04-01)
 
+### Phase 13: UI & Simulation Bugfixes
+
+**Goal:** Fix 3 user-reported bugs — canvas layout overflow, traffic light visual confusion on four-way signal, and highway merge ramp targeting wrong lane
+**Requirements**: FIX-01, FIX-02, FIX-03
+**Depends on:** Phase 12
+
+**Plans:** 3/3 plans complete
+
+Plans:
+- [x] 13-01-PLAN.md — Fix canvas layout overflow (FIX-01)
+- [x] 13-02-PLAN.md — Fix traffic light visual confusion and box-blocking indicator (FIX-02)
+- [x] 13-03-PLAN.md — Fix highway merge ramp lane targeting (FIX-03)
+
+### Phase 14: Playwright Bug Fixes & Responsive Layout
+
+**Goal:** Fix 6 bugs from Playwright testing session: merge vehicle overlap, mobile responsiveness, sidebar cutoff, canvas scaling, page title, button layout + UX polish
+**Requirements**: BUG-1, BUG-2, BUG-3, BUG-4, BUG-5, BUG-6
+**Depends on:** Phase 13
+
+**Plans:** 3/3 plans complete
+
+Plans:
+- [x] 14-01-PLAN.md — Fix merge vehicle overlap with same-tick gap tracking (BUG-1)
+- [x] 14-02-PLAN.md — Responsive layout + canvas scaling (BUG-2, BUG-3, BUG-4)
+- [x] 14-03-PLAN.md — Page title + button layout fix (BUG-5, BUG-6)
+
 ---
 *Roadmap created: 2026-03-27*
 *All 33 v1 requirements mapped across 10 phases*

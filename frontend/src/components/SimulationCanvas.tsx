@@ -1,4 +1,4 @@
-import { useEffect, useRef, useCallback } from 'react';
+import { useEffect, useRef, useCallback, useState } from 'react';
 import { useSimulationStore } from '../store/useSimulationStore';
 import { drawRoads } from '../rendering/drawRoads';
 import { drawIntersections } from '../rendering/drawIntersections';
@@ -30,12 +30,41 @@ export function SimulationCanvas() {
   const roadsCanvasRef = useRef<HTMLCanvasElement>(null);
   const vehiclesCanvasRef = useRef<HTMLCanvasElement>(null);
   const rafRef = useRef<number>(0);
+  const containerRef = useRef<HTMLDivElement>(null);
 
   const roads = useSimulationStore((s) => s.roads);
   const roadsLoaded = useSimulationStore((s) => s.roadsLoaded);
   const intersections = useSimulationStore((s) => s.intersections);
 
   const { width, height } = computeCanvasSize(roads);
+
+  // Track container dimensions for scaling
+  const [containerSize, setContainerSize] = useState<{ width: number; height: number }>({
+    width: 900,
+    height: 600,
+  });
+
+  useEffect(() => {
+    const el = containerRef.current;
+    if (!el) return;
+
+    const observer = new ResizeObserver((entries) => {
+      for (const entry of entries) {
+        const { width: w, height: h } = entry.contentRect;
+        if (w > 0 && h > 0) {
+          setContainerSize({ width: w, height: h });
+        }
+      }
+    });
+
+    observer.observe(el);
+    return () => observer.disconnect();
+  }, []);
+
+  // Compute CSS scale factor to fill container while preserving aspect ratio
+  const scaleX = containerSize.width / width;
+  const scaleY = containerSize.height / height;
+  const finalScale = Math.max(0.3, Math.min(scaleX, scaleY, 3.0));
 
   // Draw static roads layer once when roads are loaded
   useEffect(() => {
@@ -96,8 +125,9 @@ export function SimulationCanvas() {
     const canvas = vehiclesCanvasRef.current;
     if (!canvas) return;
     const rect = canvas.getBoundingClientRect();
-    const cx = e.clientX - rect.left;
-    const cy = e.clientY - rect.top;
+    // getBoundingClientRect returns the CSS-scaled size; compensate to get canvas pixel coords
+    const cx = (e.clientX - rect.left) * (canvas.width / rect.width);
+    const cy = (e.clientY - rect.top) * (canvas.height / rect.height);
 
     const store = useSimulationStore.getState();
     const { sendCommand, obstacles } = store;
@@ -122,21 +152,53 @@ export function SimulationCanvas() {
     }
   }, [roads]);
 
+  // Scaled dimensions for layout — transform doesn't affect layout box,
+  // so we set the outer wrapper to the scaled size and use transformOrigin top-left
+  const scaledWidth = Math.ceil(width * finalScale);
+  const scaledHeight = Math.ceil(height * finalScale);
+
   return (
-    <div style={{ position: 'relative', width, height }}>
-      <canvas
-        ref={roadsCanvasRef}
-        width={width}
-        height={height}
-        style={{ position: 'absolute', top: 0, left: 0 }}
-      />
-      <canvas
-        ref={vehiclesCanvasRef}
-        width={width}
-        height={height}
-        onClick={handleCanvasClick}
-        style={{ position: 'absolute', top: 0, left: 0, cursor: 'crosshair' }}
-      />
+    <div
+      ref={containerRef}
+      style={{
+        width: '100%',
+        height: '100%',
+        display: 'flex',
+        alignItems: 'center',
+        justifyContent: 'center',
+        overflow: 'hidden',
+      }}
+    >
+      <div style={{
+        width: scaledWidth,
+        height: scaledHeight,
+        flexShrink: 0,
+        position: 'relative',
+      }}>
+        <div style={{
+          position: 'absolute',
+          top: 0,
+          left: 0,
+          width,
+          height,
+          transform: `scale(${finalScale})`,
+          transformOrigin: 'top left',
+        }}>
+          <canvas
+            ref={roadsCanvasRef}
+            width={width}
+            height={height}
+            style={{ position: 'absolute', top: 0, left: 0 }}
+          />
+          <canvas
+            ref={vehiclesCanvasRef}
+            width={width}
+            height={height}
+            onClick={handleCanvasClick}
+            style={{ position: 'absolute', top: 0, left: 0, cursor: 'crosshair' }}
+          />
+        </div>
+      </div>
     </div>
   );
 }

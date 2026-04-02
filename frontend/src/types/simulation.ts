@@ -18,6 +18,7 @@ export interface TrafficLightDto {
   x: number;
   y: number;
   angle: number;
+  boxBlocked: boolean;
 }
 
 export interface ObstacleDto {

@@ -74,6 +74,21 @@ Requirements for initial release. Each maps to roadmap phases.
 - [ ] **INFR-03**: WebSocket communication uses STOMP over SockJS
 - [ ] **INFR-04**: Command queue pattern ensures thread-safe simulation state access
 
+### Bugfixes (Phase 13)
+
+- [x] **FIX-01**: Canvas area must scroll instead of expanding the page when map is wider than viewport (e.g. phantom-jam-corridor at 2100px). Sidebar with controls must always remain visible.
+- [x] **FIX-02**: Traffic lights on four-way-signal map — investigate and fix visual confusion where cars appear to stop on green and drive on red. Likely caused by box-blocking preventing movement on green, or traffic light rendering angle mismatch.
+- [x] **FIX-03**: Highway merge — vehicles from on-ramp must merge onto the rightmost lane (lane 0) of the target road, not a random lane. pickTargetLane must respect merge semantics.
+
+### Playwright Bug Fixes (Phase 14)
+
+- [x] **BUG-1**: Merge vehicle overlap — pojazdy nakładają się w punkcie merge (highway-merge, spawn rate >= 2.0). Brak cross-road gap checking przy transferze.
+- [ ] **BUG-2**: Brak responsywności mobilnej — na viewport 375x667 panel Controls niewidoczny, canvas zajmuje cały viewport, brak sterowania.
+- [ ] **BUG-3**: Panel Controls obcięty w Straight Road — canvas wypycha sidebar poza viewport na 1280x720.
+- [ ] **BUG-4**: Canvas nie skaluje się do dostępnej przestrzeni — na Full HD (1920x1080) canvas ma ~630px, reszta pusta.
+- [x] **BUG-5**: Tytuł strony to generyczny "Vite + React + TS" zamiast "Traffic Simulator".
+- [x] **BUG-6**: Przyciski Start/Pause/Stop łamią się na dwie linie zamiast mieścić w jednym rzędzie.
+
 ## v2 Requirements
 
 Deferred to future release. Tracked but not in current roadmap.
