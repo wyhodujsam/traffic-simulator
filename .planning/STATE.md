@@ -60,3 +60,4 @@ See: .planning/PROJECT.md (updated 2026-03-27)
 - 2026-03-28: Phase 5 Plan 5.7 complete — 15 frontend tests: interpolation (6), Zustand store (6), StatsPanel rendering (3); all pass; tsc --noEmit clean
 - 2026-03-28: Phase 7 Plan 7.4 complete — 12 tests: LaneChangeEngineTest (9 MOBIL safety/correctness tests), RoadNarrowingIntegrationTest (3 integration tests); 56 total tests pass
 - 2026-04-02: Phase 13 Plan 13-01 complete — Fixed canvas layout overflow: removed flex centering from App.tsx main, added margin:auto + flexShrink:0 to SimulationCanvas; wide maps now scroll instead of breaking layout; tsc --noEmit passes
+- 2026-04-02: Phase 13 Plan 13-03 complete — Merge-aware lane targeting: ramp vehicles (1-lane inbound) now target lane 0 of multi-lane outbound road; pickTargetLane overloaded with inboundRoad parameter; 140 tests pass; FIX-03 satisfied
