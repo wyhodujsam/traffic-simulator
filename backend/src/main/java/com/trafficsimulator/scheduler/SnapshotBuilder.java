@@ -59,14 +59,35 @@ public class SnapshotBuilder {
                 for (String inRoadId : ixtn.getInboundRoadIds()) {
                     Road inRoad = network.getRoads().get(inRoadId);
                     if (inRoad == null) continue;
+                    String signalState = tl.getSignalState(inRoadId);
+                    boolean boxBlocked = false;
+                    if ("GREEN".equals(signalState)) {
+                        // Check if all outbound roads are full (box-blocking active)
+                        boolean anyOutboundHasSpace = false;
+                        for (String outRoadId : ixtn.getOutboundRoadIds()) {
+                            if (outRoadId.replace("_in", "_out").equals(inRoadId.replace("_in", "_out"))) continue;
+                            Road outRoad = network.getRoads().get(outRoadId);
+                            if (outRoad == null) continue;
+                            for (Lane outLane : outRoad.getLanes()) {
+                                if (!outLane.isActive()) continue;
+                                if (outLane.getVehiclesView().isEmpty() || outLane.getVehiclesView().get(0).getPosition() > 10.0) {
+                                    anyOutboundHasSpace = true;
+                                    break;
+                                }
+                            }
+                            if (anyOutboundHasSpace) break;
+                        }
+                        boxBlocked = !anyOutboundHasSpace;
+                    }
                     trafficLightDtos.add(TrafficLightDto.builder()
                         .intersectionId(ixtn.getId())
                         .roadId(inRoadId)
-                        .state(tl.getSignalState(inRoadId))
+                        .state(signalState)
                         .x(inRoad.getEndX())
                         .y(inRoad.getEndY())
                         .angle(Math.atan2(inRoad.getEndY() - inRoad.getStartY(),
                                            inRoad.getEndX() - inRoad.getStartX()))
+                        .boxBlocked(boxBlocked)
                         .build());
                 }
             }
