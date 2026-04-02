@@ -260,6 +260,19 @@ Plans:
 - [x] 13-02-PLAN.md — Fix traffic light visual confusion and box-blocking indicator (FIX-02)
 - [x] 13-03-PLAN.md — Fix highway merge ramp lane targeting (FIX-03)
 
+### Phase 14: Playwright Bug Fixes & Responsive Layout
+
+**Goal:** Fix 6 bugs from Playwright testing session: merge vehicle overlap, mobile responsiveness, sidebar cutoff, canvas scaling, page title, button layout + UX polish
+**Requirements**: BUG-1, BUG-2, BUG-3, BUG-4, BUG-5, BUG-6
+**Depends on:** Phase 13
+
+**Plans:** 3 plans
+
+Plans:
+- [ ] 14-01-PLAN.md — Fix merge vehicle overlap with same-tick gap tracking (BUG-1)
+- [ ] 14-02-PLAN.md — Responsive layout + canvas scaling (BUG-2, BUG-3, BUG-4)
+- [ ] 14-03-PLAN.md — Page title + button layout fix (BUG-5, BUG-6)
+
 ---
 *Roadmap created: 2026-03-27*
 *All 33 v1 requirements mapped across 10 phases*
