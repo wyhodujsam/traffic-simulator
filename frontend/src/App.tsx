@@ -1,8 +1,25 @@
+import { useState, useEffect } from 'react';
 import { useWebSocket } from './hooks/useWebSocket';
 import { SimulationCanvas } from './components/SimulationCanvas';
 import { ControlsPanel } from './components/ControlsPanel';
 import { StatsPanel } from './components/StatsPanel';
 import { useSimulationStore } from './store/useSimulationStore';
+
+const MOBILE_BREAKPOINT = 768;
+
+function useIsMobile(): boolean {
+  const [isMobile, setIsMobile] = useState(() => window.innerWidth <= MOBILE_BREAKPOINT);
+
+  useEffect(() => {
+    const handleResize = () => {
+      setIsMobile(window.innerWidth <= MOBILE_BREAKPOINT);
+    };
+    window.addEventListener('resize', handleResize);
+    return () => window.removeEventListener('resize', handleResize);
+  }, []);
+
+  return isMobile;
+}
 
 function DisconnectBanner() {
   const connected = useSimulationStore((s) => s.connected);
@@ -47,6 +64,7 @@ function PausedOverlay() {
 
 function App() {
   useWebSocket();
+  const isMobile = useIsMobile();
 
   return (
     <div style={{
@@ -63,6 +81,7 @@ function App() {
         borderBottom: '1px solid #333',
         fontSize: '18px',
         fontWeight: 'bold',
+        flexShrink: 0,
       }}>
         Traffic Simulator
       </header>
@@ -72,26 +91,37 @@ function App() {
       {/* Main content */}
       <div style={{
         display: 'flex',
+        flexDirection: isMobile ? 'column' : 'row',
         flex: 1,
-        overflow: 'hidden',
+        overflow: isMobile ? 'auto' : 'hidden',
+        minHeight: 0,
       }}>
         {/* Canvas area */}
         <main style={{
-          flex: 1,
+          flex: isMobile ? 'none' : 1,
           minWidth: 0,
           display: 'flex',
           padding: '16px',
           overflow: 'auto',
           position: 'relative',
+          maxHeight: isMobile ? '50vh' : undefined,
         }}>
           <SimulationCanvas />
           <PausedOverlay />
         </main>
 
         {/* Sidebar */}
-        <aside style={{
+        <aside style={isMobile ? {
+          width: '100%',
+          borderTop: '1px solid #333',
+          display: 'flex',
+          flexDirection: 'column',
+          overflow: 'auto',
+          flexShrink: 0,
+        } : {
           width: '260px',
           minWidth: '260px',
+          flexShrink: 0,
           borderLeft: '1px solid #333',
           display: 'flex',
           flexDirection: 'column',
