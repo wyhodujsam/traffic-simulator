@@ -86,8 +86,8 @@ Requirements for initial release. Each maps to roadmap phases.
 - [ ] **BUG-2**: Brak responsywności mobilnej — na viewport 375x667 panel Controls niewidoczny, canvas zajmuje cały viewport, brak sterowania.
 - [ ] **BUG-3**: Panel Controls obcięty w Straight Road — canvas wypycha sidebar poza viewport na 1280x720.
 - [ ] **BUG-4**: Canvas nie skaluje się do dostępnej przestrzeni — na Full HD (1920x1080) canvas ma ~630px, reszta pusta.
-- [ ] **BUG-5**: Tytuł strony to generyczny "Vite + React + TS" zamiast "Traffic Simulator".
-- [ ] **BUG-6**: Przyciski Start/Pause/Stop łamią się na dwie linie zamiast mieścić w jednym rzędzie.
+- [x] **BUG-5**: Tytuł strony to generyczny "Vite + React + TS" zamiast "Traffic Simulator".
+- [x] **BUG-6**: Przyciski Start/Pause/Stop łamią się na dwie linie zamiast mieścić w jednym rzędzie.
 
 ## v2 Requirements
 
