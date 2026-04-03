@@ -279,12 +279,12 @@ Plans:
 **Requirements**: SQ-01, SQ-02, SQ-03, SQ-04, SQ-05, SQ-06, SQ-07
 **Depends on:** Phase 14
 
-**Plans:** 2/3 plans executed
+**Plans:** 3/3 plans complete
 
 Plans:
 - [x] 15-01-PLAN.md — Fix test assertions (SQ-01) + refactor MapValidator (SQ-02, SQ-07)
 - [x] 15-02-PLAN.md — Refactor SnapshotBuilder, PhysicsEngine, TickEmitter, SimulationController (SQ-03, SQ-06)
-- [ ] 15-03-PLAN.md — Refactor LaneChangeEngine (SQ-04) + IntersectionManager (SQ-05)
+- [x] 15-03-PLAN.md — Refactor LaneChangeEngine (SQ-04) + IntersectionManager (SQ-05)
 
 ---
 *Roadmap created: 2026-03-27*
