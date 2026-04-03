@@ -48,7 +48,7 @@ class TrafficLightTest {
         // Tick for 34 seconds — past both phases (30s + 3s = 33s total), wraps to phase 0
         light.tick(34.0);
 
-        assertThat(light.getCurrentPhaseIndex()).isEqualTo(0);
+        assertThat(light.getCurrentPhaseIndex()).isZero();
         assertThat(light.getCurrentPhase().getType()).isEqualTo(TrafficLightPhase.PhaseType.GREEN);
     }
 
@@ -97,8 +97,8 @@ class TrafficLightTest {
             .build());
         light.replacePhases(newPhases);
 
-        assertThat(light.getPhaseElapsedMs()).isEqualTo(0);
-        assertThat(light.getCurrentPhaseIndex()).isEqualTo(0);
+        assertThat(light.getPhaseElapsedMs()).isZero();
+        assertThat(light.getCurrentPhaseIndex()).isZero();
         assertThat(light.getPhases()).hasSize(1);
     }
 }

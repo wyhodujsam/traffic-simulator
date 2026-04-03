@@ -1,11 +1,11 @@
 import { useSimulationStore } from '../store/useSimulationStore';
 
 interface StatRowProps {
-  label: string;
-  value: string;
+  readonly label: string;
+  readonly value: string;
 }
 
-function StatRow({ label, value }: StatRowProps) {
+function StatRow({ label, value }: Readonly<StatRowProps>) {
   return (
     <div style={{
       display: 'flex',

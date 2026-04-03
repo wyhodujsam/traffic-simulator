@@ -9,9 +9,8 @@ import com.trafficsimulator.model.RoadNetwork;
 import com.trafficsimulator.model.TrafficLight;
 import com.trafficsimulator.model.TrafficLightPhase;
 import com.trafficsimulator.model.Vehicle;
-import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
-import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.lang.Nullable;
 import org.springframework.stereotype.Component;
 
 import java.util.ArrayList;
@@ -24,20 +23,23 @@ import java.util.Set;
  * Extracted from SimulationEngine to separate command processing from state management.
  */
 @Component
-@RequiredArgsConstructor
 @Slf4j
 public class CommandDispatcher {
 
     private final SimulationEngine engine;
+    private final VehicleSpawner vehicleSpawner;
+    private final ObstacleManager obstacleManager;
+    private final MapLoader mapLoader;
 
-    @Autowired(required = false)
-    private VehicleSpawner vehicleSpawner;
-
-    @Autowired(required = false)
-    private ObstacleManager obstacleManager;
-
-    @Autowired(required = false)
-    private MapLoader mapLoader;
+    public CommandDispatcher(SimulationEngine engine,
+                             @Nullable VehicleSpawner vehicleSpawner,
+                             @Nullable ObstacleManager obstacleManager,
+                             @Nullable MapLoader mapLoader) {
+        this.engine = engine;
+        this.vehicleSpawner = vehicleSpawner;
+        this.obstacleManager = obstacleManager;
+        this.mapLoader = mapLoader;
+    }
 
     public void dispatch(SimulationCommand cmd) {
         if (cmd instanceof SimulationCommand.Start) {
@@ -194,8 +196,8 @@ public class CommandDispatcher {
             List<TrafficLightPhase> newPhases = new ArrayList<>();
             Set<Set<String>> seenGroups = new LinkedHashSet<>();
             for (TrafficLightPhase p : tl.getPhases()) {
-                if (p.getType() == TrafficLightPhase.PhaseType.GREEN) {
-                    if (seenGroups.add(p.getGreenRoadIds())) {
+                if (p.getType() == TrafficLightPhase.PhaseType.GREEN
+                        && seenGroups.add(p.getGreenRoadIds())) {
                         newPhases.add(TrafficLightPhase.builder()
                             .greenRoadIds(p.getGreenRoadIds())
                             .durationMs(cmd.greenDurationMs())
@@ -208,7 +210,6 @@ public class CommandDispatcher {
                             .greenRoadIds(Set.of())
                             .durationMs(2000)
                             .type(TrafficLightPhase.PhaseType.ALL_RED).build());
-                    }
                 }
             }
             tl.replacePhases(newPhases);

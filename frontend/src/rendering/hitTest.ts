@@ -1,6 +1,6 @@
 import type { RoadDto, ObstacleDto } from '../types/simulation';
 import { projectObstacle } from './projection';
-import { LANE_WIDTH_PX, OBSTACLE_LENGTH_PX, OBSTACLE_HIT_PADDING } from './constants';
+import { LANE_WIDTH_PX, OBSTACLE_LENGTH_PX, OBSTACLE_HIT_PADDING, RENDER_SCALE } from './constants';
 
 export interface RoadHit {
   roadId: string;
@@ -54,9 +54,13 @@ export function hitTestRoad(
   let bestPerpDist = Infinity;
 
   for (const road of roads) {
-    const dx = road.endX - road.startX;
-    const dy = road.endY - road.startY;
-    const roadLenPx = Math.sqrt(dx * dx + dy * dy);
+    const sx = road.startX * RENDER_SCALE;
+    const sy = road.startY * RENDER_SCALE;
+    const ex = road.endX * RENDER_SCALE;
+    const ey = road.endY * RENDER_SCALE;
+    const dx = ex - sx;
+    const dy = ey - sy;
+    const roadLenPx = Math.hypot(dx, dy);
     if (roadLenPx === 0) continue;
 
     // Unit vectors: along road and perpendicular
@@ -66,8 +70,8 @@ export function hitTestRoad(
     const ny = ux;
 
     // Vector from road start to click
-    const px = cx - road.startX;
-    const py = cy - road.startY;
+    const px = cx - sx;
+    const py = cy - sy;
 
     // Project onto road axis
     const along = px * ux + py * uy;

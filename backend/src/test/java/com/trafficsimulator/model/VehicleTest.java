@@ -54,7 +54,7 @@ class VehicleTest {
         v.startLaneChange(targetLane, 0, 42L);
 
         assertThat(v.getLane()).isSameAs(targetLane);
-        assertThat(v.getLaneChangeSourceIndex()).isEqualTo(0);
+        assertThat(v.getLaneChangeSourceIndex()).isZero();
         assertThat(v.getLaneChangeProgress()).isEqualTo(0.0);
         assertThat(v.getLastLaneChangeTick()).isEqualTo(42L);
     }

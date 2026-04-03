@@ -109,8 +109,8 @@ class IntersectionManagerTest {
         Map<String, Double> stopLines = manager.computeStopLines(network);
 
         // west_in and east_in lanes should have stop lines (RED)
-        assertThat(stopLines).containsKey("r_west_in-lane0");
-        assertThat(stopLines).containsKey("r_east_in-lane0");
+        assertThat(stopLines).containsKey("r_west_in-lane0")
+            .containsKey("r_east_in-lane0");
     }
 
     @Test
@@ -123,10 +123,10 @@ class IntersectionManagerTest {
 
         // No red-light stop lines (box-blocking may still apply if outbound empty check fails,
         // but with empty outbound lanes, all should pass)
-        assertThat(stopLines).doesNotContainKey("r_north_in-lane0");
-        assertThat(stopLines).doesNotContainKey("r_south_in-lane0");
-        assertThat(stopLines).doesNotContainKey("r_west_in-lane0");
-        assertThat(stopLines).doesNotContainKey("r_east_in-lane0");
+        assertThat(stopLines).doesNotContainKey("r_north_in-lane0")
+            .doesNotContainKey("r_south_in-lane0")
+            .doesNotContainKey("r_west_in-lane0")
+            .doesNotContainKey("r_east_in-lane0");
     }
 
     @Test
@@ -586,7 +586,7 @@ class IntersectionManagerTest {
     void equalLaneTransferRemainsRandom() {
         // Scenario: 2-lane main_before onto 2-lane main_after
         // Equal lane counts -> random lane selection (both lanes should be reachable)
-        RoadNetwork network = buildMergeNetwork();
+        buildMergeNetwork();
 
         // Run many transfers and collect which lanes received vehicles
         Set<Integer> lanesUsed = new HashSet<>();

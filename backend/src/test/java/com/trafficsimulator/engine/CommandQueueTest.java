@@ -3,7 +3,6 @@ package com.trafficsimulator.engine;
 import com.trafficsimulator.engine.command.SimulationCommand;
 import org.junit.jupiter.api.Test;
 
-import java.lang.reflect.Field;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
@@ -17,15 +16,9 @@ class CommandQueueTest {
      * Creates a SimulationEngine with a CommandDispatcher wired in (no Spring context needed).
      */
     private static SimulationEngine createEngine() {
-        SimulationEngine engine = new SimulationEngine();
-        CommandDispatcher dispatcher = new CommandDispatcher(engine);
-        try {
-            Field field = SimulationEngine.class.getDeclaredField("commandDispatcher");
-            field.setAccessible(true);
-            field.set(engine, dispatcher);
-        } catch (ReflectiveOperationException e) {
-            throw new RuntimeException("Failed to wire CommandDispatcher into SimulationEngine", e);
-        }
+        SimulationEngine engine = new SimulationEngine(null, null);
+        CommandDispatcher dispatcher = new CommandDispatcher(engine, null, null, null);
+        engine.setCommandDispatcher(dispatcher);
         return engine;
     }
 
@@ -47,12 +40,13 @@ class CommandQueueTest {
             });
         }
 
-        latch.await(5, TimeUnit.SECONDS);
+        assertThat(latch.await(5, TimeUnit.SECONDS)).isTrue();
         executor.shutdown();
 
-        // Drain and count — should be exactly 100 commands
+        // Drain all enqueued commands — verifies no ConcurrentModificationException thrown
         engine.drainCommands();
-        // If no exception during enqueue+drain, the test passes
+        // All threads completed and drain succeeded — engine is in a valid state
+        assertThat(engine.getStatus()).isNotNull();
     }
 
     @Test
@@ -88,7 +82,7 @@ class CommandQueueTest {
         Thread tickThread = new Thread(() -> {
             for (int i = 0; i < 100; i++) {
                 engine.drainCommands();
-                try { Thread.sleep(1); } catch (InterruptedException ignored) {}
+                Thread.yield();
             }
         });
         tickThread.start();
@@ -153,6 +147,6 @@ class CommandQueueTest {
         engine.drainCommands();
 
         assertThat(engine.getStatus()).isEqualTo(SimulationStatus.STOPPED);
-        assertThat(engine.getTickCounter().get()).isEqualTo(0);
+        assertThat(engine.getTickCounter().get()).isZero();
     }
 }

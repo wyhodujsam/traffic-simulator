@@ -127,40 +127,47 @@ public class SimulationController {
 
         List<IntersectionDto> result = new ArrayList<>();
         for (Intersection ixtn : network.getIntersections().values()) {
-            double sumX = 0, sumY = 0;
-            int count = 0;
-            int maxLaneCount = 1;
-            for (String roadId : ixtn.getConnectedRoadIds()) {
-                Road road = network.getRoads().get(roadId);
-                if (road == null) continue;
-                if (road.getToNodeId().equals(ixtn.getId())) {
-                    sumX += road.getEndX(); sumY += road.getEndY(); count++;
-                } else if (road.getFromNodeId().equals(ixtn.getId())) {
-                    sumX += road.getStartX(); sumY += road.getStartY(); count++;
-                }
-                maxLaneCount = Math.max(maxLaneCount, road.getLanes().size());
-            }
-            double cx, cy;
-            if (count == 0) {
-                cx = ixtn.getCenterX();
-                cy = ixtn.getCenterY();
-            } else {
-                cx = sumX / count;
-                cy = sumY / count;
-            }
-
-            // Use explicit intersectionSize from config if set, otherwise derive from widest road
-            double size = ixtn.getIntersectionSize() > 0
-                ? ixtn.getIntersectionSize()
-                : maxLaneCount * 14.0;
+            double[] center = computeIntersectionCenter(ixtn, network);
+            double size = computeIntersectionSize(ixtn, network);
             result.add(IntersectionDto.builder()
                 .id(ixtn.getId())
                 .type(ixtn.getType().name())
-                .x(cx).y(cy)
+                .x(center[0]).y(center[1])
                 .size(size)
                 .build());
         }
         return result;
+    }
+
+    private double[] computeIntersectionCenter(Intersection ixtn, RoadNetwork network) {
+        double sumX = 0;
+        double sumY = 0;
+        int count = 0;
+        for (String roadId : ixtn.getConnectedRoadIds()) {
+            Road road = network.getRoads().get(roadId);
+            if (road == null) continue;
+            if (road.getToNodeId().equals(ixtn.getId())) {
+                sumX += road.getEndX(); sumY += road.getEndY(); count++;
+            } else if (road.getFromNodeId().equals(ixtn.getId())) {
+                sumX += road.getStartX(); sumY += road.getStartY(); count++;
+            }
+        }
+        if (count == 0) {
+            return new double[]{ixtn.getCenterX(), ixtn.getCenterY()};
+        }
+        return new double[]{sumX / count, sumY / count};
+    }
+
+    private double computeIntersectionSize(Intersection ixtn, RoadNetwork network) {
+        if (ixtn.getIntersectionSize() > 0) return ixtn.getIntersectionSize();
+        int maxLaneCount = 1;
+        for (String roadId : ixtn.getConnectedRoadIds()) {
+            Road road = network.getRoads().get(roadId);
+            if (road != null) {
+                maxLaneCount = Math.max(maxLaneCount, road.getLanes().size());
+            }
+        }
+        return maxLaneCount * 14.0;
     }
 
     @GetMapping("/debug/traffic-lights")

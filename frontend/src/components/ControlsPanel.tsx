@@ -13,8 +13,8 @@ export function ControlsPanel() {
   const mapError = useSimulationStore((s) => s.mapError);
   const refetchRoads = useSimulationStore((s) => s.refetchRoads);
 
-  const [speedMultiplier, setSpeedMultiplier] = useState(1.0);
-  const [spawnRate, setSpawnRate] = useState(1.0);
+  const [speedMultiplier, setSpeedMultiplier] = useState(1);
+  const [spawnRate, setSpawnRate] = useState(1);
   const [maxSpeed, setMaxSpeed] = useState(120); // km/h display
   const [greenDuration, setGreenDuration] = useState(30); // seconds
 
@@ -104,10 +104,11 @@ export function ControlsPanel() {
 
       {/* Map selector */}
       <div style={{ marginBottom: '16px' }}>
-        <label style={{ display: 'block', marginBottom: '4px' }}>
+        <label htmlFor="scenario-select" style={{ display: 'block', marginBottom: '4px' }}>
           Scenario:
         </label>
         <select
+          id="scenario-select"
           value={currentMapId ?? ''}
           onChange={handleMapChange}
           disabled={status === 'RUNNING'}
@@ -193,7 +194,7 @@ export function ControlsPanel() {
             step="0.5"
             value={speedMultiplier}
             onChange={(e) => {
-              const v = parseFloat(e.target.value);
+              const v = Number.parseFloat(e.target.value);
               setSpeedMultiplier(v);
               debouncedSpeedMultiplier(v);
             }}
@@ -214,7 +215,7 @@ export function ControlsPanel() {
             step="0.5"
             value={spawnRate}
             onChange={(e) => {
-              const v = parseFloat(e.target.value);
+              const v = Number.parseFloat(e.target.value);
               setSpawnRate(v);
               debouncedSpawnRate(v);
             }}
@@ -256,7 +257,7 @@ export function ControlsPanel() {
             step="5"
             value={greenDuration}
             onChange={(e) => {
-              const v = parseInt(e.target.value, 10);
+              const v = Number.parseInt(e.target.value, 10);
               setGreenDuration(v);
               debouncedSignalTiming(v);
             }}
@@ -277,7 +278,7 @@ export function ControlsPanel() {
             step="10"
             value={maxSpeed}
             onChange={(e) => {
-              const v = parseInt(e.target.value, 10);
+              const v = Number.parseInt(e.target.value, 10);
               setMaxSpeed(v);
               debouncedMaxSpeed(v);
             }}

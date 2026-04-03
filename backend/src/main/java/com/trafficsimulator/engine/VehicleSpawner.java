@@ -68,21 +68,28 @@ public class VehicleSpawner implements IVehicleSpawner {
             SpawnPoint sp = spawnPoints.get(spawnPointIndex % spawnPoints.size());
             spawnPointIndex++;
 
-            Road road = network.getRoads().get(sp.roadId());
-            if (road == null) continue;
-
-            Lane lane = road.getLanes().get(sp.laneIndex());
-            if (!lane.isActive()) continue;
-
-            if (isSpawnPositionClear(lane, sp.position())) {
-                Vehicle vehicle = createVehicle(lane, sp.position(), currentTick);
-                lane.addVehicle(vehicle);
-                log.debug("Spawned vehicle {} on lane {} at position {}",
-                    vehicle.getId(), lane.getId(), sp.position());
+            if (trySpawnAtPoint(sp, network, currentTick)) {
                 return true;
             }
         }
         log.debug("All spawn points blocked, deferring spawn");
+        return false;
+    }
+
+    private boolean trySpawnAtPoint(SpawnPoint sp, RoadNetwork network, long currentTick) {
+        Road road = network.getRoads().get(sp.roadId());
+        if (road == null) return false;
+
+        Lane lane = road.getLanes().get(sp.laneIndex());
+        if (!lane.isActive()) return false;
+
+        if (isSpawnPositionClear(lane, sp.position())) {
+            Vehicle vehicle = createVehicle(lane, sp.position(), currentTick);
+            lane.addVehicle(vehicle);
+            log.debug("Spawned vehicle {} on lane {} at position {}",
+                vehicle.getId(), lane.getId(), sp.position());
+            return true;
+        }
         return false;
     }
 

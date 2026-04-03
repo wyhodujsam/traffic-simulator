@@ -23,14 +23,10 @@ class CommandDispatcherTest {
     private CommandDispatcher dispatcher;
 
     @BeforeEach
-    void setUp() throws Exception {
-        engine = new SimulationEngine();
-        dispatcher = new CommandDispatcher(engine);
-
-        // Wire dispatcher into engine for drainCommands() delegation
-        var field = SimulationEngine.class.getDeclaredField("commandDispatcher");
-        field.setAccessible(true);
-        field.set(engine, dispatcher);
+    void setUp() {
+        engine = new SimulationEngine(null, null);
+        dispatcher = new CommandDispatcher(engine, null, null, null);
+        engine.setCommandDispatcher(dispatcher);
     }
 
     @Test
@@ -51,7 +47,7 @@ class CommandDispatcherTest {
         dispatcher.dispatch(new SimulationCommand.Stop());
 
         assertThat(engine.getStatus()).isEqualTo(SimulationStatus.STOPPED);
-        assertThat(engine.getTickCounter().get()).isEqualTo(0);
+        assertThat(engine.getTickCounter().get()).isZero();
     }
 
     @Test

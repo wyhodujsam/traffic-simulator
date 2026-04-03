@@ -106,7 +106,9 @@ class VehicleSpawnerTest {
             .build();
 
         spawner.tick(1.0, emptyNetwork, 1);
-        // No exception, no vehicles
+        // Verify no side effects: no roads created, no throughput recorded
+        assertThat(emptyNetwork.getRoads()).isEmpty();
+        assertThat(spawner.getThroughput()).isZero();
     }
 
     @Test

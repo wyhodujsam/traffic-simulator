@@ -167,7 +167,6 @@ class LaneChangeEngineTest {
     @DisplayName("Vehicle that just changed lanes cannot change again within cooldown period")
     void cooldownEnforced() {
         Road road = createTwoLaneRoad();
-        Lane lane0 = road.getLanes().get(0);
         Lane lane1 = road.getLanes().get(1);
 
         // Slow leader in lane 1
@@ -272,7 +271,6 @@ class LaneChangeEngineTest {
     void noDualOccupancy() {
         Road road = createTwoLaneRoad();
         Lane lane0 = road.getLanes().get(0);
-        Lane lane1 = road.getLanes().get(1);
 
         // Create several vehicles in lane 0 with a slow leader
         Vehicle leader = createVehicle("leader", 300, 5.0, lane0);
@@ -324,7 +322,7 @@ class LaneChangeEngineTest {
                 .filter(v -> v.getId().equals("mover")).findFirst().orElseThrow();
             // Progress should be 0.0 right after commit
             assertThat(moved.getLaneChangeProgress()).isEqualTo(0.0);
-            assertThat(moved.getLaneChangeSourceIndex()).isEqualTo(0); // came from lane 0
+            assertThat(moved.getLaneChangeSourceIndex()).isZero(); // came from lane 0
 
             // Second tick: progress should increase
             laneChangeEngine.tick(network, 101);

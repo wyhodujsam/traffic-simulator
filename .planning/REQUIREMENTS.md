@@ -89,6 +89,16 @@ Requirements for initial release. Each maps to roadmap phases.
 - [x] **BUG-5**: Tytuł strony to generyczny "Vite + React + TS" zamiast "Traffic Simulator".
 - [x] **BUG-6**: Przyciski Start/Pause/Stop łamią się na dwie linie zamiast mieścić w jednym rzędzie.
 
+### SonarQube Code Quality (Phase 15)
+
+- [x] **SQ-01**: [BLOCKER] Testy bez asercji — CommandQueueTest:33 i VehicleSpawnerTest:99 muszą mieć co najmniej jedną asercję (java:S2699)
+- [x] **SQ-02**: [CRITICAL] MapValidator.validate() cognitive complexity 103→max 15 — rozbić na mniejsze metody walidacyjne (java:S3776)
+- [x] **SQ-03**: [CRITICAL] SnapshotBuilder.buildSnapshot() cognitive complexity 77→max 15 — wydzielić metody pomocnicze (java:S3776)
+- [x] **SQ-04**: [CRITICAL] LaneChangeEngine — 4 metody powyżej limitu (complexity 50, 37, 29, 16) — refaktor na mniejsze metody (java:S3776)
+- [x] **SQ-05**: [CRITICAL] IntersectionManager — 5 metod powyżej limitu (complexity 31, 27, 23, 19, 18) — wydzielić logikę per typ skrzyżowania (java:S3776)
+- [x] **SQ-06**: [CRITICAL] PhysicsEngine.tick() complexity 37, TickEmitter.emitTick() complexity 20, SimulationController complexity 16 — refaktor (java:S3776)
+- [x] **SQ-07**: [CRITICAL] MapValidator zduplikowane literały "Road " i "Intersection " — wydzielić stałe (java:S1192)
+
 ## v2 Requirements
 
 Deferred to future release. Tracked but not in current roadmap.

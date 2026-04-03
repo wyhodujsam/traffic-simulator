@@ -52,11 +52,11 @@ class FullPipelineTest {
         int afterDespawn = road.getLanes().stream()
             .mapToInt(lane -> lane.getVehiclesView().size())
             .sum();
-        assertThat(afterDespawn).isEqualTo(0);
+        assertThat(afterDespawn).isZero();
     }
 
     @Test
-    void fullPipeline_spawnedVehicle_hasValidIdmParams() throws Exception {
+    void fullPipeline_spawnedVehicle_hasValidIdmParams() {
         spawner.tick(1.0, network, 1);
 
         // Find the spawned vehicle across all lanes

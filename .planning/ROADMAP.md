@@ -273,6 +273,19 @@ Plans:
 - [x] 14-02-PLAN.md — Responsive layout + canvas scaling (BUG-2, BUG-3, BUG-4)
 - [x] 14-03-PLAN.md — Page title + button layout fix (BUG-5, BUG-6)
 
+### Phase 15: SonarQube Code Quality Fixes
+
+**Goal:** Fix all 20 SonarQube BLOCKER and CRITICAL violations — test assertions, cognitive complexity reduction, duplicated literals
+**Requirements**: SQ-01, SQ-02, SQ-03, SQ-04, SQ-05, SQ-06, SQ-07
+**Depends on:** Phase 14
+
+**Plans:** 3/3 plans complete
+
+Plans:
+- [x] 15-01-PLAN.md — Fix test assertions (SQ-01) + refactor MapValidator (SQ-02, SQ-07)
+- [x] 15-02-PLAN.md — Refactor SnapshotBuilder, PhysicsEngine, TickEmitter, SimulationController (SQ-03, SQ-06)
+- [x] 15-03-PLAN.md — Refactor LaneChangeEngine (SQ-04) + IntersectionManager (SQ-05)
+
 ---
 *Roadmap created: 2026-03-27*
 *All 33 v1 requirements mapped across 10 phases*

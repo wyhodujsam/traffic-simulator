@@ -78,58 +78,58 @@ public class LaneChangeEngine implements ILaneChangeEngine {
      */
     private List<LaneChangeIntent> collectIntents(RoadNetwork network, long currentTick) {
         List<LaneChangeIntent> intents = new ArrayList<>();
-        long cooldownTicks = (long)(COOLDOWN_SECONDS / BASE_DT); // 60 ticks
+        long cooldownTicks = (long)(COOLDOWN_SECONDS / BASE_DT);
 
         for (Road road : network.getRoads().values()) {
-            for (Lane lane : road.getLanes()) {
-                if (!lane.isActive()) continue;
+            collectIntentsForRoad(road, currentTick, cooldownTicks, intents);
+        }
+        return intents;
+    }
 
-                for (Vehicle vehicle : lane.getVehiclesView()) {
-                    // Skip vehicles stuck behind obstacle unless they're the zipper candidate
-                    // This enforces one-by-one merging
-                    if (isStuckBehindObstacle(vehicle, lane) && !vehicle.isZipperCandidate()) {
-                        continue;
-                    }
-
-                    // Cooldown check (skip for forced and zipper candidates)
-                    if (!vehicle.isForceLaneChange() && !vehicle.isZipperCandidate()) {
-                        if (!vehicle.canChangeLane(currentTick, cooldownTicks)) {
-                            continue;
-                        }
-                    }
-
-                    // Evaluate both directions, pick the best
-                    LaneChangeIntent bestIntent = null;
-
-                    // Try left (higher index)
-                    Lane leftLane = road.getLeftNeighbor(lane);
-                    if (leftLane != null) {
-                        LaneChangeIntent intent = evaluateMOBIL(
-                            vehicle, lane, leftLane, A_THRESHOLD_LEFT);
-                        if (intent != null && (bestIntent == null
-                            || intent.incentiveScore() > bestIntent.incentiveScore())) {
-                            bestIntent = intent;
-                        }
-                    }
-
-                    // Try right (lower index)
-                    Lane rightLane = road.getRightNeighbor(lane);
-                    if (rightLane != null) {
-                        LaneChangeIntent intent = evaluateMOBIL(
-                            vehicle, lane, rightLane, A_THRESHOLD_RIGHT);
-                        if (intent != null && (bestIntent == null
-                            || intent.incentiveScore() > bestIntent.incentiveScore())) {
-                            bestIntent = intent;
-                        }
-                    }
-
-                    if (bestIntent != null) {
-                        intents.add(bestIntent);
-                    }
+    private void collectIntentsForRoad(Road road, long currentTick, long cooldownTicks, List<LaneChangeIntent> intents) {
+        for (Lane lane : road.getLanes()) {
+            if (!lane.isActive()) continue;
+            for (Vehicle vehicle : lane.getVehiclesView()) {
+                if (shouldSkipVehicle(vehicle, lane, currentTick, cooldownTicks)) continue;
+                LaneChangeIntent bestIntent = evaluateBestIntent(vehicle, lane, road);
+                if (bestIntent != null) {
+                    intents.add(bestIntent);
                 }
             }
         }
-        return intents;
+    }
+
+    /**
+     * Returns true if the vehicle should be skipped for lane-change evaluation this tick.
+     * Handles stuck-behind-obstacle check, cooldown check, and force/zipper bypass.
+     */
+    private boolean shouldSkipVehicle(Vehicle vehicle, Lane lane, long currentTick, long cooldownTicks) {
+        if (isStuckBehindObstacle(vehicle, lane) && !vehicle.isZipperCandidate()) {
+            return true;
+        }
+        return !vehicle.isForceLaneChange()
+                && !vehicle.isZipperCandidate()
+                && !vehicle.canChangeLane(currentTick, cooldownTicks);
+    }
+
+    /**
+     * Evaluates both left and right neighbors for the given vehicle and returns
+     * the intent with the highest incentive score, or null if neither is beneficial.
+     */
+    private LaneChangeIntent evaluateBestIntent(Vehicle vehicle, Lane lane, Road road) {
+        LaneChangeIntent bestIntent = evaluateLaneIntent(vehicle, lane, road.getLeftNeighbor(lane), A_THRESHOLD_LEFT);
+        LaneChangeIntent rightIntent = evaluateLaneIntent(vehicle, lane, road.getRightNeighbor(lane), A_THRESHOLD_RIGHT);
+
+        if (rightIntent != null && (bestIntent == null
+                || rightIntent.incentiveScore() > bestIntent.incentiveScore())) {
+            bestIntent = rightIntent;
+        }
+        return bestIntent;
+    }
+
+    private LaneChangeIntent evaluateLaneIntent(Vehicle vehicle, Lane currentLane, Lane targetLane, double threshold) {
+        if (targetLane == null) return null;
+        return evaluateMOBIL(vehicle, currentLane, targetLane, threshold);
     }
 
     /**
@@ -142,103 +142,111 @@ public class LaneChangeEngine implements ILaneChangeEngine {
                                             Lane targetLane, double aThreshold) {
         double subjectPos = subject.getPosition();
 
-        // Find neighbors in target lane
         Vehicle newLeader = targetLane.findLeaderAt(subjectPos);
         Vehicle newFollower = targetLane.findFollowerAt(subjectPos);
-
-        // Current acceleration of subject (obstacle-aware)
         Vehicle currentLeader = currentLane.getLeader(subject);
-        double aSubjectCurrent = computeIdmAccelInLane(subject, currentLeader, currentLane);
 
-        // Acceleration of subject in target lane (obstacle-aware)
+        double aSubjectCurrent = computeIdmAccelInLane(subject, currentLeader, currentLane);
         double aSubjectTarget = computeIdmAccelInLane(subject, newLeader, targetLane);
 
-        // Safety criterion: new follower must not brake harder than b_safe
-        // Zipper candidates: only require minimum physical gap (no braking check).
-        // The follower will naturally brake via IDM after the merge.
         boolean isZipper = subject.isZipperCandidate();
-        if (newFollower != null && !isZipper) {
-            double aNewFollowerAfter = computeIdmAccelWithLeader(newFollower, subject);
-            if (aNewFollowerAfter < -B_SAFE) {
-                return null; // unsafe
-            }
+        if (!isSafeLaneChange(subject, newFollower, isZipper)) return null;
+        if (!checkGapSafety(subject, subjectPos, newLeader, newFollower, isZipper)) return null;
+
+        if (hasObstacleConflictInTarget(subject, subjectPos, targetLane)) return null;
+
+        if (subject.isForceLaneChange() || subject.isZipperCandidate()) {
+            double score = subject.isForceLaneChange() ? Double.MAX_VALUE : 100.0;
+            return new LaneChangeIntent(subject, currentLane, targetLane, subjectPos, score);
         }
 
-        // Gap check: ensure minimum gap to vehicles in target lane
+        var ctx = new IncentiveContext(subject, currentLane, currentLeader, subjectPos,
+                newLeader, newFollower, aSubjectCurrent, aSubjectTarget);
+        return evaluateIncentive(ctx, aThreshold, targetLane);
+    }
+
+    /**
+     * Safety criterion: new follower must not brake harder than b_safe.
+     * Zipper candidates skip this check (follower will brake naturally via IDM).
+     */
+    private boolean isSafeLaneChange(Vehicle subject, Vehicle newFollower, boolean isZipper) {
+        if (newFollower == null || isZipper) return true;
+        double aNewFollowerAfter = computeIdmAccelWithLeader(newFollower, subject);
+        return aNewFollowerAfter >= -B_SAFE;
+    }
+
+    /**
+     * Gap check: ensures minimum gap to vehicles in target lane.
+     * Zipper merges only check ahead gap (follower will brake via IDM after merge).
+     */
+    private boolean checkGapSafety(Vehicle subject, double subjectPos,
+                                    Vehicle newLeader, Vehicle newFollower, boolean isZipper) {
         if (isZipper) {
-            // Zipper: only check ahead gap (must not land on top of leader).
-            // Skip behind check — follower will brake naturally via IDM after merge.
             if (newLeader != null) {
                 double gapAhead = newLeader.getPosition() - subjectPos - newLeader.getLength();
-                if (gapAhead < subject.getLength()) {
-                    return null;
-                }
+                if (gapAhead < subject.getLength()) return false;
             }
-        } else {
-            if (newLeader != null) {
-                double gapAhead = newLeader.getPosition() - subjectPos - newLeader.getLength();
-                if (gapAhead < subject.getS0() + subject.getLength()) {
-                    return null;
-                }
-            }
-            if (newFollower != null) {
-                double gapBehind = subjectPos - newFollower.getPosition() - subject.getLength();
-                if (gapBehind < newFollower.getS0()) {
-                    return null;
-                }
-            }
+            return true;
         }
 
-        // Gap check: ensure no obstacle blocks the target position
-        // Use larger gap for obstacles — they're stationary, need stopping distance
+        if (newLeader != null) {
+            double gapAhead = newLeader.getPosition() - subjectPos - newLeader.getLength();
+            if (gapAhead < subject.getS0() + subject.getLength()) return false;
+        }
+        if (newFollower != null) {
+            double gapBehind = subjectPos - newFollower.getPosition() - subject.getLength();
+            if (gapBehind < newFollower.getS0()) return false;
+        }
+        return true;
+    }
+
+    /**
+     * Checks for obstacle conflicts in target lane (both ahead and behind subject position).
+     */
+    private boolean hasObstacleConflictInTarget(Vehicle subject, double subjectPos, Lane targetLane) {
         Obstacle targetObstacle = findNearestObstacleAhead(targetLane, subjectPos);
         if (targetObstacle != null) {
             double gapToObstacle = targetObstacle.getPosition() - subjectPos - targetObstacle.getLength();
             double minObstacleGap = subject.getS0() + subject.getLength()
-                + subject.getSpeed() * subject.getT(); // add speed-dependent headway
-            if (gapToObstacle < minObstacleGap) {
-                return null; // obstacle too close ahead in target lane
-            }
+                + subject.getSpeed() * subject.getT();
+            if (gapToObstacle < minObstacleGap) return true;
         }
-        // Also check for obstacle behind in target lane (don't land just past one)
         for (Obstacle obs : targetLane.getObstaclesView()) {
             double gapBehindObs = subjectPos - obs.getPosition();
             if (gapBehindObs > 0 && gapBehindObs < subject.getLength() + subject.getS0()) {
-                return null; // too close behind obstacle in target lane
+                return true;
             }
         }
+        return false;
+    }
 
-        // For forced lane changes (lane closed) or zipper merge, skip incentive check
-        if (subject.isForceLaneChange() || subject.isZipperCandidate()) {
-            double score = subject.isForceLaneChange() ? Double.MAX_VALUE : 100.0;
-            return new LaneChangeIntent(subject, currentLane, targetLane,
-                subjectPos, score);
-        }
+    private record IncentiveContext(Vehicle subject, Lane currentLane, Vehicle currentLeader,
+                                    double subjectPos, Vehicle newLeader, Vehicle newFollower,
+                                    double aSubjectCurrent, double aSubjectTarget) {}
 
-        // Incentive criterion:
-        // a'_subject - a_subject > p * (a'_old_follower - a_old_follower
-        //                              + a'_new_follower - a_new_follower) + a_threshold
-        Vehicle oldFollower = currentLane.findFollowerAt(subjectPos);
+    /**
+     * Computes MOBIL incentive criterion and returns intent if threshold is exceeded.
+     */
+    private LaneChangeIntent evaluateIncentive(IncentiveContext ctx, double aThreshold, Lane targetLane) {
+        Vehicle oldFollower = ctx.currentLane.findFollowerAt(ctx.subjectPos);
 
         double aOldFollowerBefore = (oldFollower != null)
-            ? computeIdmAccelWithLeader(oldFollower, subject) : 0.0;
+            ? computeIdmAccelWithLeader(oldFollower, ctx.subject) : 0.0;
         double aOldFollowerAfter = (oldFollower != null)
-            ? computeIdmAccel(oldFollower, currentLeader) : 0.0;
-            // After subject leaves, old follower's leader becomes subject's old leader
+            ? computeIdmAccel(oldFollower, ctx.currentLeader) : 0.0;
 
-        double aNewFollowerBefore = (newFollower != null)
-            ? computeIdmAccel(newFollower, newLeader) : 0.0;
-        double aNewFollowerAfter = (newFollower != null)
-            ? computeIdmAccelWithLeader(newFollower, subject) : 0.0;
+        double aNewFollowerBefore = (ctx.newFollower != null)
+            ? computeIdmAccel(ctx.newFollower, ctx.newLeader) : 0.0;
+        double aNewFollowerAfter = (ctx.newFollower != null)
+            ? computeIdmAccelWithLeader(ctx.newFollower, ctx.subject) : 0.0;
 
-        double subjectGain = aSubjectTarget - aSubjectCurrent;
+        double subjectGain = ctx.aSubjectTarget - ctx.aSubjectCurrent;
         double neighborCost = (aOldFollowerAfter - aOldFollowerBefore)
                             + (aNewFollowerAfter - aNewFollowerBefore);
         double incentive = subjectGain - POLITENESS * neighborCost;
 
         if (incentive > aThreshold) {
-            return new LaneChangeIntent(subject, currentLane, targetLane,
-                subjectPos, incentive);
+            return new LaneChangeIntent(ctx.subject, ctx.currentLane, targetLane, ctx.subjectPos, incentive);
         }
         return null;
     }
@@ -251,7 +259,9 @@ public class LaneChangeEngine implements ILaneChangeEngine {
         // Find nearest obstacle ahead in the lane
         Obstacle nearestObstacle = findNearestObstacleAhead(lane, vehicle.getPosition());
 
-        double leaderPos, leaderSpeed, leaderLength;
+        double leaderPos;
+        double leaderSpeed;
+        double leaderLength;
         boolean hasLeader;
 
         if (vehicleLeader != null && nearestObstacle != null) {
@@ -379,19 +389,25 @@ public class LaneChangeEngine implements ILaneChangeEngine {
 
             // Record zipper merge time for rate-limiting
             if (vehicle.isZipperCandidate()) {
-                // Find which obstacle this vehicle was behind
-                for (Obstacle obs : source.getObstaclesView()) {
-                    double dist = obs.getPosition() - vehicle.getPosition();
-                    if (dist > -5 && dist < OBSTACLE_PROXIMITY) {
-                        lastZipperMergeTick.put(obs.getId(), currentTick);
-                        break;
-                    }
-                }
+                recordZipperMerge(vehicle, source, currentTick);
                 vehicle.setZipperCandidate(false);
             }
 
             log.debug("Lane change: vehicle={} from lane {} to lane {}",
                 vehicle.getId(), source.getId(), target.getId());
+        }
+    }
+
+    /**
+     * Records the tick of a zipper merge for the obstacle this vehicle was queued behind.
+     */
+    private void recordZipperMerge(Vehicle vehicle, Lane source, long currentTick) {
+        for (Obstacle obs : source.getObstaclesView()) {
+            double dist = obs.getPosition() - vehicle.getPosition();
+            if (dist > -5 && dist < OBSTACLE_PROXIMITY) {
+                lastZipperMergeTick.put(obs.getId(), currentTick);
+                break;
+            }
         }
     }
 
@@ -417,34 +433,52 @@ public class LaneChangeEngine implements ILaneChangeEngine {
     private void markZipperCandidates(RoadNetwork network, long currentTick) {
         for (Road road : network.getRoads().values()) {
             for (Lane lane : road.getLanes()) {
-                // Clear previous marks
-                for (Vehicle v : lane.getVehiclesView()) {
-                    v.setZipperCandidate(false);
-                }
-
-                // For each obstacle, find the first vehicle behind it that is slow/stopped
-                for (Obstacle obs : lane.getObstaclesView()) {
-                    // Enforce merge interval per obstacle
-                    Long lastMerge = lastZipperMergeTick.get(obs.getId());
-                    if (lastMerge != null && currentTick - lastMerge < ZIPPER_INTERVAL_TICKS) {
-                        continue; // too soon since last merge from this obstacle
-                    }
-
-                    Vehicle closest = null;
-                    double closestDist = Double.MAX_VALUE;
-                    for (Vehicle v : lane.getVehiclesView()) {
-                        double dist = obs.getPosition() - v.getPosition();
-                        if (dist > 0 && dist < OBSTACLE_PROXIMITY && dist < closestDist) {
-                            closest = v;
-                            closestDist = dist;
-                        }
-                    }
-                    if (closest != null && closest.getSpeed() < 2.0) {
-                        closest.setZipperCandidate(true);
-                    }
-                }
+                clearZipperMarks(lane);
+                markZipperCandidatesInLane(lane, currentTick);
             }
         }
+    }
+
+    /**
+     * Clears zipper candidate marks from all vehicles in the lane.
+     */
+    private void clearZipperMarks(Lane lane) {
+        for (Vehicle v : lane.getVehiclesView()) {
+            v.setZipperCandidate(false);
+        }
+    }
+
+    /**
+     * For each obstacle in the lane, marks the closest slow/stopped vehicle as zipper candidate,
+     * subject to the merge interval constraint.
+     */
+    private void markZipperCandidatesInLane(Lane lane, long currentTick) {
+        for (Obstacle obs : lane.getObstaclesView()) {
+            Long lastMerge = lastZipperMergeTick.get(obs.getId());
+            if (lastMerge != null && currentTick - lastMerge < ZIPPER_INTERVAL_TICKS) {
+                continue; // too soon since last merge from this obstacle
+            }
+            Vehicle closest = findClosestVehicleBehindObstacle(lane, obs);
+            if (closest != null && closest.getSpeed() < 2.0) {
+                closest.setZipperCandidate(true);
+            }
+        }
+    }
+
+    /**
+     * Finds the closest vehicle behind the given obstacle within OBSTACLE_PROXIMITY.
+     */
+    private Vehicle findClosestVehicleBehindObstacle(Lane lane, Obstacle obs) {
+        Vehicle closest = null;
+        double closestDist = Double.MAX_VALUE;
+        for (Vehicle v : lane.getVehiclesView()) {
+            double dist = obs.getPosition() - v.getPosition();
+            if (dist > 0 && dist < OBSTACLE_PROXIMITY && dist < closestDist) {
+                closest = v;
+                closestDist = dist;
+            }
+        }
+        return closest;
     }
 
     /**
@@ -455,14 +489,17 @@ public class LaneChangeEngine implements ILaneChangeEngine {
         double progressStep = 1.0 / TRANSITION_TICKS;
         for (Road road : network.getRoads().values()) {
             for (Lane lane : road.getLanes()) {
-                for (Vehicle v : lane.getVehiclesView()) {
-                    if (v.getLaneChangeProgress() < 1.0 && v.getLaneChangeSourceIndex() >= 0) {
-                        v.advanceLaneChangeProgress(progressStep);
-                        if (v.getLaneChangeProgress() >= 1.0) {
-                            v.completeLaneChange();
-                        }
-                    }
-                }
+                advanceLaneChangeInLane(lane, progressStep);
+            }
+        }
+    }
+
+    private void advanceLaneChangeInLane(Lane lane, double progressStep) {
+        for (Vehicle v : lane.getVehiclesView()) {
+            if (v.getLaneChangeProgress() >= 1.0 || v.getLaneChangeSourceIndex() < 0) continue;
+            v.advanceLaneChangeProgress(progressStep);
+            if (v.getLaneChangeProgress() >= 1.0) {
+                v.completeLaneChange();
             }
         }
     }
