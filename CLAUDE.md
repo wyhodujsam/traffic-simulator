@@ -113,6 +113,7 @@ Aplikacja webowa symulujaca ruch uliczny w widoku z gory (top-down). Samochody p
 ## Conventions
 
 See `.planning/CONVENTIONS.md` for coding conventions (loaded by GSD executor before implementation).
+Gdy z analizy błędów (SonarQube, review, testy) wyniknie nowa reguła kodowania — dopisz ją do `.planning/CONVENTIONS.md`.
 <!-- GSD:conventions-end -->
 
 <!-- GSD:architecture-start source:ARCHITECTURE.md -->
