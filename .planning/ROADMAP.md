@@ -292,7 +292,10 @@ Plans:
 **Requirements**: MAP-01
 **Depends on:** Phase 15
 
-**Plans:** 0
+**Plans:** 1 plan
+
+Plans:
+- [ ] 16-01-PLAN.md — Create combined-loop.json scenario map with roundabout + signal + merge + loop (MAP-01)
 
 ---
 *Roadmap created: 2026-03-27*
