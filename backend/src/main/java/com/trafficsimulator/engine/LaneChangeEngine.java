@@ -78,21 +78,25 @@ public class LaneChangeEngine implements ILaneChangeEngine {
      */
     private List<LaneChangeIntent> collectIntents(RoadNetwork network, long currentTick) {
         List<LaneChangeIntent> intents = new ArrayList<>();
-        long cooldownTicks = (long)(COOLDOWN_SECONDS / BASE_DT); // 60 ticks
+        long cooldownTicks = (long)(COOLDOWN_SECONDS / BASE_DT);
 
         for (Road road : network.getRoads().values()) {
-            for (Lane lane : road.getLanes()) {
-                if (!lane.isActive()) continue;
-                for (Vehicle vehicle : lane.getVehiclesView()) {
-                    if (shouldSkipVehicle(vehicle, lane, currentTick, cooldownTicks)) continue;
-                    LaneChangeIntent bestIntent = evaluateBestIntent(vehicle, lane, road);
-                    if (bestIntent != null) {
-                        intents.add(bestIntent);
-                    }
+            collectIntentsForRoad(road, currentTick, cooldownTicks, intents);
+        }
+        return intents;
+    }
+
+    private void collectIntentsForRoad(Road road, long currentTick, long cooldownTicks, List<LaneChangeIntent> intents) {
+        for (Lane lane : road.getLanes()) {
+            if (!lane.isActive()) continue;
+            for (Vehicle vehicle : lane.getVehiclesView()) {
+                if (shouldSkipVehicle(vehicle, lane, currentTick, cooldownTicks)) continue;
+                LaneChangeIntent bestIntent = evaluateBestIntent(vehicle, lane, road);
+                if (bestIntent != null) {
+                    intents.add(bestIntent);
                 }
             }
         }
-        return intents;
     }
 
     /**
@@ -493,14 +497,17 @@ public class LaneChangeEngine implements ILaneChangeEngine {
         double progressStep = 1.0 / TRANSITION_TICKS;
         for (Road road : network.getRoads().values()) {
             for (Lane lane : road.getLanes()) {
-                for (Vehicle v : lane.getVehiclesView()) {
-                    if (v.getLaneChangeProgress() < 1.0 && v.getLaneChangeSourceIndex() >= 0) {
-                        v.advanceLaneChangeProgress(progressStep);
-                        if (v.getLaneChangeProgress() >= 1.0) {
-                            v.completeLaneChange();
-                        }
-                    }
-                }
+                advanceLaneChangeInLane(lane, progressStep);
+            }
+        }
+    }
+
+    private void advanceLaneChangeInLane(Lane lane, double progressStep) {
+        for (Vehicle v : lane.getVehiclesView()) {
+            if (v.getLaneChangeProgress() >= 1.0 || v.getLaneChangeSourceIndex() < 0) continue;
+            v.advanceLaneChangeProgress(progressStep);
+            if (v.getLaneChangeProgress() >= 1.0) {
+                v.completeLaneChange();
             }
         }
     }

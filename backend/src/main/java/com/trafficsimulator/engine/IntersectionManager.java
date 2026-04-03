@@ -116,41 +116,43 @@ public class IntersectionManager implements IIntersectionManager {
         Road myRoad = network.getRoads().get(inboundRoadId);
         if (myRoad == null) return false;
 
-        // Ring traffic has priority — never blocked by yield
         boolean isRingRoad = network.getIntersections().containsKey(myRoad.getFromNodeId());
-        if (isRingRoad) {
-            return false; // only box-blocking applies (checked in canEnterIntersection)
-        }
+        if (isRingRoad) return false;
 
-        // Approach traffic: yield to any ring road that has vehicles near this intersection
+        if (hasCirculatingRingTraffic(ixtn, inboundRoadId, network)) return true;
+
+        return isRoundaboutCapacityExceeded(ixtn, network);
+    }
+
+    private boolean hasCirculatingRingTraffic(Intersection ixtn, String inboundRoadId, RoadNetwork network) {
         for (String otherInboundId : ixtn.getInboundRoadIds()) {
             if (otherInboundId.equals(inboundRoadId)) continue;
             Road otherRoad = network.getRoads().get(otherInboundId);
             if (otherRoad == null) continue;
 
-            // Only yield to ring roads (roads coming from another intersection node)
             boolean otherIsRing = network.getIntersections().containsKey(otherRoad.getFromNodeId());
             if (!otherIsRing) continue;
 
-            // Check for vehicles near intersection on ring road
-            double threshold = otherRoad.getLength() - ROUNDABOUT_YIELD_ZONE;
-            for (Lane lane : otherRoad.getLanes()) {
-                for (Vehicle v : lane.getVehiclesView()) {
-                    if (v.getPosition() >= threshold) {
-                        return true; // circulating ring traffic — yield
-                    }
-                }
+            if (hasVehiclesNearEnd(otherRoad, ROUNDABOUT_YIELD_ZONE)) return true;
+        }
+        return false;
+    }
+
+    private boolean hasVehiclesNearEnd(Road road, double zone) {
+        double threshold = road.getLength() - zone;
+        for (Lane lane : road.getLanes()) {
+            for (Vehicle v : lane.getVehiclesView()) {
+                if (v.getPosition() >= threshold) return true;
             }
         }
-
-        // Capacity gating: count all ring road vehicles across all ring nodes
-        int occupancy = countRoundaboutOccupancy(ixtn, network);
-        int capacity = ixtn.getRoundaboutCapacity();
-        if (capacity > 0 && occupancy >= (int)(capacity * ROUNDABOUT_GATING_RATIO)) {
-            return true;
-        }
-
         return false;
+    }
+
+    private boolean isRoundaboutCapacityExceeded(Intersection ixtn, RoadNetwork network) {
+        int capacity = ixtn.getRoundaboutCapacity();
+        if (capacity <= 0) return false;
+        int occupancy = countRoundaboutOccupancy(ixtn, network);
+        return occupancy >= (int)(capacity * ROUNDABOUT_GATING_RATIO);
     }
 
     /**
@@ -334,17 +336,25 @@ public class IntersectionManager implements IIntersectionManager {
     private Vehicle findLongestWaitingVehicle(Intersection ixtn, RoadNetwork network) {
         Vehicle oldest = null;
         for (String inRoadId : ixtn.getInboundRoadIds()) {
-            Road inRoad = network.getRoads().get(inRoadId);
-            if (inRoad == null) continue;
-            double buffer = computeStopLineBuffer(ixtn, inRoad);
-            double threshold = inRoad.getLength() - buffer - 5.0;
-            for (Lane lane : inRoad.getLanes()) {
-                for (Vehicle v : lane.getVehiclesView()) {
-                    if (v.getPosition() >= threshold && v.getSpeed() < 0.5) {
-                        if (oldest == null || v.getSpawnedAt() < oldest.getSpawnedAt()) {
-                            oldest = v;
-                        }
-                    }
+            Vehicle candidate = findOldestStoppedVehicleOnRoad(inRoadId, ixtn, network);
+            if (candidate != null && (oldest == null || candidate.getSpawnedAt() < oldest.getSpawnedAt())) {
+                oldest = candidate;
+            }
+        }
+        return oldest;
+    }
+
+    private Vehicle findOldestStoppedVehicleOnRoad(String inRoadId, Intersection ixtn, RoadNetwork network) {
+        Road inRoad = network.getRoads().get(inRoadId);
+        if (inRoad == null) return null;
+        double buffer = computeStopLineBuffer(ixtn, inRoad);
+        double threshold = inRoad.getLength() - buffer - 5.0;
+        Vehicle oldest = null;
+        for (Lane lane : inRoad.getLanes()) {
+            for (Vehicle v : lane.getVehiclesView()) {
+                if (v.getPosition() < threshold || v.getSpeed() >= 0.5) continue;
+                if (oldest == null || v.getSpawnedAt() < oldest.getSpawnedAt()) {
+                    oldest = v;
                 }
             }
         }
