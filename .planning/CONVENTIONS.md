@@ -35,3 +35,29 @@ Obowiązkowe reguły dla agenta kodującego. Czytaj przed każdą implementacją
 **Nie ignoruj wartości zwracanych.** (java:S899) Jeśli celowo ignorujesz — dodaj `@SuppressWarnings("java:S899")` z komentarzem dlaczego.
 
 **Nie deklaruj throws Exception, gdy metoda nie rzuca checked exception.** (java:S1130) Dotyczy szczególnie testów.
+
+## TypeScript/React Code Quality
+
+**Cognitive complexity <= 15 per function.** (typescript:S3776) Te same zasady co Java — wydzielaj helpery z dużych funkcji renderujących (np. `drawClosedLaneHatching`, `drawRoadBoundaries`).
+
+**`Math.hypot(x, y)` zamiast `Math.sqrt(x*x + y*y)`.** (typescript:S7769) Czytelniejsze i bezpieczniejsze numerycznie.
+
+**`Number.parseFloat()` / `Number.parseInt()` zamiast globalnych.** (typescript:S7773) Preferuj metody na obiekcie Number.
+
+**`Math.trunc()` zamiast `| 0`.** (typescript:S7767) Czytelniejsze.
+
+**`codePointAt()` zamiast `charCodeAt()`.** (typescript:S7758) Poprawna obsługa Unicode.
+
+**Nie używaj zbędnych `.0` w literałach.** (typescript:S7748) `2` zamiast `2.0`, `14` zamiast `14.0`.
+
+**Bez zagnieżdżonych ternary.** (typescript:S3358) Wydziel do osobnej funkcji helper.
+
+**Optional chaining zamiast ręcznego null-checka.** (typescript:S6582) `prev?.roadId` zamiast `prev !== undefined && prev.roadId`.
+
+**Unikaj negated conditions w if/else.** (typescript:S7735) Pisz pozytywny warunek w if, negatywny w else.
+
+**Props interfejsy oznaczaj jako `readonly`.** (typescript:S6759) `interface Props { readonly label: string; }`.
+
+**Form label musi być powiązany z kontrolką.** (typescript:S6853) Użyj `htmlFor`/`id` lub zagnieźdź input wewnątrz label.
+
+**Usuwaj nieużywane zmienne.** (typescript:S1854) Nie przypisuj wartości do zmiennych, których nie używasz.
