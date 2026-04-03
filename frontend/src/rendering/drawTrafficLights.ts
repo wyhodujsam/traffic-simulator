@@ -1,12 +1,18 @@
 import type { TrafficLightDto } from '../types/simulation';
-import { LANE_WIDTH_PX } from './constants';
+import { LANE_WIDTH_PX, RENDER_SCALE } from './constants';
+
+function trafficLightColor(state: string): string {
+  if (state === 'GREEN') return '#00aa00';
+  if (state === 'RED') return '#aa0000';
+  return '#aaaa00';
+}
 
 /** Radius of each traffic light indicator circle */
-const LIGHT_RADIUS = 4;
+const LIGHT_RADIUS = 4 * RENDER_SCALE;
 /** Spacing between the three light circles */
-const LIGHT_SPACING = 10;
+const LIGHT_SPACING = 10 * RENDER_SCALE;
 /** Pixels to offset backward from intersection center to stop line */
-const STOP_LINE_OFFSET = 25;
+const STOP_LINE_OFFSET = 25 * RENDER_SCALE;
 /** Offset perpendicular to road direction (places light to the side of road) */
 const ROAD_SIDE_OFFSET = LANE_WIDTH_PX * 1.2;
 
@@ -34,8 +40,8 @@ export function drawTrafficLights(
     const sin = Math.sin(tl.angle);
 
     // Offset backward along road direction to stop line position
-    const stopX = tl.x - cos * STOP_LINE_OFFSET;
-    const stopY = tl.y - sin * STOP_LINE_OFFSET;
+    const stopX = tl.x * RENDER_SCALE - cos * STOP_LINE_OFFSET;
+    const stopY = tl.y * RENDER_SCALE - sin * STOP_LINE_OFFSET;
 
     // Offset perpendicular (to the right of the road direction)
     const perpX = -sin * ROAD_SIDE_OFFSET;
@@ -45,7 +51,7 @@ export function drawTrafficLights(
     ctx.beginPath();
     ctx.moveTo(stopX + perpX, stopY + perpY);
     ctx.lineTo(stopX, stopY);
-    ctx.strokeStyle = tl.state === 'GREEN' ? '#00aa00' : tl.state === 'RED' ? '#aa0000' : '#aaaa00';
+    ctx.strokeStyle = trafficLightColor(tl.state);
     ctx.lineWidth = 1.5;
     ctx.stroke();
 

@@ -1,4 +1,5 @@
 import type { IntersectionDto } from '../types/simulation';
+import { RENDER_SCALE } from './constants';
 
 /**
  * Draws intersection shapes on the static roads canvas layer.
@@ -32,47 +33,48 @@ export function drawIntersections(
 }
 
 function drawBox(ctx: CanvasRenderingContext2D, ixtn: IntersectionDto): void {
-  const halfSize = ixtn.size / 2;
-  const x = ixtn.x - halfSize;
-  const y = ixtn.y - halfSize;
-  const cornerRadius = 4;
+  const size = ixtn.size * RENDER_SCALE;
+  const halfSize = size / 2;
+  const x = ixtn.x * RENDER_SCALE - halfSize;
+  const y = ixtn.y * RENDER_SCALE - halfSize;
+  const cornerRadius = 4 * RENDER_SCALE;
 
   ctx.fillStyle = '#3a3a3a';
   ctx.beginPath();
-  ctx.roundRect(x, y, ixtn.size, ixtn.size, cornerRadius);
+  ctx.roundRect(x, y, size, size, cornerRadius);
   ctx.fill();
 
   ctx.strokeStyle = '#4a4a4a';
   ctx.lineWidth = 1;
   ctx.beginPath();
-  ctx.roundRect(x, y, ixtn.size, ixtn.size, cornerRadius);
+  ctx.roundRect(x, y, size, size, cornerRadius);
   ctx.stroke();
 }
 
 /** Small junction at ring node — just fills the gap between roads */
 function drawSmallJunction(ctx: CanvasRenderingContext2D, ixtn: IntersectionDto): void {
-  const halfSize = ixtn.size / 2;
+  const halfSize = ixtn.size * RENDER_SCALE / 2;
   ctx.fillStyle = '#3a3a3a';
   ctx.beginPath();
-  ctx.arc(ixtn.x, ixtn.y, halfSize, 0, Math.PI * 2);
+  ctx.arc(ixtn.x * RENDER_SCALE, ixtn.y * RENDER_SCALE, halfSize, 0, Math.PI * 2);
   ctx.fill();
 }
 
 /** Draws the roundabout visual: computes center and radius from ring node positions */
 function drawRoundaboutFromNodes(ctx: CanvasRenderingContext2D, nodes: IntersectionDto[]): void {
-  // Compute center as average of all ring node positions
+  // Compute center as average of all ring node positions (scaled)
   let cx = 0, cy = 0;
-  for (const n of nodes) { cx += n.x; cy += n.y; }
+  for (const n of nodes) { cx += n.x * RENDER_SCALE; cy += n.y * RENDER_SCALE; }
   cx /= nodes.length;
   cy /= nodes.length;
 
   // Compute radius as average distance from center to ring nodes + margin
   let avgDist = 0;
   for (const n of nodes) {
-    avgDist += Math.sqrt((n.x - cx) ** 2 + (n.y - cy) ** 2);
+    avgDist += Math.hypot(n.x * RENDER_SCALE - cx, n.y * RENDER_SCALE - cy);
   }
   avgDist /= nodes.length;
-  const outerRadius = avgDist + 10;
+  const outerRadius = avgDist + 10 * RENDER_SCALE;
   const innerRadius = avgDist * 0.35;
 
   // Filled circle — road surface color

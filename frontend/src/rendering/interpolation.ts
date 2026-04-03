@@ -32,10 +32,7 @@ export function interpolateVehicles(
       interpolated = vehicle;
     } else {
       const prev = prevSnapshot.vehicleMap.get(vehicle.id);
-      if (prev === undefined || prev.roadId !== vehicle.roadId) {
-        // Newly spawned or changed roads — no interpolation (avoids teleport glitch)
-        interpolated = vehicle;
-      } else {
+      if (prev?.roadId === vehicle.roadId) {
         // Interpolate domain fields
         interpolated = {
           ...vehicle,
@@ -43,6 +40,9 @@ export function interpolateVehicles(
           speed: prev.speed + alpha * (vehicle.speed - prev.speed),
           laneChangeProgress: prev.laneChangeProgress + alpha * (vehicle.laneChangeProgress - prev.laneChangeProgress),
         };
+      } else {
+        // Newly spawned or changed roads — no interpolation (avoids teleport glitch)
+        interpolated = vehicle;
       }
     }
 

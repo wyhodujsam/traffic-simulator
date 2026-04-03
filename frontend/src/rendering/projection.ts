@@ -1,6 +1,5 @@
 import type { VehicleDto, ObstacleDto, RoadDto } from '../types/simulation';
-
-const LANE_WIDTH_PX = 14;
+import { LANE_WIDTH_PX, RENDER_SCALE } from './constants';
 
 export interface ProjectedPosition {
   x: number;
@@ -10,21 +9,21 @@ export interface ProjectedPosition {
 
 /**
  * Projects a vehicle from domain coordinates to pixel coordinates.
- * Uses road geometry (startX/Y, endX/Y) and lane index.
+ * Uses road geometry (startX/Y, endX/Y) and lane index, scaled by RENDER_SCALE.
  */
 export function projectVehicle(vehicle: VehicleDto, roads: RoadDto[]): ProjectedPosition {
   const road = roads.find(r => r.id === vehicle.roadId);
   if (!road) return { x: 0, y: 0, angle: 0 };
 
   const fraction = vehicle.position / road.length;
-  const x = road.startX + fraction * (road.endX - road.startX);
-  const yBase = road.startY + fraction * (road.endY - road.startY);
+  const x = (road.startX + fraction * (road.endX - road.startX)) * RENDER_SCALE;
+  const yBase = (road.startY + fraction * (road.endY - road.startY)) * RENDER_SCALE;
 
   const laneCount = road.laneCount;
   const targetOffset = (vehicle.laneIndex - (laneCount - 1) / 2) * LANE_WIDTH_PX;
 
   let y: number;
-  if (vehicle.laneChangeSourceIndex >= 0 && vehicle.laneChangeProgress < 1.0) {
+  if (vehicle.laneChangeSourceIndex >= 0 && vehicle.laneChangeProgress < 1) {
     const sourceOffset = (vehicle.laneChangeSourceIndex - (laneCount - 1) / 2) * LANE_WIDTH_PX;
     y = yBase + sourceOffset + vehicle.laneChangeProgress * (targetOffset - sourceOffset);
   } else {
@@ -43,8 +42,8 @@ export function projectObstacle(obstacle: ObstacleDto, roads: RoadDto[]): Projec
   if (!road) return { x: 0, y: 0, angle: 0 };
 
   const fraction = obstacle.position / road.length;
-  const x = road.startX + fraction * (road.endX - road.startX);
-  const yBase = road.startY + fraction * (road.endY - road.startY);
+  const x = (road.startX + fraction * (road.endX - road.startX)) * RENDER_SCALE;
+  const yBase = (road.startY + fraction * (road.endY - road.startY)) * RENDER_SCALE;
   const laneOffset = (obstacle.laneIndex - (road.laneCount - 1) / 2) * LANE_WIDTH_PX;
   const y = yBase + laneOffset;
   const angle = Math.atan2(road.endY - road.startY, road.endX - road.startX);

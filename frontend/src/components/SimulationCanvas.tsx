@@ -7,7 +7,7 @@ import { drawObstacles } from '../rendering/drawObstacles';
 import { drawTrafficLights } from '../rendering/drawTrafficLights';
 import { hitTestObstacle, hitTestRoad } from '../rendering/hitTest';
 import { interpolateVehicles } from '../rendering/interpolation';
-import { CANVAS_PADDING, LANE_WIDTH_PX } from '../rendering/constants';
+import { CANVAS_PADDING, LANE_WIDTH_PX, RENDER_SCALE } from '../rendering/constants';
 import type { RoadDto } from '../types/simulation';
 
 export function computeCanvasSize(roads: RoadDto[]): { width: number; height: number } {
@@ -16,8 +16,8 @@ export function computeCanvasSize(roads: RoadDto[]): { width: number; height: nu
   let maxX = -Infinity, maxY = -Infinity;
   for (const road of roads) {
     const halfW = (road.laneCount * LANE_WIDTH_PX) / 2;
-    maxX = Math.max(maxX, road.startX, road.endX);
-    maxY = Math.max(maxY, road.startY + halfW, road.endY + halfW);
+    maxX = Math.max(maxX, road.startX * RENDER_SCALE, road.endX * RENDER_SCALE);
+    maxY = Math.max(maxY, road.startY * RENDER_SCALE + halfW, road.endY * RENDER_SCALE + halfW);
   }
 
   return {
@@ -64,7 +64,7 @@ export function SimulationCanvas() {
   // Compute CSS scale factor to fill container while preserving aspect ratio
   const scaleX = containerSize.width / width;
   const scaleY = containerSize.height / height;
-  const finalScale = Math.max(0.3, Math.min(scaleX, scaleY, 3.0));
+  const finalScale = Math.max(0.3, Math.min(scaleX, scaleY, 3));
 
   // Draw static roads layer once when roads are loaded
   useEffect(() => {
