@@ -21,6 +21,10 @@ import java.util.List;
 @Component
 public class SnapshotBuilder {
 
+    private record VehicleObstacleCollection(
+            List<VehicleDto> vehicles, List<ObstacleDto> obstacles,
+            double totalSpeed, int vehicleCount, double totalRoadLength) {}
+
     /**
      * Builds a complete SimulationStateDto snapshot from the current state.
      */
@@ -28,93 +32,106 @@ public class SnapshotBuilder {
             String status, double spawnRate, double speedMultiplier,
             IVehicleSpawner vehicleSpawner, String mapId, String error) {
 
+        VehicleObstacleCollection collection = collectVehiclesAndObstacles(network);
+        List<TrafficLightDto> trafficLights = collectTrafficLights(network);
+        StatsDto stats = computeStats(collection, vehicleSpawner);
+
+        return SimulationStateDto.builder()
+            .tick(tick)
+            .timestamp(System.currentTimeMillis())
+            .status(status)
+            .vehicles(collection.vehicles())
+            .obstacles(collection.obstacles())
+            .trafficLights(trafficLights)
+            .stats(stats)
+            .mapId(mapId)
+            .error(error)
+            .build();
+    }
+
+    private VehicleObstacleCollection collectVehiclesAndObstacles(RoadNetwork network) {
         List<VehicleDto> vehicleDtos = new ArrayList<>();
         List<ObstacleDto> obstacleDtos = new ArrayList<>();
         double totalSpeed = 0.0;
         int vehicleCount = 0;
         double totalRoadLength = 0.0;
 
-        if (network != null) {
-            for (Road road : network.getRoads().values()) {
-                totalRoadLength += road.getLength();
-                for (int laneIdx = 0; laneIdx < road.getLanes().size(); laneIdx++) {
-                    Lane lane = road.getLanes().get(laneIdx);
-                    for (Vehicle v : lane.getVehiclesView()) {
-                        vehicleDtos.add(buildVehicleDto(v, road, laneIdx));
-                        totalSpeed += v.getSpeed();
-                        vehicleCount++;
-                    }
-                    for (Obstacle obs : lane.getObstaclesView()) {
-                        obstacleDtos.add(buildObstacleDto(obs, road, laneIdx));
-                    }
+        if (network == null) {
+            return new VehicleObstacleCollection(vehicleDtos, obstacleDtos, totalSpeed, vehicleCount, totalRoadLength);
+        }
+
+        for (Road road : network.getRoads().values()) {
+            totalRoadLength += road.getLength();
+            for (int laneIdx = 0; laneIdx < road.getLanes().size(); laneIdx++) {
+                Lane lane = road.getLanes().get(laneIdx);
+                for (Vehicle v : lane.getVehiclesView()) {
+                    vehicleDtos.add(buildVehicleDto(v, road, laneIdx));
+                    totalSpeed += v.getSpeed();
+                    vehicleCount++;
+                }
+                for (Obstacle obs : lane.getObstaclesView()) {
+                    obstacleDtos.add(buildObstacleDto(obs, road, laneIdx));
                 }
             }
         }
 
+        return new VehicleObstacleCollection(vehicleDtos, obstacleDtos, totalSpeed, vehicleCount, totalRoadLength);
+    }
+
+    private List<TrafficLightDto> collectTrafficLights(RoadNetwork network) {
         List<TrafficLightDto> trafficLightDtos = new ArrayList<>();
-        if (network != null) {
-            for (Intersection ixtn : network.getIntersections().values()) {
-                if (ixtn.getTrafficLight() == null) continue;
-                TrafficLight tl = ixtn.getTrafficLight();
-                for (String inRoadId : ixtn.getInboundRoadIds()) {
-                    Road inRoad = network.getRoads().get(inRoadId);
-                    if (inRoad == null) continue;
-                    String signalState = tl.getSignalState(inRoadId);
-                    boolean boxBlocked = false;
-                    if ("GREEN".equals(signalState)) {
-                        // Check if all outbound roads are full (box-blocking active)
-                        boolean anyOutboundHasSpace = false;
-                        for (String outRoadId : ixtn.getOutboundRoadIds()) {
-                            if (outRoadId.replace("_in", "_out").equals(inRoadId.replace("_in", "_out"))) continue;
-                            Road outRoad = network.getRoads().get(outRoadId);
-                            if (outRoad == null) continue;
-                            for (Lane outLane : outRoad.getLanes()) {
-                                if (!outLane.isActive()) continue;
-                                if (outLane.getVehiclesView().isEmpty() || outLane.getVehiclesView().get(0).getPosition() > 10.0) {
-                                    anyOutboundHasSpace = true;
-                                    break;
-                                }
-                            }
-                            if (anyOutboundHasSpace) break;
-                        }
-                        boxBlocked = !anyOutboundHasSpace;
-                    }
-                    trafficLightDtos.add(TrafficLightDto.builder()
-                        .intersectionId(ixtn.getId())
-                        .roadId(inRoadId)
-                        .state(signalState)
-                        .x(inRoad.getEndX())
-                        .y(inRoad.getEndY())
-                        .angle(Math.atan2(inRoad.getEndY() - inRoad.getStartY(),
-                                           inRoad.getEndX() - inRoad.getStartX()))
-                        .boxBlocked(boxBlocked)
-                        .build());
+        if (network == null) return trafficLightDtos;
+
+        for (Intersection ixtn : network.getIntersections().values()) {
+            if (ixtn.getTrafficLight() == null) continue;
+            TrafficLight tl = ixtn.getTrafficLight();
+            for (String inRoadId : ixtn.getInboundRoadIds()) {
+                Road inRoad = network.getRoads().get(inRoadId);
+                if (inRoad == null) continue;
+                String signalState = tl.getSignalState(inRoadId);
+                boolean boxBlocked = "GREEN".equals(signalState) && isBoxBlocked(ixtn, inRoadId, network);
+                trafficLightDtos.add(TrafficLightDto.builder()
+                    .intersectionId(ixtn.getId())
+                    .roadId(inRoadId)
+                    .state(signalState)
+                    .x(inRoad.getEndX())
+                    .y(inRoad.getEndY())
+                    .angle(Math.atan2(inRoad.getEndY() - inRoad.getStartY(),
+                                       inRoad.getEndX() - inRoad.getStartX()))
+                    .boxBlocked(boxBlocked)
+                    .build());
+            }
+        }
+        return trafficLightDtos;
+    }
+
+    private boolean isBoxBlocked(Intersection ixtn, String inRoadId, RoadNetwork network) {
+        for (String outRoadId : ixtn.getOutboundRoadIds()) {
+            if (outRoadId.replace("_in", "_out").equals(inRoadId.replace("_in", "_out"))) continue;
+            Road outRoad = network.getRoads().get(outRoadId);
+            if (outRoad == null) continue;
+            for (Lane outLane : outRoad.getLanes()) {
+                if (!outLane.isActive()) continue;
+                if (outLane.getVehiclesView().isEmpty() || outLane.getVehiclesView().get(0).getPosition() > 10.0) {
+                    return false;
                 }
             }
         }
+        return true;
+    }
 
-        double avgSpeed = vehicleCount > 0 ? totalSpeed / vehicleCount : 0.0;
-        double density = totalRoadLength > 0
-            ? (vehicleCount / (totalRoadLength / 1000.0))
+    private StatsDto computeStats(VehicleObstacleCollection collection, IVehicleSpawner vehicleSpawner) {
+        int vehicleCount = collection.vehicleCount();
+        double avgSpeed = vehicleCount > 0 ? collection.totalSpeed() / vehicleCount : 0.0;
+        double density = collection.totalRoadLength() > 0
+            ? (vehicleCount / (collection.totalRoadLength() / 1000.0))
             : 0.0;
 
-        StatsDto stats = StatsDto.builder()
+        return StatsDto.builder()
             .vehicleCount(vehicleCount)
             .avgSpeed(avgSpeed)
             .density(density)
             .throughput(vehicleSpawner.getThroughput())
-            .build();
-
-        return SimulationStateDto.builder()
-            .tick(tick)
-            .timestamp(System.currentTimeMillis())
-            .status(status)
-            .vehicles(vehicleDtos)
-            .obstacles(obstacleDtos)
-            .trafficLights(trafficLightDtos)
-            .stats(stats)
-            .mapId(mapId)
-            .error(error)
             .build();
     }
 
