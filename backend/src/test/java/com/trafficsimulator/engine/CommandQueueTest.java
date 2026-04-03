@@ -47,12 +47,13 @@ class CommandQueueTest {
             });
         }
 
-        latch.await(5, TimeUnit.SECONDS);
+        assertThat(latch.await(5, TimeUnit.SECONDS)).isTrue();
         executor.shutdown();
 
-        // Drain and count — should be exactly 100 commands
+        // Drain all enqueued commands — verifies no ConcurrentModificationException thrown
         engine.drainCommands();
-        // If no exception during enqueue+drain, the test passes
+        // All threads completed and drain succeeded — engine is in a valid state
+        assertThat(engine.getStatus()).isNotNull();
     }
 
     @Test
