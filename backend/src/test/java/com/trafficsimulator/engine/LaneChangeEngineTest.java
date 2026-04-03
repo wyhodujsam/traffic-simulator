@@ -167,7 +167,6 @@ class LaneChangeEngineTest {
     @DisplayName("Vehicle that just changed lanes cannot change again within cooldown period")
     void cooldownEnforced() {
         Road road = createTwoLaneRoad();
-        Lane lane0 = road.getLanes().get(0);
         Lane lane1 = road.getLanes().get(1);
 
         // Slow leader in lane 1
@@ -272,7 +271,6 @@ class LaneChangeEngineTest {
     void noDualOccupancy() {
         Road road = createTwoLaneRoad();
         Lane lane0 = road.getLanes().get(0);
-        Lane lane1 = road.getLanes().get(1);
 
         // Create several vehicles in lane 0 with a slow leader
         Vehicle leader = createVehicle("leader", 300, 5.0, lane0);

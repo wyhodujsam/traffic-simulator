@@ -13,7 +13,6 @@ import java.util.List;
 @Slf4j
 public class PhysicsEngine implements IPhysicsEngine {
 
-    private static final double DELTA = 4.0;   // IDM acceleration exponent
     private static final double S_MIN = 1.0;    // minimum gap guard (metres)
     // Zipper yield removed — was causing adjacent lane congestion at merge point
 
@@ -114,13 +113,12 @@ public class PhysicsEngine implements IPhysicsEngine {
         }
 
         // Stop line as virtual stationary leader (position = stopLinePosition, speed = 0, length = 0)
-        if (stopLinePosition >= 0 && stopLinePosition > vehicle.getPosition()) {
-            if (!hasLeader || stopLinePosition < leaderPos) {
-                leaderPos = stopLinePosition;
-                leaderSpeed = 0.0;
-                leaderLength = 0.0;
-                hasLeader = true;
-            }
+        if (stopLinePosition >= 0 && stopLinePosition > vehicle.getPosition()
+                && (!hasLeader || stopLinePosition < leaderPos)) {
+            leaderPos = stopLinePosition;
+            leaderSpeed = 0.0;
+            leaderLength = 0.0;
+            hasLeader = true;
         }
 
         return new LeaderInfo(leaderPos, leaderSpeed, leaderLength, hasLeader);

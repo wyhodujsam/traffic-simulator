@@ -29,8 +29,7 @@ public class SnapshotBuilder {
      * Builds a complete SimulationStateDto snapshot from the current state.
      */
     public SimulationStateDto buildSnapshot(RoadNetwork network, long tick,
-            String status, double spawnRate, double speedMultiplier,
-            IVehicleSpawner vehicleSpawner, String mapId, String error) {
+            String status, IVehicleSpawner vehicleSpawner, String mapId, String error) {
 
         VehicleObstacleCollection collection = collectVehiclesAndObstacles(network);
         List<TrafficLightDto> trafficLights = collectTrafficLights(network);

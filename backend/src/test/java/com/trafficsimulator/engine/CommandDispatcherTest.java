@@ -24,13 +24,9 @@ class CommandDispatcherTest {
 
     @BeforeEach
     void setUp() throws Exception {
-        engine = new SimulationEngine();
-        dispatcher = new CommandDispatcher(engine);
-
-        // Wire dispatcher into engine for drainCommands() delegation
-        var field = SimulationEngine.class.getDeclaredField("commandDispatcher");
-        field.setAccessible(true);
-        field.set(engine, dispatcher);
+        engine = new SimulationEngine(null, null);
+        dispatcher = new CommandDispatcher(engine, null, null, null);
+        engine.setCommandDispatcher(dispatcher);
     }
 
     @Test

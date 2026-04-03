@@ -107,10 +107,10 @@ public class LaneChangeEngine implements ILaneChangeEngine {
         if (isStuckBehindObstacle(vehicle, lane) && !vehicle.isZipperCandidate()) {
             return true;
         }
-        if (!vehicle.isForceLaneChange() && !vehicle.isZipperCandidate()) {
-            if (!vehicle.canChangeLane(currentTick, cooldownTicks)) {
-                return true;
-            }
+        if (!vehicle.isForceLaneChange()
+                && !vehicle.isZipperCandidate()
+                && !vehicle.canChangeLane(currentTick, cooldownTicks)) {
+            return true;
         }
         return false;
     }
@@ -120,27 +120,19 @@ public class LaneChangeEngine implements ILaneChangeEngine {
      * the intent with the highest incentive score, or null if neither is beneficial.
      */
     private LaneChangeIntent evaluateBestIntent(Vehicle vehicle, Lane lane, Road road) {
-        LaneChangeIntent bestIntent = null;
+        LaneChangeIntent bestIntent = evaluateLaneIntent(vehicle, lane, road.getLeftNeighbor(lane), A_THRESHOLD_LEFT);
+        LaneChangeIntent rightIntent = evaluateLaneIntent(vehicle, lane, road.getRightNeighbor(lane), A_THRESHOLD_RIGHT);
 
-        Lane leftLane = road.getLeftNeighbor(lane);
-        if (leftLane != null) {
-            LaneChangeIntent intent = evaluateMOBIL(vehicle, lane, leftLane, A_THRESHOLD_LEFT);
-            if (intent != null && (bestIntent == null
-                    || intent.incentiveScore() > bestIntent.incentiveScore())) {
-                bestIntent = intent;
-            }
+        if (rightIntent != null && (bestIntent == null
+                || rightIntent.incentiveScore() > bestIntent.incentiveScore())) {
+            bestIntent = rightIntent;
         }
-
-        Lane rightLane = road.getRightNeighbor(lane);
-        if (rightLane != null) {
-            LaneChangeIntent intent = evaluateMOBIL(vehicle, lane, rightLane, A_THRESHOLD_RIGHT);
-            if (intent != null && (bestIntent == null
-                    || intent.incentiveScore() > bestIntent.incentiveScore())) {
-                bestIntent = intent;
-            }
-        }
-
         return bestIntent;
+    }
+
+    private LaneChangeIntent evaluateLaneIntent(Vehicle vehicle, Lane currentLane, Lane targetLane, double threshold) {
+        if (targetLane == null) return null;
+        return evaluateMOBIL(vehicle, currentLane, targetLane, threshold);
     }
 
     /**
@@ -171,9 +163,9 @@ public class LaneChangeEngine implements ILaneChangeEngine {
             return new LaneChangeIntent(subject, currentLane, targetLane, subjectPos, score);
         }
 
-        return evaluateIncentive(subject, currentLane, currentLeader, subjectPos,
-                newLeader, newFollower, aSubjectCurrent, aSubjectTarget, aThreshold,
-                targetLane);
+        var ctx = new IncentiveContext(subject, currentLane, currentLeader, subjectPos,
+                newLeader, newFollower, aSubjectCurrent, aSubjectTarget);
+        return evaluateIncentive(ctx, aThreshold, targetLane);
     }
 
     /**
@@ -231,32 +223,33 @@ public class LaneChangeEngine implements ILaneChangeEngine {
         return false;
     }
 
+    private record IncentiveContext(Vehicle subject, Lane currentLane, Vehicle currentLeader,
+                                    double subjectPos, Vehicle newLeader, Vehicle newFollower,
+                                    double aSubjectCurrent, double aSubjectTarget) {}
+
     /**
      * Computes MOBIL incentive criterion and returns intent if threshold is exceeded.
      */
-    private LaneChangeIntent evaluateIncentive(Vehicle subject, Lane currentLane, Vehicle currentLeader,
-                                                double subjectPos, Vehicle newLeader, Vehicle newFollower,
-                                                double aSubjectCurrent, double aSubjectTarget,
-                                                double aThreshold, Lane targetLane) {
-        Vehicle oldFollower = currentLane.findFollowerAt(subjectPos);
+    private LaneChangeIntent evaluateIncentive(IncentiveContext ctx, double aThreshold, Lane targetLane) {
+        Vehicle oldFollower = ctx.currentLane.findFollowerAt(ctx.subjectPos);
 
         double aOldFollowerBefore = (oldFollower != null)
-            ? computeIdmAccelWithLeader(oldFollower, subject) : 0.0;
+            ? computeIdmAccelWithLeader(oldFollower, ctx.subject) : 0.0;
         double aOldFollowerAfter = (oldFollower != null)
-            ? computeIdmAccel(oldFollower, currentLeader) : 0.0;
+            ? computeIdmAccel(oldFollower, ctx.currentLeader) : 0.0;
 
-        double aNewFollowerBefore = (newFollower != null)
-            ? computeIdmAccel(newFollower, newLeader) : 0.0;
-        double aNewFollowerAfter = (newFollower != null)
-            ? computeIdmAccelWithLeader(newFollower, subject) : 0.0;
+        double aNewFollowerBefore = (ctx.newFollower != null)
+            ? computeIdmAccel(ctx.newFollower, ctx.newLeader) : 0.0;
+        double aNewFollowerAfter = (ctx.newFollower != null)
+            ? computeIdmAccelWithLeader(ctx.newFollower, ctx.subject) : 0.0;
 
-        double subjectGain = aSubjectTarget - aSubjectCurrent;
+        double subjectGain = ctx.aSubjectTarget - ctx.aSubjectCurrent;
         double neighborCost = (aOldFollowerAfter - aOldFollowerBefore)
                             + (aNewFollowerAfter - aNewFollowerBefore);
         double incentive = subjectGain - POLITENESS * neighborCost;
 
         if (incentive > aThreshold) {
-            return new LaneChangeIntent(subject, currentLane, targetLane, subjectPos, incentive);
+            return new LaneChangeIntent(ctx.subject, ctx.currentLane, targetLane, ctx.subjectPos, incentive);
         }
         return null;
     }

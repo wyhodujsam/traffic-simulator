@@ -63,7 +63,6 @@ public class TickEmitter {
             String error = simulationEngine.getLastError();
             SimulationStateDto state = snapshotBuilder.buildSnapshot(
                 network, tick, simulationEngine.getStatus().name(),
-                simulationEngine.getSpawnRate(), simulationEngine.getSpeedMultiplier(),
                 vehicleSpawner, mapId, error);
             statePublisher.broadcast(state);
 

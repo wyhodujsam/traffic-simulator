@@ -72,16 +72,20 @@ public class IntersectionManager implements IIntersectionManager {
      * Considers: traffic light state, right-of-way priority, roundabout yield, and box-blocking.
      */
     private boolean canEnterIntersection(Intersection ixtn, String inboundRoadId, RoadNetwork network) {
-        if (ixtn.getType() == IntersectionType.SIGNAL && ixtn.getTrafficLight() != null) {
-            if (!ixtn.getTrafficLight().isGreen(inboundRoadId)) return false;
+        if (ixtn.getType() == IntersectionType.SIGNAL
+                && ixtn.getTrafficLight() != null
+                && !ixtn.getTrafficLight().isGreen(inboundRoadId)) {
+            return false;
         }
 
-        if (ixtn.getType() == IntersectionType.PRIORITY || ixtn.getType() == IntersectionType.NONE) {
-            if (hasVehicleFromRight(ixtn, inboundRoadId, network)) return false;
+        if ((ixtn.getType() == IntersectionType.PRIORITY || ixtn.getType() == IntersectionType.NONE)
+                && hasVehicleFromRight(ixtn, inboundRoadId, network)) {
+            return false;
         }
 
-        if (ixtn.getType() == IntersectionType.ROUNDABOUT) {
-            if (isRoundaboutEntryBlocked(ixtn, inboundRoadId, network)) return false;
+        if (ixtn.getType() == IntersectionType.ROUNDABOUT
+                && isRoundaboutEntryBlocked(ixtn, inboundRoadId, network)) {
+            return false;
         }
 
         return checkBoxBlocking(ixtn, inboundRoadId, network);

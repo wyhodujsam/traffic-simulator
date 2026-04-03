@@ -157,12 +157,11 @@ class PhysicsEngineTest {
     void zeroGapGuard_overlapProducesFiniteBraking() {
         // Place follower so close that gap is negative (overlap)
         // gap = leader.pos - follower.pos - leader.length = 100.0 - 99.0 - 4.5 = -3.5 (negative!)
-        Vehicle leader = createVehicle("leader", 100.0, 10.0);
+        createVehicle("leader", 100.0, 10.0);
         Vehicle follower = createVehicle("follower", 99.0, 15.0);
 
         engine.tick(lane, DT);
 
-        // No exception was thrown
         assertThat(Double.isFinite(follower.getAcceleration()))
             .as("acceleration is finite despite overlap").isTrue();
         assertThat(follower.getAcceleration())
@@ -182,7 +181,7 @@ class PhysicsEngineTest {
     // =========================================================================
     @Test
     void nanGuard_zeroParametersProduceFiniteResult() {
-        Vehicle leader = createVehicle("leader", 120.0, 15.0);
+        createVehicle("leader", 120.0, 15.0);
         Vehicle follower = createVehicle("follower", 100.0, 20.0);
 
         // Rebuild follower with corrupt parameters to force NaN in IDM formula

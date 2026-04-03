@@ -12,7 +12,7 @@ import static org.assertj.core.api.Assertions.assertThat;
 
 class VehicleDespawnTest {
 
-    private RoadNetwork buildNetwork(Lane lane, Road road) {
+    private RoadNetwork buildNetwork(Road road) {
         Map<String, Road> roads = new LinkedHashMap<>();
         roads.put("r1", road);
         return RoadNetwork.builder()
@@ -48,7 +48,7 @@ class VehicleDespawnTest {
             .build();
         lane.addVehicle(v);
 
-        RoadNetwork network = buildNetwork(lane, road);
+        RoadNetwork network = buildNetwork(road);
 
         new VehicleSpawner().despawnVehicles(network);
 
@@ -69,7 +69,7 @@ class VehicleDespawnTest {
             .build();
         lane.addVehicle(v);
 
-        RoadNetwork network = buildNetwork(lane, road);
+        RoadNetwork network = buildNetwork(road);
 
         new VehicleSpawner().despawnVehicles(network);
 
@@ -90,7 +90,7 @@ class VehicleDespawnTest {
             .build();
         lane.addVehicle(v);
 
-        RoadNetwork network = buildNetwork(lane, road);
+        RoadNetwork network = buildNetwork(road);
 
         new VehicleSpawner().despawnVehicles(network);
 

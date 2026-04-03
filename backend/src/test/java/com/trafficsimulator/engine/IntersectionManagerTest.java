@@ -586,7 +586,7 @@ class IntersectionManagerTest {
     void equalLaneTransferRemainsRandom() {
         // Scenario: 2-lane main_before onto 2-lane main_after
         // Equal lane counts -> random lane selection (both lanes should be reachable)
-        RoadNetwork network = buildMergeNetwork();
+        buildMergeNetwork();
 
         // Run many transfers and collect which lanes received vehicles
         Set<Integer> lanesUsed = new HashSet<>();

@@ -9,8 +9,8 @@ import jakarta.annotation.PostConstruct;
 import lombok.Getter;
 import lombok.Setter;
 import lombok.extern.slf4j.Slf4j;
-import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.context.annotation.Lazy;
+import org.springframework.lang.Nullable;
 import org.springframework.stereotype.Component;
 
 import java.util.ArrayList;
@@ -63,11 +63,17 @@ public class SimulationEngine {
     @Getter @Setter
     private volatile String lastError;
 
-    @Autowired(required = false)
-    private MapLoader mapLoader;
-
-    @Autowired @Lazy
+    private final MapLoader mapLoader;
     private CommandDispatcher commandDispatcher;
+
+    public SimulationEngine(@Nullable MapLoader mapLoader, @Lazy CommandDispatcher commandDispatcher) {
+        this.mapLoader = mapLoader;
+        this.commandDispatcher = commandDispatcher;
+    }
+
+    void setCommandDispatcher(CommandDispatcher commandDispatcher) {
+        this.commandDispatcher = commandDispatcher;
+    }
 
     @PostConstruct
     void loadDefaultMap() {

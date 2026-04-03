@@ -3,7 +3,6 @@ package com.trafficsimulator.engine;
 import com.trafficsimulator.engine.command.SimulationCommand;
 import org.junit.jupiter.api.Test;
 
-import java.lang.reflect.Field;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
@@ -17,15 +16,9 @@ class CommandQueueTest {
      * Creates a SimulationEngine with a CommandDispatcher wired in (no Spring context needed).
      */
     private static SimulationEngine createEngine() {
-        SimulationEngine engine = new SimulationEngine();
-        CommandDispatcher dispatcher = new CommandDispatcher(engine);
-        try {
-            Field field = SimulationEngine.class.getDeclaredField("commandDispatcher");
-            field.setAccessible(true);
-            field.set(engine, dispatcher);
-        } catch (ReflectiveOperationException e) {
-            throw new RuntimeException("Failed to wire CommandDispatcher into SimulationEngine", e);
-        }
+        SimulationEngine engine = new SimulationEngine(null, null);
+        CommandDispatcher dispatcher = new CommandDispatcher(engine, null, null, null);
+        engine.setCommandDispatcher(dispatcher);
         return engine;
     }
 
@@ -89,7 +82,7 @@ class CommandQueueTest {
         Thread tickThread = new Thread(() -> {
             for (int i = 0; i < 100; i++) {
                 engine.drainCommands();
-                try { Thread.sleep(1); } catch (InterruptedException ignored) {}
+                Thread.yield();
             }
         });
         tickThread.start();
