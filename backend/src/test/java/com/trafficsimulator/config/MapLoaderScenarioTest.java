@@ -105,7 +105,7 @@ class MapLoaderScenarioTest {
         config.setId("test");
 
         List<String> errors = validator.validate(config);
-        assertThat(errors).isNotEmpty();
-        assertThat(errors).anyMatch(e -> e.contains("At least one node is required"));
+        assertThat(errors).isNotEmpty()
+            .anyMatch(e -> e.contains("At least one node is required"));
     }
 }

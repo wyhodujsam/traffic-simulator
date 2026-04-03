@@ -322,7 +322,7 @@ class LaneChangeEngineTest {
                 .filter(v -> v.getId().equals("mover")).findFirst().orElseThrow();
             // Progress should be 0.0 right after commit
             assertThat(moved.getLaneChangeProgress()).isEqualTo(0.0);
-            assertThat(moved.getLaneChangeSourceIndex()).isEqualTo(0); // came from lane 0
+            assertThat(moved.getLaneChangeSourceIndex()).isZero(); // came from lane 0
 
             // Second tick: progress should increase
             laneChangeEngine.tick(network, 101);

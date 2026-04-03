@@ -1,9 +1,6 @@
 package com.trafficsimulator.engine;
 
-import com.trafficsimulator.config.MapLoader;
 import com.trafficsimulator.engine.command.SimulationCommand;
-import com.trafficsimulator.model.Lane;
-import com.trafficsimulator.model.Road;
 import com.trafficsimulator.model.RoadNetwork;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;

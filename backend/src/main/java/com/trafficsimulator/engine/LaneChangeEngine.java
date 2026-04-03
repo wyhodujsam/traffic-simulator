@@ -107,12 +107,9 @@ public class LaneChangeEngine implements ILaneChangeEngine {
         if (isStuckBehindObstacle(vehicle, lane) && !vehicle.isZipperCandidate()) {
             return true;
         }
-        if (!vehicle.isForceLaneChange()
+        return !vehicle.isForceLaneChange()
                 && !vehicle.isZipperCandidate()
-                && !vehicle.canChangeLane(currentTick, cooldownTicks)) {
-            return true;
-        }
-        return false;
+                && !vehicle.canChangeLane(currentTick, cooldownTicks);
     }
 
     /**
@@ -262,7 +259,9 @@ public class LaneChangeEngine implements ILaneChangeEngine {
         // Find nearest obstacle ahead in the lane
         Obstacle nearestObstacle = findNearestObstacleAhead(lane, vehicle.getPosition());
 
-        double leaderPos, leaderSpeed, leaderLength;
+        double leaderPos;
+        double leaderSpeed;
+        double leaderLength;
         boolean hasLeader;
 
         if (vehicleLeader != null && nearestObstacle != null) {

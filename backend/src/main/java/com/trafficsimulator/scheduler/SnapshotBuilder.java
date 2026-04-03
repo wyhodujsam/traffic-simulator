@@ -106,17 +106,26 @@ public class SnapshotBuilder {
 
     private boolean isBoxBlocked(Intersection ixtn, String inRoadId, RoadNetwork network) {
         for (String outRoadId : ixtn.getOutboundRoadIds()) {
-            if (outRoadId.replace("_in", "_out").equals(inRoadId.replace("_in", "_out"))) continue;
-            Road outRoad = network.getRoads().get(outRoadId);
-            if (outRoad == null) continue;
-            for (Lane outLane : outRoad.getLanes()) {
-                if (!outLane.isActive()) continue;
-                if (outLane.getVehiclesView().isEmpty() || outLane.getVehiclesView().get(0).getPosition() > 10.0) {
-                    return false;
-                }
+            if (hasSpaceOnOutbound(outRoadId, inRoadId, network)) {
+                return false;
             }
         }
         return true;
+    }
+
+    private boolean hasSpaceOnOutbound(String outRoadId, String inRoadId, RoadNetwork network) {
+        if (outRoadId.replace("_in", "_out").equals(inRoadId.replace("_in", "_out"))) return false;
+        Road outRoad = network.getRoads().get(outRoadId);
+        if (outRoad == null) return false;
+        for (Lane outLane : outRoad.getLanes()) {
+            if (!outLane.isActive()) {
+                continue;
+            }
+            if (outLane.getVehiclesView().isEmpty() || outLane.getVehiclesView().get(0).getPosition() > 10.0) {
+                return true;
+            }
+        }
+        return false;
     }
 
     private StatsDto computeStats(VehicleObstacleCollection collection, IVehicleSpawner vehicleSpawner) {

@@ -80,7 +80,9 @@ public class PhysicsEngine implements IPhysicsEngine {
 
     private LeaderInfo findEffectiveLeader(Vehicle vehicle, Vehicle vehicleLeader,
                                            Obstacle nearestObstacle, double stopLinePosition) {
-        double leaderPos, leaderSpeed, leaderLength;
+        double leaderPos;
+        double leaderSpeed;
+        double leaderLength;
         boolean hasLeader;
 
         if (vehicleLeader != null && nearestObstacle != null) {

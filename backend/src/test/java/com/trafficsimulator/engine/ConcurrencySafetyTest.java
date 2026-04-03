@@ -82,7 +82,7 @@ class ConcurrencySafetyTest {
      * even under heavy concurrent load.
      */
     @Test
-    void drainCompletesUnderLoad_noDeadlock() throws Exception {
+    void drainCompletesUnderLoad_noDeadlock() {
         SimulationEngine engine = createEngine();
 
         engine.enqueue(new SimulationCommand.Start());

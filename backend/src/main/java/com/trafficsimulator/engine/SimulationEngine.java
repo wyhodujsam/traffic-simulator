@@ -42,6 +42,7 @@ public class SimulationEngine {
     private volatile SimulationStatus status = SimulationStatus.STOPPED;
 
     @Getter
+    @SuppressWarnings("java:S3077") // RoadNetwork is immutable after construction, volatile swap is safe
     private volatile RoadNetwork roadNetwork;
 
     @Getter
@@ -90,6 +91,7 @@ public class SimulationEngine {
         }
     }
 
+    @SuppressWarnings("java:S899") // LinkedBlockingQueue.offer() always returns true for unbounded queues
     public void enqueue(SimulationCommand command) {
         commandQueue.offer(command);
     }

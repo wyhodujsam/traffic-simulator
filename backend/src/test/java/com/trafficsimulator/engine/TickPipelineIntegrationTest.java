@@ -54,8 +54,8 @@ class TickPipelineIntegrationTest {
             .flatMap(l -> l.getVehiclesView().stream())
             .toList();
 
-        assertThat(allVehicles).isNotEmpty();
-        assertThat(allVehicles).allSatisfy(v -> {
+        assertThat(allVehicles).isNotEmpty()
+            .allSatisfy(v -> {
             assertThat(v.getPosition()).isGreaterThan(0.0);
             assertThat(v.getSpeed()).isGreaterThan(0.0);
         });
@@ -149,7 +149,7 @@ class TickPipelineIntegrationTest {
         spawner.reset();
 
         int vehiclesAfterStop = countVehicles(network);
-        assertThat(vehiclesAfterStop).isEqualTo(0);
+        assertThat(vehiclesAfterStop).isZero();
 
         // Simulate START: run 20 more ticks — vehicles should appear again
         for (long tick = 1; tick <= 20; tick++) {

@@ -23,7 +23,7 @@ class CommandDispatcherTest {
     private CommandDispatcher dispatcher;
 
     @BeforeEach
-    void setUp() throws Exception {
+    void setUp() {
         engine = new SimulationEngine(null, null);
         dispatcher = new CommandDispatcher(engine, null, null, null);
         engine.setCommandDispatcher(dispatcher);
@@ -47,7 +47,7 @@ class CommandDispatcherTest {
         dispatcher.dispatch(new SimulationCommand.Stop());
 
         assertThat(engine.getStatus()).isEqualTo(SimulationStatus.STOPPED);
-        assertThat(engine.getTickCounter().get()).isEqualTo(0);
+        assertThat(engine.getTickCounter().get()).isZero();
     }
 
     @Test

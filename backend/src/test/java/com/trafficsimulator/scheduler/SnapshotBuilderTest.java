@@ -65,7 +65,7 @@ class SnapshotBuilderTest {
         assertThat(dto.getId()).isEqualTo("v1");
         assertThat(dto.getRoadId()).isEqualTo("r1");
         assertThat(dto.getLaneId()).isEqualTo("r1-lane0");
-        assertThat(dto.getLaneIndex()).isEqualTo(0);
+        assertThat(dto.getLaneIndex()).isZero();
         assertThat(dto.getPosition()).isCloseTo(500.0, within(0.01));
         assertThat(dto.getSpeed()).isCloseTo(10.0, within(0.01));
         assertThat(dto.getLaneChangeSourceIndex()).isEqualTo(-1);
@@ -96,7 +96,7 @@ class SnapshotBuilderTest {
         assertThat(dto.getId()).isEqualTo("obs1");
         assertThat(dto.getRoadId()).isEqualTo("r1");
         assertThat(dto.getLaneId()).isEqualTo("r1-lane0");
-        assertThat(dto.getLaneIndex()).isEqualTo(0);
+        assertThat(dto.getLaneIndex()).isZero();
         assertThat(dto.getPosition()).isCloseTo(250.0, within(0.01));
     }
 
@@ -146,7 +146,7 @@ class SnapshotBuilderTest {
         assertThat(state.getVehicles()).isEmpty();
         assertThat(state.getObstacles()).isEmpty();
         assertThat(state.getTrafficLights()).isEmpty();
-        assertThat(state.getStats().getVehicleCount()).isEqualTo(0);
+        assertThat(state.getStats().getVehicleCount()).isZero();
         assertThat(state.getStats().getAvgSpeed()).isEqualTo(0.0);
         assertThat(state.getStats().getDensity()).isEqualTo(0.0);
     }

@@ -147,6 +147,6 @@ class CommandQueueTest {
         engine.drainCommands();
 
         assertThat(engine.getStatus()).isEqualTo(SimulationStatus.STOPPED);
-        assertThat(engine.getTickCounter().get()).isEqualTo(0);
+        assertThat(engine.getTickCounter().get()).isZero();
     }
 }

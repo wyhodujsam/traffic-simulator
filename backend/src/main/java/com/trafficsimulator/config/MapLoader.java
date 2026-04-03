@@ -110,8 +110,10 @@ public class MapLoader {
     }
 
     private double[] computeRoadCoords(MapConfig.NodeConfig fromNode, MapConfig.NodeConfig toNode) {
-        double startX = fromNode.getX(), startY = fromNode.getY();
-        double endX = toNode.getX(), endY = toNode.getY();
+        double startX = fromNode.getX();
+        double startY = fromNode.getY();
+        double endX = toNode.getX();
+        double endY = toNode.getY();
 
         if (!"INTERSECTION".equals(fromNode.getType()) && !"INTERSECTION".equals(toNode.getType())) {
             return new double[]{startX, startY, endX, endY};

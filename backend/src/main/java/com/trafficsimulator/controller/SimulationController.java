@@ -140,7 +140,8 @@ public class SimulationController {
     }
 
     private double[] computeIntersectionCenter(Intersection ixtn, RoadNetwork network) {
-        double sumX = 0, sumY = 0;
+        double sumX = 0;
+        double sumY = 0;
         int count = 0;
         for (String roadId : ixtn.getConnectedRoadIds()) {
             Road road = network.getRoads().get(roadId);

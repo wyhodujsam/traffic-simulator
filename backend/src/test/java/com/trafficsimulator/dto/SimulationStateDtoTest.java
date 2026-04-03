@@ -78,6 +78,6 @@ class SimulationStateDtoTest {
             .build();
 
         assertThat(state.getVehicles()).isEmpty();
-        assertThat(state.getStats().getVehicleCount()).isEqualTo(0);
+        assertThat(state.getStats().getVehicleCount()).isZero();
     }
 }
