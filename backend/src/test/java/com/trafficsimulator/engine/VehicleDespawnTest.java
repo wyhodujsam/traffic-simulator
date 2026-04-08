@@ -44,7 +44,7 @@ class VehicleDespawnTest {
 
         Vehicle v = Vehicle.builder()
             .id("v1").position(800.5).speed(10.0).lane(lane).length(4.5)
-            .v0(33.3).aMax(1.4).b(2.0).s0(2.0).T(1.5).spawnedAt(0)
+            .v0(33.3).aMax(1.4).b(2.0).s0(2.0).timeHeadway(1.5).spawnedAt(0)
             .build();
         lane.addVehicle(v);
 
@@ -65,7 +65,7 @@ class VehicleDespawnTest {
 
         Vehicle v = Vehicle.builder()
             .id("v1").position(799.9).speed(10.0).lane(lane).length(4.5)
-            .v0(33.3).aMax(1.4).b(2.0).s0(2.0).T(1.5).spawnedAt(0)
+            .v0(33.3).aMax(1.4).b(2.0).s0(2.0).timeHeadway(1.5).spawnedAt(0)
             .build();
         lane.addVehicle(v);
 
@@ -86,7 +86,7 @@ class VehicleDespawnTest {
 
         Vehicle v = Vehicle.builder()
             .id("v1").position(800.0).speed(0.0).lane(lane).length(4.5)
-            .v0(33.3).aMax(1.4).b(2.0).s0(2.0).T(1.5).spawnedAt(0)
+            .v0(33.3).aMax(1.4).b(2.0).s0(2.0).timeHeadway(1.5).spawnedAt(0)
             .build();
         lane.addVehicle(v);
 

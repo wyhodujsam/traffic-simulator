@@ -16,7 +16,7 @@ class RoadNarrowingIntegrationTest {
     private Vehicle createVehicle(String id, double position, double speed, Lane lane) {
         return Vehicle.builder()
             .id(id).position(position).speed(speed).acceleration(0)
-            .lane(lane).length(4.5).v0(33.33).aMax(1.5).b(2.0).s0(2.0).T(1.5)
+            .lane(lane).length(4.5).v0(33.33).aMax(1.5).b(2.0).s0(2.0).timeHeadway(1.5)
             .spawnedAt(0).lastLaneChangeTick(0).forceLaneChange(false)
             .laneChangeProgress(1.0).laneChangeSourceIndex(-1)
             .build();

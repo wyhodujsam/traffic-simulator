@@ -29,8 +29,7 @@ public class Vehicle {
     private double aMax;  // max acceleration m/s²
     private double b;     // comfortable braking deceleration m/s²
     private double s0;    // minimum gap metres
-    @SuppressWarnings("java:S116") // IDM physics parameter name — standard notation
-    private double T;     // desired time headway seconds
+    private double timeHeadway;     // desired time headway seconds (IDM parameter T)
 
     private long spawnedAt; // tick number when created
 

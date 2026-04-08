@@ -62,7 +62,7 @@ class VehicleSpawnerTest {
 
         Vehicle v = lane0.getVehiclesView().get(0);
         assertThat(v.getId()).isNotNull();
-        assertThat(v.getPosition()).isEqualTo(0.0);
+        assertThat(v.getPosition()).isZero();
         // Vehicle spawns at 50% of lane maxSpeed to avoid braking cascade
         assertThat(v.getSpeed()).isEqualTo(0.5 * lane0.getMaxSpeed());
         assertThat(v.getLane()).isSameAs(lane0);
@@ -81,7 +81,7 @@ class VehicleSpawnerTest {
         assertThat(v.getAMax()).isBetween(1.4 * 0.8, 1.4 * 1.2);
         assertThat(v.getB()).isBetween(2.0 * 0.8, 2.0 * 1.2);
         assertThat(v.getS0()).isEqualTo(2.0); // s0 is NOT randomised
-        assertThat(v.getT()).isBetween(1.5 * 0.8, 1.5 * 1.2);
+        assertThat(v.getTimeHeadway()).isBetween(1.5 * 0.8, 1.5 * 1.2);
     }
 
     @Test

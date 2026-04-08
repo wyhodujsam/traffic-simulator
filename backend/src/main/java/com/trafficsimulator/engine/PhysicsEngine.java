@@ -153,12 +153,9 @@ public class PhysicsEngine implements IPhysicsEngine {
         double newPosition = vehicle.getPosition() + newSpeed * dt;
 
         // Guard 6: Position clamp — never pass the effective leader
-        if (leader.present()) {
-            double maxPosition = leader.position() - leader.length() - S_MIN;
-            if (newPosition > maxPosition) {
-                newPosition = maxPosition;
-                newSpeed = 0.0;
-            }
+        if (leader.present() && newPosition > leader.position() - leader.length() - S_MIN) {
+            newPosition = leader.position() - leader.length() - S_MIN;
+            newSpeed = 0.0;
         }
 
         // Write back via domain method
@@ -209,7 +206,7 @@ public class PhysicsEngine implements IPhysicsEngine {
         // Guard 5: s* floor via max(0, ...) on the dynamic term
         double sqrtTerm = 2.0 * Math.sqrt(aMax * vehicle.getB());
         double interactionTerm = (sqrtTerm > 0.0) ? (v * deltaV / sqrtTerm) : 0.0;
-        double sStar = vehicle.getS0() + Math.max(0.0, v * vehicle.getT() + interactionTerm);
+        double sStar = vehicle.getS0() + Math.max(0.0, v * vehicle.getTimeHeadway() + interactionTerm);
 
         // IDM acceleration
         double sRatio = sStar / safeGap;

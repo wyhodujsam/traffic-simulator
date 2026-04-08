@@ -47,6 +47,20 @@ public class LaneChangeEngine implements ILaneChangeEngine {
         double incentiveScore
     ) {}
 
+    /** Effective leader data resolved from vehicle leader and/or obstacle. */
+    private record EffectiveLeader(double position, double speed, double length) {}
+
+    /** Context for MOBIL incentive computation. */
+    private record IncentiveContext(
+        Vehicle subject,
+        Lane currentLane,
+        Vehicle currentLeader,
+        double subjectPos
+    ) {}
+
+    /** Acceleration data for subject in current vs target lane. */
+    private record AccelerationPair(double current, double target) {}
+
     /**
      * Main tick: evaluates MOBIL for all vehicles, resolves conflicts, commits moves.
      * Called once per tick AFTER physics, BEFORE despawn.
@@ -155,14 +169,14 @@ public class LaneChangeEngine implements ILaneChangeEngine {
 
         if (hasObstacleConflictInTarget(subject, subjectPos, targetLane)) return null;
 
-        if (subject.isForceLaneChange() || subject.isZipperCandidate()) {
+        if (subject.isForceLaneChange() || isZipper) {
             double score = subject.isForceLaneChange() ? Double.MAX_VALUE : 100.0;
             return new LaneChangeIntent(subject, currentLane, targetLane, subjectPos, score);
         }
 
-        var ctx = new IncentiveContext(subject, currentLane, currentLeader, subjectPos,
-                newLeader, newFollower, aSubjectCurrent, aSubjectTarget);
-        return evaluateIncentive(ctx, aThreshold, targetLane);
+        var ctx = new IncentiveContext(subject, currentLane, currentLeader, subjectPos);
+        var accel = new AccelerationPair(aSubjectCurrent, aSubjectTarget);
+        return evaluateIncentive(ctx, accel, newLeader, newFollower, aThreshold, targetLane);
     }
 
     /**
@@ -208,7 +222,7 @@ public class LaneChangeEngine implements ILaneChangeEngine {
         if (targetObstacle != null) {
             double gapToObstacle = targetObstacle.getPosition() - subjectPos - targetObstacle.getLength();
             double minObstacleGap = subject.getS0() + subject.getLength()
-                + subject.getSpeed() * subject.getT();
+                + subject.getSpeed() * subject.getTimeHeadway();
             if (gapToObstacle < minObstacleGap) return true;
         }
         for (Obstacle obs : targetLane.getObstaclesView()) {
@@ -220,14 +234,12 @@ public class LaneChangeEngine implements ILaneChangeEngine {
         return false;
     }
 
-    private record IncentiveContext(Vehicle subject, Lane currentLane, Vehicle currentLeader,
-                                    double subjectPos, Vehicle newLeader, Vehicle newFollower,
-                                    double aSubjectCurrent, double aSubjectTarget) {}
-
     /**
      * Computes MOBIL incentive criterion and returns intent if threshold is exceeded.
      */
-    private LaneChangeIntent evaluateIncentive(IncentiveContext ctx, double aThreshold, Lane targetLane) {
+    private LaneChangeIntent evaluateIncentive(IncentiveContext ctx, AccelerationPair accel,
+                                                Vehicle newLeader, Vehicle newFollower,
+                                                double aThreshold, Lane targetLane) {
         Vehicle oldFollower = ctx.currentLane.findFollowerAt(ctx.subjectPos);
 
         double aOldFollowerBefore = (oldFollower != null)
@@ -235,20 +247,19 @@ public class LaneChangeEngine implements ILaneChangeEngine {
         double aOldFollowerAfter = (oldFollower != null)
             ? computeIdmAccel(oldFollower, ctx.currentLeader) : 0.0;
 
-        double aNewFollowerBefore = (ctx.newFollower != null)
-            ? computeIdmAccel(ctx.newFollower, ctx.newLeader) : 0.0;
-        double aNewFollowerAfter = (ctx.newFollower != null)
-            ? computeIdmAccelWithLeader(ctx.newFollower, ctx.subject) : 0.0;
+        double aNewFollowerBefore = (newFollower != null)
+            ? computeIdmAccel(newFollower, newLeader) : 0.0;
+        double aNewFollowerAfter = (newFollower != null)
+            ? computeIdmAccelWithLeader(newFollower, ctx.subject) : 0.0;
 
-        double subjectGain = ctx.aSubjectTarget - ctx.aSubjectCurrent;
+        double subjectGain = accel.target - accel.current;
         double neighborCost = (aOldFollowerAfter - aOldFollowerBefore)
                             + (aNewFollowerAfter - aNewFollowerBefore);
         double incentive = subjectGain - POLITENESS * neighborCost;
 
-        if (incentive > aThreshold) {
-            return new LaneChangeIntent(ctx.subject, ctx.currentLane, targetLane, ctx.subjectPos, incentive);
-        }
-        return null;
+        return incentive > aThreshold
+            ? new LaneChangeIntent(ctx.subject, ctx.currentLane, targetLane, ctx.subjectPos, incentive)
+            : null;
     }
 
     /**
@@ -256,41 +267,33 @@ public class LaneChangeEngine implements ILaneChangeEngine {
      * and obstacles (nearest ahead wins). This mirrors PhysicsEngine.tick() logic.
      */
     private double computeIdmAccelInLane(Vehicle vehicle, Vehicle vehicleLeader, Lane lane) {
-        // Find nearest obstacle ahead in the lane
         Obstacle nearestObstacle = findNearestObstacleAhead(lane, vehicle.getPosition());
 
-        double leaderPos;
-        double leaderSpeed;
-        double leaderLength;
-        boolean hasLeader;
+        EffectiveLeader leader = resolveEffectiveLeader(vehicleLeader, nearestObstacle);
+        if (leader == null) {
+            return physicsEngine.computeAcceleration(vehicle, 0, 0, 0, false);
+        }
+        return physicsEngine.computeAcceleration(vehicle, leader.position(), leader.speed(), leader.length(), true);
+    }
 
+    /**
+     * Resolves the effective leader from a vehicle leader and/or obstacle.
+     * Returns null if neither is present (free-flow).
+     */
+    private EffectiveLeader resolveEffectiveLeader(Vehicle vehicleLeader, Obstacle nearestObstacle) {
         if (vehicleLeader != null && nearestObstacle != null) {
             if (vehicleLeader.getPosition() <= nearestObstacle.getPosition()) {
-                leaderPos = vehicleLeader.getPosition();
-                leaderSpeed = vehicleLeader.getSpeed();
-                leaderLength = vehicleLeader.getLength();
-            } else {
-                leaderPos = nearestObstacle.getPosition();
-                leaderSpeed = 0.0;
-                leaderLength = nearestObstacle.getLength();
+                return new EffectiveLeader(vehicleLeader.getPosition(), vehicleLeader.getSpeed(), vehicleLeader.getLength());
             }
-            hasLeader = true;
-        } else if (vehicleLeader != null) {
-            leaderPos = vehicleLeader.getPosition();
-            leaderSpeed = vehicleLeader.getSpeed();
-            leaderLength = vehicleLeader.getLength();
-            hasLeader = true;
-        } else if (nearestObstacle != null) {
-            leaderPos = nearestObstacle.getPosition();
-            leaderSpeed = 0.0;
-            leaderLength = nearestObstacle.getLength();
-            hasLeader = true;
-        } else {
-            leaderPos = 0; leaderSpeed = 0; leaderLength = 0;
-            hasLeader = false;
+            return new EffectiveLeader(nearestObstacle.getPosition(), 0.0, nearestObstacle.getLength());
         }
-
-        return physicsEngine.computeAcceleration(vehicle, leaderPos, leaderSpeed, leaderLength, hasLeader);
+        if (vehicleLeader != null) {
+            return new EffectiveLeader(vehicleLeader.getPosition(), vehicleLeader.getSpeed(), vehicleLeader.getLength());
+        }
+        if (nearestObstacle != null) {
+            return new EffectiveLeader(nearestObstacle.getPosition(), 0.0, nearestObstacle.getLength());
+        }
+        return null;
     }
 
     /**
@@ -333,38 +336,46 @@ public class LaneChangeEngine implements ILaneChangeEngine {
      * want overlapping positions. Winner = highest incentive score.
      */
     private List<LaneChangeIntent> resolveConflicts(List<LaneChangeIntent> intents) {
-        // Group by target lane ID
         Map<String, List<LaneChangeIntent>> byTargetLane = intents.stream()
             .collect(Collectors.groupingBy(i -> i.targetLane().getId()));
 
         List<LaneChangeIntent> resolved = new ArrayList<>();
 
         for (List<LaneChangeIntent> group : byTargetLane.values()) {
-            // Sort by position ascending
-            group.sort(Comparator.comparingDouble(LaneChangeIntent::position));
-
-            // Check for overlapping intents
-            LaneChangeIntent prev = null;
-            for (LaneChangeIntent intent : group) {
-                if (prev != null) {
-                    double gap = intent.position() - prev.position();
-                    double minGap = intent.vehicle().getS0() + intent.vehicle().getLength();
-                    if (gap < minGap) {
-                        // Conflict: keep the one with higher incentive
-                        if (intent.incentiveScore() > prev.incentiveScore()) {
-                            resolved.remove(prev);
-                            resolved.add(intent);
-                            prev = intent;
-                        }
-                        // else keep prev, skip current intent
-                        continue;
-                    }
-                }
-                resolved.add(intent);
-                prev = intent;
-            }
+            resolveConflictsInGroup(group, resolved);
         }
         return resolved;
+    }
+
+    /**
+     * Resolves conflicts within a single target-lane group sorted by position.
+     * Overlapping intents are resolved by keeping the one with higher incentive.
+     */
+    private void resolveConflictsInGroup(List<LaneChangeIntent> group, List<LaneChangeIntent> resolved) {
+        group.sort(Comparator.comparingDouble(LaneChangeIntent::position));
+
+        LaneChangeIntent prev = null;
+        for (LaneChangeIntent intent : group) {
+            if (prev != null && isOverlapping(intent, prev)) {
+                if (intent.incentiveScore() > prev.incentiveScore()) {
+                    resolved.remove(prev);
+                    resolved.add(intent);
+                    prev = intent;
+                }
+                continue;
+            }
+            resolved.add(intent);
+            prev = intent;
+        }
+    }
+
+    /**
+     * Returns true if two intents overlap (gap less than minimum required).
+     */
+    private boolean isOverlapping(LaneChangeIntent intent, LaneChangeIntent prev) {
+        double gap = intent.position() - prev.position();
+        double minGap = intent.vehicle().getS0() + intent.vehicle().getLength();
+        return gap < minGap;
     }
 
     /**
@@ -427,7 +438,7 @@ public class LaneChangeEngine implements ILaneChangeEngine {
 
     /**
      * Marks the first stopped/slow vehicle behind each obstacle as a zipper merge candidate.
-     * Only one vehicle per obstacle gets zipper status → 1-by-1 merge.
+     * Only one vehicle per obstacle gets zipper status -> 1-by-1 merge.
      * Enforces ZIPPER_INTERVAL_TICKS between merges per obstacle.
      */
     private void markZipperCandidates(RoadNetwork network, long currentTick) {

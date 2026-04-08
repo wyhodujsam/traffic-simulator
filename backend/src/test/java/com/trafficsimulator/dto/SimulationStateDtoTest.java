@@ -28,7 +28,7 @@ class SimulationStateDtoTest {
 
         Vehicle v = Vehicle.builder()
             .id("v1").position(400.0).speed(20.0).lane(lane).length(4.5)
-            .v0(33.3).aMax(1.4).b(2.0).s0(2.0).T(1.5).spawnedAt(0)
+            .v0(33.3).aMax(1.4).b(2.0).s0(2.0).timeHeadway(1.5).spawnedAt(0)
             .build();
 
         // Simulate projection: x = 50 + (400/800) * (850-50) = 50 + 400 = 450

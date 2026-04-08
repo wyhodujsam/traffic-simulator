@@ -34,7 +34,7 @@ class LaneChangeEngineTest {
             .aMax(1.5)
             .b(2.0)
             .s0(2.0)
-            .T(1.5)
+            .timeHeadway(1.5)
             .spawnedAt(0)
             .lastLaneChangeTick(0)
             .forceLaneChange(false)
@@ -44,40 +44,39 @@ class LaneChangeEngineTest {
     }
 
     private Road createTwoLaneRoad() {
-        Lane lane0 = Lane.builder()
-            .id("r1-lane0").laneIndex(0).length(1000).maxSpeed(33.33).active(true)
-            .vehicles(new ArrayList<>()).obstacles(new ArrayList<>()).build();
-        Lane lane1 = Lane.builder()
-            .id("r1-lane1").laneIndex(1).length(1000).maxSpeed(33.33).active(true)
-            .vehicles(new ArrayList<>()).obstacles(new ArrayList<>()).build();
         Road road = Road.builder()
-            .id("r1").name("Test Road").lanes(List.of(lane0, lane1))
+            .id("r1").name("Test Road").lanes(List.of(
+                Lane.builder()
+                    .id("r1-lane0").laneIndex(0).length(1000).maxSpeed(33.33).active(true)
+                    .vehicles(new ArrayList<>()).obstacles(new ArrayList<>()).build(),
+                Lane.builder()
+                    .id("r1-lane1").laneIndex(1).length(1000).maxSpeed(33.33).active(true)
+                    .vehicles(new ArrayList<>()).obstacles(new ArrayList<>()).build()
+            ))
             .length(1000).speedLimit(33.33)
             .startX(0).startY(300).endX(1000).endY(300)
             .fromNodeId("n1").toNodeId("n2").build();
-        lane0.setRoad(road);
-        lane1.setRoad(road);
+        road.getLanes().forEach(lane -> lane.setRoad(road));
         return road;
     }
 
     private Road createThreeLaneRoad() {
-        Lane lane0 = Lane.builder()
-            .id("r1-lane0").laneIndex(0).length(1000).maxSpeed(33.33).active(true)
-            .vehicles(new ArrayList<>()).obstacles(new ArrayList<>()).build();
-        Lane lane1 = Lane.builder()
-            .id("r1-lane1").laneIndex(1).length(1000).maxSpeed(33.33).active(true)
-            .vehicles(new ArrayList<>()).obstacles(new ArrayList<>()).build();
-        Lane lane2 = Lane.builder()
-            .id("r1-lane2").laneIndex(2).length(1000).maxSpeed(33.33).active(true)
-            .vehicles(new ArrayList<>()).obstacles(new ArrayList<>()).build();
         Road road = Road.builder()
-            .id("r1").name("Test Road").lanes(List.of(lane0, lane1, lane2))
+            .id("r1").name("Test Road").lanes(List.of(
+                Lane.builder()
+                    .id("r1-lane0").laneIndex(0).length(1000).maxSpeed(33.33).active(true)
+                    .vehicles(new ArrayList<>()).obstacles(new ArrayList<>()).build(),
+                Lane.builder()
+                    .id("r1-lane1").laneIndex(1).length(1000).maxSpeed(33.33).active(true)
+                    .vehicles(new ArrayList<>()).obstacles(new ArrayList<>()).build(),
+                Lane.builder()
+                    .id("r1-lane2").laneIndex(2).length(1000).maxSpeed(33.33).active(true)
+                    .vehicles(new ArrayList<>()).obstacles(new ArrayList<>()).build()
+            ))
             .length(1000).speedLimit(33.33)
             .startX(0).startY(300).endX(1000).endY(300)
             .fromNodeId("n1").toNodeId("n2").build();
-        lane0.setRoad(road);
-        lane1.setRoad(road);
-        lane2.setRoad(road);
+        road.getLanes().forEach(lane -> lane.setRoad(road));
         return road;
     }
 
@@ -321,7 +320,7 @@ class LaneChangeEngineTest {
             Vehicle moved = lane1.getVehiclesView().stream()
                 .filter(v -> v.getId().equals("mover")).findFirst().orElseThrow();
             // Progress should be 0.0 right after commit
-            assertThat(moved.getLaneChangeProgress()).isEqualTo(0.0);
+            assertThat(moved.getLaneChangeProgress()).isZero();
             assertThat(moved.getLaneChangeSourceIndex()).isZero(); // came from lane 0
 
             // Second tick: progress should increase

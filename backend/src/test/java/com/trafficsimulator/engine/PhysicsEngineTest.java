@@ -51,7 +51,7 @@ class PhysicsEngineTest {
             .aMax(1.4)
             .b(2.0)
             .s0(2.0)
-            .T(1.5)
+            .timeHeadway(1.5)
             .spawnedAt(0)
             .build();
         lane.addVehicle(v);
@@ -188,7 +188,7 @@ class PhysicsEngineTest {
         lane.removeVehicle(follower);
         follower = Vehicle.builder()
             .id("follower").position(100.0).speed(20.0).acceleration(0.0)
-            .lane(lane).length(4.5).v0(MAX_SPEED).aMax(0.0).b(0.0).s0(2.0).T(1.5).spawnedAt(0)
+            .lane(lane).length(4.5).v0(MAX_SPEED).aMax(0.0).b(0.0).s0(2.0).timeHeadway(1.5).spawnedAt(0)
             .build();
         lane.addVehicle(follower);
 
@@ -215,7 +215,7 @@ class PhysicsEngineTest {
         // Build vehicle with speed just below maxSpeed, with high v0 to push past limit
         Vehicle v = Vehicle.builder()
             .id("v1").position(100.0).speed(MAX_SPEED - 0.01).acceleration(0.0)
-            .lane(lane).length(4.5).v0(MAX_SPEED + 10.0).aMax(1.4).b(2.0).s0(2.0).T(1.5).spawnedAt(0)
+            .lane(lane).length(4.5).v0(MAX_SPEED + 10.0).aMax(1.4).b(2.0).s0(2.0).timeHeadway(1.5).spawnedAt(0)
             .build();
         lane.addVehicle(v); // personal v0 exceeds lane max
 

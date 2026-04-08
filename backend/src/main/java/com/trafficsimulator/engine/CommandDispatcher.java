@@ -227,11 +227,9 @@ public class CommandDispatcher {
         engine.setStatus(SimulationStatus.STOPPED);
         engine.getTickCounter().set(0);
         engine.clearAllVehicles();
-        if (obstacleManager != null) {
-            RoadNetwork oldNetwork = engine.getRoadNetwork();
-            if (oldNetwork != null) {
-                obstacleManager.clearAll(oldNetwork);
-            }
+        RoadNetwork oldNetwork = engine.getRoadNetwork();
+        if (obstacleManager != null && oldNetwork != null) {
+            obstacleManager.clearAll(oldNetwork);
         }
         if (vehicleSpawner != null) {
             vehicleSpawner.reset();

@@ -10,6 +10,8 @@ import com.trafficsimulator.model.RoadNetwork;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 
+import java.io.IOException;
+
 import static org.assertj.core.api.Assertions.assertThat;
 
 class FullPipelineTest {
@@ -18,7 +20,7 @@ class FullPipelineTest {
     private VehicleSpawner spawner;
 
     @BeforeEach
-    void setUp() throws Exception {
+    void setUp() throws IOException {
         MapLoader loader = new MapLoader(new ObjectMapper(), new MapValidator());
         network = loader.loadFromClasspath("maps/straight-road.json").network();
         spawner = new VehicleSpawner();
@@ -69,6 +71,6 @@ class FullPipelineTest {
         assertThat(vehicle.getAMax()).isBetween(1.4 * 0.8, 1.4 * 1.2);
         assertThat(vehicle.getB()).isBetween(2.0 * 0.8, 2.0 * 1.2);
         assertThat(vehicle.getS0()).isEqualTo(2.0);
-        assertThat(vehicle.getT()).isBetween(1.5 * 0.8, 1.5 * 1.2);
+        assertThat(vehicle.getTimeHeadway()).isBetween(1.5 * 0.8, 1.5 * 1.2);
     }
 }

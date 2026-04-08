@@ -38,7 +38,7 @@ class IntersectionManagerTest {
     private static Vehicle buildVehicle(String id, double position, double speed, Lane lane, long spawnedAt) {
         Vehicle v = Vehicle.builder()
             .id(id).position(position).speed(speed).lane(lane)
-            .length(4.5).v0(13.9).aMax(1.5).b(2.0).s0(2.0).T(1.5)
+            .length(4.5).v0(13.9).aMax(1.5).b(2.0).s0(2.0).timeHeadway(1.5)
             .spawnedAt(spawnedAt).laneChangeProgress(1.0).laneChangeSourceIndex(-1)
             .build();
         lane.addVehicle(v);
@@ -170,8 +170,8 @@ class IntersectionManagerTest {
         manager.processTransfers(network, 1);
 
         // Vehicle should still be on inbound lane (RED light)
-        assertThat(inLane.getVehiclesView()).hasSize(1);
-        assertThat(inLane.getVehiclesView().get(0).getId()).isEqualTo("v1");
+        assertThat(inLane.getVehiclesView()).hasSize(1)
+            .first().extracting(v -> ((Vehicle) v).getId()).isEqualTo("v1");
     }
 
     @Test
@@ -193,8 +193,8 @@ class IntersectionManagerTest {
         manager.processTransfers(network, 1);
 
         // Vehicle should NOT be transferred — all outbound roads blocked
-        assertThat(inLane.getVehiclesView()).hasSize(1);
-        assertThat(inLane.getVehiclesView().get(0).getId()).isEqualTo("v1");
+        assertThat(inLane.getVehiclesView()).hasSize(1)
+            .first().extracting(v -> ((Vehicle) v).getId()).isEqualTo("v1");
     }
 
     @Test
@@ -586,7 +586,6 @@ class IntersectionManagerTest {
     void equalLaneTransferRemainsRandom() {
         // Scenario: 2-lane main_before onto 2-lane main_after
         // Equal lane counts -> random lane selection (both lanes should be reachable)
-        buildMergeNetwork();
 
         // Run many transfers and collect which lanes received vehicles
         Set<Integer> lanesUsed = new HashSet<>();

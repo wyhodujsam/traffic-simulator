@@ -29,7 +29,7 @@ class LaneTest {
     private Vehicle vehicle(String id, double position) {
         return Vehicle.builder()
             .id(id).position(position).speed(10.0).length(4.5)
-            .v0(33.3).aMax(1.4).b(2.0).s0(2.0).T(1.5)
+            .v0(33.3).aMax(1.4).b(2.0).s0(2.0).timeHeadway(1.5)
             .lane(lane)
             .build();
     }

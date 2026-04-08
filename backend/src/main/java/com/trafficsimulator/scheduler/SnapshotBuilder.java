@@ -118,10 +118,8 @@ public class SnapshotBuilder {
         Road outRoad = network.getRoads().get(outRoadId);
         if (outRoad == null) return false;
         for (Lane outLane : outRoad.getLanes()) {
-            if (!outLane.isActive()) {
-                continue;
-            }
-            if (outLane.getVehiclesView().isEmpty() || outLane.getVehiclesView().get(0).getPosition() > 10.0) {
+            if (outLane.isActive()
+                    && (outLane.getVehiclesView().isEmpty() || outLane.getVehiclesView().get(0).getPosition() > 10.0)) {
                 return true;
             }
         }

@@ -47,13 +47,13 @@ public class VehicleSpawner implements IVehicleSpawner {
         List<SpawnPoint> spawnPoints = network.getSpawnPoints();
         if (spawnPoints.isEmpty()) return;
 
-        while (spawnAccumulator >= 1.0) {
+        boolean allBlocked = false;
+        while (spawnAccumulator >= 1.0 && !allBlocked) {
             spawnAccumulator -= 1.0;
-            boolean spawned = trySpawnOne(network, spawnPoints, currentTick);
-            if (!spawned) {
+            if (!trySpawnOne(network, spawnPoints, currentTick)) {
                 // All spawn points blocked — defer budget to next tick
                 spawnAccumulator += 1.0;
-                break;
+                allBlocked = true;
             }
         }
     }
@@ -112,7 +112,7 @@ public class VehicleSpawner implements IVehicleSpawner {
             .aMax(vary(A_BASE))
             .b(vary(B_BASE))
             .s0(S0)
-            .T(vary(T_BASE))
+            .timeHeadway(vary(T_BASE))
             .spawnedAt(currentTick)
             .build();
     }

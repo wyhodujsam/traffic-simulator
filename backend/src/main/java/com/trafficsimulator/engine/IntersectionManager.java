@@ -33,22 +33,30 @@ public class IntersectionManager implements IIntersectionManager {
     public Map<String, Double> computeStopLines(RoadNetwork network) {
         Map<String, Double> stopLines = new HashMap<>();
         for (Intersection ixtn : network.getIntersections().values()) {
-            for (String inboundRoadId : ixtn.getInboundRoadIds()) {
-                Road inboundRoad = network.getRoads().get(inboundRoadId);
-                if (inboundRoad == null) continue;
-
-                boolean canEnter = canEnterIntersection(ixtn, inboundRoadId, network);
-
-                if (!canEnter) {
-                    double buffer = computeStopLineBuffer(ixtn, inboundRoad);
-                    double stopPos = Math.max(0, inboundRoad.getLength() - buffer);
-                    for (Lane lane : inboundRoad.getLanes()) {
-                        stopLines.put(lane.getId(), stopPos);
-                    }
-                }
-            }
+            computeStopLinesForIntersection(ixtn, network, stopLines);
         }
         return stopLines;
+    }
+
+    private void computeStopLinesForIntersection(Intersection ixtn, RoadNetwork network,
+                                                  Map<String, Double> stopLines) {
+        for (String inboundRoadId : ixtn.getInboundRoadIds()) {
+            Road inboundRoad = network.getRoads().get(inboundRoadId);
+            if (inboundRoad == null) {
+                continue;
+            }
+            if (!canEnterIntersection(ixtn, inboundRoadId, network)) {
+                addStopLinesForRoad(ixtn, inboundRoad, stopLines);
+            }
+        }
+    }
+
+    private void addStopLinesForRoad(Intersection ixtn, Road inboundRoad, Map<String, Double> stopLines) {
+        double buffer = computeStopLineBuffer(ixtn, inboundRoad);
+        double stopPos = Math.max(0, inboundRoad.getLength() - buffer);
+        for (Lane lane : inboundRoad.getLanes()) {
+            stopLines.put(lane.getId(), stopPos);
+        }
     }
 
     /**
@@ -95,12 +103,8 @@ public class IntersectionManager implements IIntersectionManager {
      * Box-blocking check: returns true if at least one outbound road has space at clip edge entry.
      */
     private boolean checkBoxBlocking(Intersection ixtn, String inboundRoadId, RoadNetwork network) {
-        for (String outRoadId : ixtn.getOutboundRoadIds()) {
-            if (hasSpaceOnOutboundRoad(ixtn, inboundRoadId, outRoadId, network)) {
-                return true;
-            }
-        }
-        return false;
+        return ixtn.getOutboundRoadIds().stream()
+            .anyMatch(outRoadId -> hasSpaceOnOutboundRoad(ixtn, inboundRoadId, outRoadId, network));
     }
 
     private boolean hasSpaceOnOutboundRoad(Intersection ixtn, String inboundRoadId,
@@ -113,16 +117,14 @@ public class IntersectionManager implements IIntersectionManager {
     }
 
     private boolean hasSpaceOnAnyActiveLane(Road road, double outBuffer) {
-        for (Lane outLane : road.getLanes()) {
-            if (!outLane.isActive()) {
-                continue;
-            }
-            Vehicle first = outLane.findLeaderAt(outBuffer - 1.0);
-            if (first == null || first.getPosition() >= outBuffer + MIN_ENTRY_GAP) {
-                return true;
-            }
-        }
-        return false;
+        return road.getLanes().stream()
+            .filter(Lane::isActive)
+            .anyMatch(lane -> isLaneSpaceFree(lane, outBuffer));
+    }
+
+    private boolean isLaneSpaceFree(Lane lane, double outBuffer) {
+        Vehicle first = lane.findLeaderAt(outBuffer - 1.0);
+        return first == null || first.getPosition() >= outBuffer + MIN_ENTRY_GAP;
     }
 
     /**
@@ -143,12 +145,8 @@ public class IntersectionManager implements IIntersectionManager {
     }
 
     private boolean hasCirculatingRingTraffic(Intersection ixtn, String inboundRoadId, RoadNetwork network) {
-        for (String otherInboundId : ixtn.getInboundRoadIds()) {
-            if (isCirculatingRingRoad(otherInboundId, inboundRoadId, network)) {
-                return true;
-            }
-        }
-        return false;
+        return ixtn.getInboundRoadIds().stream()
+            .anyMatch(otherInboundId -> isCirculatingRingRoad(otherInboundId, inboundRoadId, network));
     }
 
     private boolean isCirculatingRingRoad(String otherInboundId, String inboundRoadId, RoadNetwork network) {
@@ -156,18 +154,14 @@ public class IntersectionManager implements IIntersectionManager {
         Road otherRoad = network.getRoads().get(otherInboundId);
         if (otherRoad == null) return false;
         boolean otherIsRing = network.getIntersections().containsKey(otherRoad.getFromNodeId());
-        if (!otherIsRing) return false;
-        return hasVehiclesNearEnd(otherRoad, ROUNDABOUT_YIELD_ZONE);
+        return otherIsRing && hasVehiclesNearEnd(otherRoad, ROUNDABOUT_YIELD_ZONE);
     }
 
     private boolean hasVehiclesNearEnd(Road road, double zone) {
         double threshold = road.getLength() - zone;
-        for (Lane lane : road.getLanes()) {
-            for (Vehicle v : lane.getVehiclesView()) {
-                if (v.getPosition() >= threshold) return true;
-            }
-        }
-        return false;
+        return road.getLanes().stream()
+            .flatMap(lane -> lane.getVehiclesView().stream())
+            .anyMatch(v -> v.getPosition() >= threshold);
     }
 
     private boolean isRoundaboutCapacityExceeded(Intersection ixtn, RoadNetwork network) {
@@ -195,13 +189,10 @@ public class IntersectionManager implements IIntersectionManager {
         Road road = network.getRoads().get(roadId);
         if (road == null) return 0;
         String nodeId = inbound ? road.getFromNodeId() : road.getToNodeId();
-        boolean isRing = network.getIntersections().containsKey(nodeId);
-        if (!isRing) return 0;
-        int count = 0;
-        for (Lane lane : road.getLanes()) {
-            count += lane.getVehicleCount();
-        }
-        return count;
+        if (!network.getIntersections().containsKey(nodeId)) return 0;
+        return road.getLanes().stream()
+            .mapToInt(Lane::getVehicleCount)
+            .sum();
     }
 
     /**
@@ -215,12 +206,8 @@ public class IntersectionManager implements IIntersectionManager {
         double myAngle = Math.atan2(myRoad.getEndY() - myRoad.getStartY(),
                                      myRoad.getEndX() - myRoad.getStartX());
 
-        for (String otherRoadId : ixtn.getInboundRoadIds()) {
-            if (isApproachingFromRight(otherRoadId, inboundRoadId, myAngle, network)) {
-                return true;
-            }
-        }
-        return false;
+        return ixtn.getInboundRoadIds().stream()
+            .anyMatch(otherRoadId -> isApproachingFromRight(otherRoadId, inboundRoadId, myAngle, network));
     }
 
     private boolean isApproachingFromRight(String otherRoadId, String inboundRoadId,
@@ -239,12 +226,9 @@ public class IntersectionManager implements IIntersectionManager {
      * Returns true if any vehicle on the given road is at or past the threshold position.
      */
     private boolean hasWaitingVehicleOnRoad(Road road, double threshold) {
-        for (Lane lane : road.getLanes()) {
-            for (Vehicle v : lane.getVehiclesView()) {
-                if (v.getPosition() >= threshold) return true;
-            }
-        }
-        return false;
+        return road.getLanes().stream()
+            .flatMap(lane -> lane.getVehiclesView().stream())
+            .anyMatch(v -> v.getPosition() >= threshold);
     }
 
     /**
@@ -270,20 +254,24 @@ public class IntersectionManager implements IIntersectionManager {
     @Override
     public void processTransfers(RoadNetwork network, long currentTick) {
         for (Intersection ixtn : network.getIntersections().values()) {
-            Map<String, Double> lastPlaced = new HashMap<>();
-
-            int waitingCount = countWaitingVehicles(ixtn, network);
-            boolean transferredAny = transferFromInboundRoads(ixtn, network, lastPlaced);
-
-            IntersectionState state = intersectionStates.computeIfAbsent(
-                ixtn.getId(), k -> new IntersectionState());
-            state.waitingVehicleCount = waitingCount;
-            if (transferredAny) {
-                state.lastTransferTick = currentTick;
-            }
+            processTransfersForIntersection(ixtn, network, currentTick);
         }
 
         checkDeadlocks(network, currentTick);
+    }
+
+    private void processTransfersForIntersection(Intersection ixtn, RoadNetwork network, long currentTick) {
+        Map<String, Double> lastPlaced = new HashMap<>();
+
+        int waitingCount = countWaitingVehicles(ixtn, network);
+        boolean transferredAny = transferFromInboundRoads(ixtn, network, lastPlaced);
+
+        IntersectionState state = intersectionStates.computeIfAbsent(
+            ixtn.getId(), k -> new IntersectionState());
+        state.waitingVehicleCount = waitingCount;
+        if (transferredAny) {
+            state.lastTransferTick = currentTick;
+        }
     }
 
     /**
@@ -292,19 +280,20 @@ public class IntersectionManager implements IIntersectionManager {
     private int countWaitingVehicles(Intersection ixtn, RoadNetwork network) {
         int waitingCount = 0;
         for (String inboundRoadId : ixtn.getInboundRoadIds()) {
-            Road inboundRoad = network.getRoads().get(inboundRoadId);
-            if (inboundRoad == null) continue;
-            double buffer = computeStopLineBuffer(ixtn, inboundRoad);
-            double waitThreshold = inboundRoad.getLength() - buffer - 5.0;
-            for (Lane lane : inboundRoad.getLanes()) {
-                for (Vehicle v : lane.getVehiclesView()) {
-                    if (v.getPosition() >= waitThreshold && v.getSpeed() < 0.5) {
-                        waitingCount++;
-                    }
-                }
-            }
+            waitingCount += countWaitingVehiclesOnRoad(ixtn, inboundRoadId, network);
         }
         return waitingCount;
+    }
+
+    private int countWaitingVehiclesOnRoad(Intersection ixtn, String inboundRoadId, RoadNetwork network) {
+        Road inboundRoad = network.getRoads().get(inboundRoadId);
+        if (inboundRoad == null) return 0;
+        double buffer = computeStopLineBuffer(ixtn, inboundRoad);
+        double waitThreshold = inboundRoad.getLength() - buffer - 5.0;
+        return (int) inboundRoad.getLanes().stream()
+            .flatMap(lane -> lane.getVehiclesView().stream())
+            .filter(v -> v.getPosition() >= waitThreshold && v.getSpeed() < 0.5)
+            .count();
     }
 
     /**
@@ -325,8 +314,7 @@ public class IntersectionManager implements IIntersectionManager {
     private boolean transferFromInboundRoad(Intersection ixtn, String inboundRoadId,
                                             RoadNetwork network, Map<String, Double> lastPlaced) {
         Road inboundRoad = network.getRoads().get(inboundRoadId);
-        if (inboundRoad == null) return false;
-        if (!canEnterIntersection(ixtn, inboundRoadId, network)) return false;
+        if (inboundRoad == null || !canEnterIntersection(ixtn, inboundRoadId, network)) return false;
         boolean transferred = false;
         for (Lane inLane : inboundRoad.getLanes()) {
             if (transferVehiclesFromLane(ixtn, inboundRoadId, inLane, network, lastPlaced)) {
@@ -386,16 +374,11 @@ public class IntersectionManager implements IIntersectionManager {
         if (inRoad == null) return null;
         double buffer = computeStopLineBuffer(ixtn, inRoad);
         double threshold = inRoad.getLength() - buffer - 5.0;
-        Vehicle oldest = null;
-        for (Lane lane : inRoad.getLanes()) {
-            for (Vehicle v : lane.getVehiclesView()) {
-                if (v.getPosition() < threshold || v.getSpeed() >= 0.5) continue;
-                if (oldest == null || v.getSpawnedAt() < oldest.getSpawnedAt()) {
-                    oldest = v;
-                }
-            }
-        }
-        return oldest;
+        return inRoad.getLanes().stream()
+            .flatMap(lane -> lane.getVehiclesView().stream())
+            .filter(v -> v.getPosition() >= threshold && v.getSpeed() < 0.5)
+            .min(Comparator.comparingLong(Vehicle::getSpawnedAt))
+            .orElse(null);
     }
 
     private void forceTransferVehicle(Vehicle victim, Intersection ixtn, RoadNetwork network) {
@@ -438,21 +421,28 @@ public class IntersectionManager implements IIntersectionManager {
         Road inboundRoad = network.getRoads().get(inboundRoadId);
         double buffer = inboundRoad != null ? computeStopLineBuffer(ixtn, inboundRoad) : STOP_LINE_BUFFER_DEFAULT;
         double threshold = inLane.getLength() - buffer;
-        List<Vehicle> toTransfer = new ArrayList<>();
-        boolean transferred = false;
-
-        for (Vehicle v : inLane.getVehiclesView()) {
-            if (v.getPosition() < threshold) continue;
-            if (tryTransferVehicle(v, ixtn, inboundRoadId, inboundRoad, network, lastPlacedPosition)) {
-                toTransfer.add(v);
-                transferred = true;
-            }
-        }
+        List<Vehicle> toTransfer = collectTransferableVehicles(ixtn, inboundRoadId, inboundRoad,
+            inLane, network, lastPlacedPosition, threshold);
 
         for (Vehicle v : toTransfer) {
             inLane.removeVehicle(v);
         }
-        return transferred;
+        return !toTransfer.isEmpty();
+    }
+
+    private List<Vehicle> collectTransferableVehicles(Intersection ixtn, String inboundRoadId,
+                                                       Road inboundRoad, Lane inLane,
+                                                       RoadNetwork network,
+                                                       Map<String, Double> lastPlacedPosition,
+                                                       double threshold) {
+        List<Vehicle> toTransfer = new ArrayList<>();
+        for (Vehicle v : inLane.getVehiclesView()) {
+            if (v.getPosition() >= threshold
+                    && tryTransferVehicle(v, ixtn, inboundRoadId, inboundRoad, network, lastPlacedPosition)) {
+                toTransfer.add(v);
+            }
+        }
+        return toTransfer;
     }
 
     /**
@@ -471,6 +461,11 @@ public class IntersectionManager implements IIntersectionManager {
         Lane targetLane = pickTargetLane(outRoad, inboundRoad);
         if (targetLane == null) return false;
 
+        return placeVehicleOnTargetLane(v, ixtn, outRoad, targetLane, lastPlacedPosition);
+    }
+
+    private boolean placeVehicleOnTargetLane(Vehicle v, Intersection ixtn, Road outRoad,
+                                              Lane targetLane, Map<String, Double> lastPlacedPosition) {
         double outBuffer = computeStopLineBuffer(ixtn, outRoad);
         double lastPos = lastPlacedPosition.getOrDefault(targetLane.getId(), -1.0);
         double effectivePosition = (lastPos >= outBuffer) ? lastPos + MIN_ENTRY_GAP : outBuffer;
@@ -503,20 +498,19 @@ public class IntersectionManager implements IIntersectionManager {
                 candidates.add(outId);
             }
         }
-        if (candidates.isEmpty()) {
+        if (candidates.isEmpty() && !ixtn.getOutboundRoadIds().isEmpty()) {
             // Allow U-turn as fallback
-            if (!ixtn.getOutboundRoadIds().isEmpty()) {
-                return ixtn.getOutboundRoadIds().get(
-                    ThreadLocalRandom.current().nextInt(ixtn.getOutboundRoadIds().size()));
-            }
+            return ixtn.getOutboundRoadIds().get(
+                ThreadLocalRandom.current().nextInt(ixtn.getOutboundRoadIds().size()));
+        }
+        if (candidates.isEmpty()) {
             return null;
         }
         return candidates.get(ThreadLocalRandom.current().nextInt(candidates.size()));
     }
 
     private boolean isValidOutboundCandidate(String outId, String inboundRoadId, RoadNetwork network) {
-        if (outId.equals(reverseRoadId(inboundRoadId))) return false;
-        return network.getRoads().get(outId) != null;
+        return !outId.equals(reverseRoadId(inboundRoadId)) && network.getRoads().get(outId) != null;
     }
 
     private Lane pickTargetLane(Road outRoad, Road inboundRoad) {

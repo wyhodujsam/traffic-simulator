@@ -147,9 +147,13 @@ public class SimulationController {
             Road road = network.getRoads().get(roadId);
             if (road == null) continue;
             if (road.getToNodeId().equals(ixtn.getId())) {
-                sumX += road.getEndX(); sumY += road.getEndY(); count++;
+                sumX += road.getEndX();
+                sumY += road.getEndY();
+                count++;
             } else if (road.getFromNodeId().equals(ixtn.getId())) {
-                sumX += road.getStartX(); sumY += road.getStartY(); count++;
+                sumX += road.getStartX();
+                sumY += road.getStartY();
+                count++;
             }
         }
         if (count == 0) {

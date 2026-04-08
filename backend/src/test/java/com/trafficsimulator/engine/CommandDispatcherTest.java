@@ -103,7 +103,7 @@ class CommandDispatcherTest {
     }
 
     @Test
-    void testLoadMap() throws Exception {
+    void testLoadMap() throws NoSuchFieldException, IllegalAccessException {
         // Wire in a real MapLoader so LoadMap can actually load
         ObjectMapper objectMapper = new ObjectMapper();
         MapValidator mapValidator = new MapValidator();

@@ -10,6 +10,7 @@ import com.trafficsimulator.model.Vehicle;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 
+import java.io.IOException;
 import java.util.List;
 
 import static org.assertj.core.api.Assertions.assertThat;
@@ -25,7 +26,7 @@ class TickPipelineIntegrationTest {
     private PhysicsEngine physics;
 
     @BeforeEach
-    void setUp() throws Exception {
+    void setUp() throws IOException {
         MapLoader loader = new MapLoader(new ObjectMapper(), new MapValidator());
         network = loader.loadFromClasspath("maps/straight-road.json").network();
         spawner = new VehicleSpawner();

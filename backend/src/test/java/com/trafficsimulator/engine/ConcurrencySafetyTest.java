@@ -35,7 +35,7 @@ class ConcurrencySafetyTest {
      * No ConcurrentModificationException should occur thanks to writeLock.
      */
     @Test
-    void concurrentCommandsDuringDrain_noException() throws Exception {
+    void concurrentCommandsDuringDrain_noException() throws InterruptedException {
         SimulationEngine engine = createEngine();
 
         // Start simulation so commands affect RUNNING state
@@ -131,7 +131,7 @@ class ConcurrencySafetyTest {
      * Verifies the lock correctly serializes access without data corruption.
      */
     @Test
-    void heavyConcurrentStress_mixedOperations() throws Exception {
+    void heavyConcurrentStress_mixedOperations() throws InterruptedException {
         SimulationEngine engine = createEngine();
 
         engine.enqueue(new SimulationCommand.Start());

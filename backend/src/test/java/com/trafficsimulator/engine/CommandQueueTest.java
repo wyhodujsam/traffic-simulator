@@ -23,7 +23,7 @@ class CommandQueueTest {
     }
 
     @Test
-    void concurrentEnqueue_100Threads_noConcurrentModificationException() throws Exception {
+    void concurrentEnqueue_100Threads_noConcurrentModificationException() throws InterruptedException {
         SimulationEngine engine = createEngine();
         int threadCount = 100;
         CountDownLatch latch = new CountDownLatch(threadCount);
@@ -50,7 +50,7 @@ class CommandQueueTest {
     }
 
     @Test
-    void concurrentEnqueue_1000Threads_duringActiveTick_noConcurrentModificationException() throws Exception {
+    void concurrentEnqueue_1000Threads_duringActiveTick_noConcurrentModificationException() throws InterruptedException {
         SimulationEngine engine = createEngine();
         // Start the simulation so commands are processed against RUNNING state
         engine.enqueue(new SimulationCommand.Start());
