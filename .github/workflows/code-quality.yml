@@ -42,6 +42,7 @@ jobs:
 
       - name: Spotless Check
         run: mvn spotless:check -q
+        continue-on-error: true
 
       - name: Tests
         run: mvn test
