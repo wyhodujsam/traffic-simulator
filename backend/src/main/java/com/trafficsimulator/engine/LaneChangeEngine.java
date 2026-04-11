@@ -2,63 +2,35 @@ package com.trafficsimulator.engine;
 
 import java.util.ArrayList;
 import java.util.Comparator;
-import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.stream.Collectors;
 
 import org.springframework.stereotype.Component;
 
+import com.trafficsimulator.engine.MOBILCalculator.LaneChangeIntent;
 import com.trafficsimulator.model.Lane;
-import com.trafficsimulator.model.Obstacle;
 import com.trafficsimulator.model.Road;
 import com.trafficsimulator.model.RoadNetwork;
 import com.trafficsimulator.model.Vehicle;
 
-import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 
 @Component
-@RequiredArgsConstructor
 @Slf4j
 public class LaneChangeEngine implements ILaneChangeEngine {
 
-    // MOBIL parameters
-    private static final double B_SAFE = 4.0; // safe braking limit m/s^2
-    private static final double B_SAFE_ZIPPER = 5.5; // relaxed braking limit for zipper merge
-    private static final double POLITENESS = 0.3; // weight for neighbors' disadvantage
-    private static final double A_THRESHOLD_LEFT = 0.3; // threshold for moving left (overtake)
-    private static final double A_THRESHOLD_RIGHT = 0.1; // threshold for moving right (keep-right)
     private static final double COOLDOWN_SECONDS = 3.0; // seconds between lane changes
     private static final double BASE_DT = 0.05; // 50ms tick
     private static final int TRANSITION_TICKS = 10; // ticks for lane change animation
-    private static final double OBSTACLE_PROXIMITY =
-            30.0; // metres — "stuck behind obstacle" threshold
-    private static final int ZIPPER_INTERVAL_TICKS =
-            40; // ticks between zipper merges per obstacle (~2s)
 
-    private final IPhysicsEngine physicsEngine;
+    private final MOBILCalculator mobilCalculator;
+    private final ZipperMergeEngine zipperMergeEngine;
 
-    /** Tracks last zipper merge tick per obstacle ID to enforce merge interval */
-    private final Map<String, Long> lastZipperMergeTick = new HashMap<>();
-
-    /** Record for a lane-change intent before conflict resolution. */
-    record LaneChangeIntent(
-            Vehicle vehicle,
-            Lane sourceLane,
-            Lane targetLane,
-            double position,
-            double incentiveScore) {}
-
-    /** Effective leader data resolved from vehicle leader and/or obstacle. */
-    private record EffectiveLeader(double position, double speed, double length) {}
-
-    /** Context for MOBIL incentive computation. */
-    private record IncentiveContext(
-            Vehicle subject, Lane currentLane, Vehicle currentLeader, double subjectPos) {}
-
-    /** Acceleration data for subject in current vs target lane. */
-    private record AccelerationPair(double current, double target) {}
+    public LaneChangeEngine(IPhysicsEngine physicsEngine) {
+        this.mobilCalculator = new MOBILCalculator(physicsEngine);
+        this.zipperMergeEngine = new ZipperMergeEngine();
+    }
 
     /**
      * Main tick: evaluates MOBIL for all vehicles, resolves conflicts, commits moves. Called once
@@ -74,7 +46,7 @@ public class LaneChangeEngine implements ILaneChangeEngine {
         updateLaneChangeProgress(network);
 
         // Mark zipper merge candidates: first stopped vehicle behind each obstacle
-        markZipperCandidates(network, currentTick);
+        zipperMergeEngine.markZipperCandidates(network, currentTick);
 
         // Phase 1: Collect intents
         List<LaneChangeIntent> intents = collectIntents(network, currentTick);
@@ -127,7 +99,8 @@ public class LaneChangeEngine implements ILaneChangeEngine {
      */
     private boolean shouldSkipVehicle(
             Vehicle vehicle, Lane lane, long currentTick, long cooldownTicks) {
-        return (isStuckBehindObstacle(vehicle, lane) && !vehicle.isZipperCandidate())
+        return (zipperMergeEngine.isStuckBehindObstacle(vehicle, lane)
+                        && !vehicle.isZipperCandidate())
                 || (!vehicle.isForceLaneChange()
                         && !vehicle.isZipperCandidate()
                         && !vehicle.canChangeLane(currentTick, cooldownTicks));
@@ -139,9 +112,17 @@ public class LaneChangeEngine implements ILaneChangeEngine {
      */
     private LaneChangeIntent evaluateBestIntent(Vehicle vehicle, Lane lane, Road road) {
         LaneChangeIntent bestIntent =
-                evaluateLaneIntent(vehicle, lane, road.getLeftNeighbor(lane), A_THRESHOLD_LEFT);
+                evaluateLaneIntent(
+                        vehicle,
+                        lane,
+                        road.getLeftNeighbor(lane),
+                        MOBILCalculator.A_THRESHOLD_LEFT);
         LaneChangeIntent rightIntent =
-                evaluateLaneIntent(vehicle, lane, road.getRightNeighbor(lane), A_THRESHOLD_RIGHT);
+                evaluateLaneIntent(
+                        vehicle,
+                        lane,
+                        road.getRightNeighbor(lane),
+                        MOBILCalculator.A_THRESHOLD_RIGHT);
 
         if (rightIntent != null
                 && (bestIntent == null
@@ -156,223 +137,7 @@ public class LaneChangeEngine implements ILaneChangeEngine {
         if (targetLane == null) {
             return null;
         }
-        return evaluateMOBIL(vehicle, currentLane, targetLane, threshold);
-    }
-
-    /**
-     * Evaluates MOBIL safety + incentive criteria for one vehicle moving to targetLane. Returns an
-     * intent if the move is both safe and beneficial, null otherwise.
-     *
-     * <p>For forced lane changes (closed lane), only safety criterion is checked.
-     */
-    private LaneChangeIntent evaluateMOBIL(
-            Vehicle subject, Lane currentLane, Lane targetLane, double aThreshold) {
-        double subjectPos = subject.getPosition();
-
-        Vehicle newLeader = targetLane.findLeaderAt(subjectPos);
-        Vehicle newFollower = targetLane.findFollowerAt(subjectPos);
-        Vehicle currentLeader = currentLane.getLeader(subject);
-
-        double aSubjectCurrent = computeIdmAccelInLane(subject, currentLeader, currentLane);
-        double aSubjectTarget = computeIdmAccelInLane(subject, newLeader, targetLane);
-
-        boolean isZipper = subject.isZipperCandidate();
-        if (!isSafeLaneChange(subject, newFollower, isZipper)) {
-            return null;
-        }
-        if (!checkGapSafety(subject, subjectPos, newLeader, newFollower, isZipper)) {
-            return null;
-        }
-
-        if (hasObstacleConflictInTarget(subject, subjectPos, targetLane)) {
-            return null;
-        }
-
-        if (subject.isForceLaneChange() || isZipper) {
-            double score = subject.isForceLaneChange() ? Double.MAX_VALUE : 100.0;
-            return new LaneChangeIntent(subject, currentLane, targetLane, subjectPos, score);
-        }
-
-        var ctx = new IncentiveContext(subject, currentLane, currentLeader, subjectPos);
-        var accel = new AccelerationPair(aSubjectCurrent, aSubjectTarget);
-        return evaluateIncentive(ctx, accel, newLeader, newFollower, aThreshold, targetLane);
-    }
-
-    /**
-     * Safety criterion: new follower must not brake harder than b_safe. Zipper candidates skip this
-     * check (follower will brake naturally via IDM).
-     */
-    private boolean isSafeLaneChange(Vehicle subject, Vehicle newFollower, boolean isZipper) {
-        if (newFollower == null || isZipper) {
-            return true;
-        }
-        double aNewFollowerAfter = computeIdmAccelWithLeader(newFollower, subject);
-        return aNewFollowerAfter >= -B_SAFE;
-    }
-
-    /**
-     * Gap check: ensures minimum gap to vehicles in target lane. Zipper merges only check ahead gap
-     * (follower will brake via IDM after merge).
-     */
-    private boolean checkGapSafety(
-            Vehicle subject,
-            double subjectPos,
-            Vehicle newLeader,
-            Vehicle newFollower,
-            boolean isZipper) {
-        if (isZipper) {
-            if (newLeader != null) {
-                double gapAhead = newLeader.getPosition() - subjectPos - newLeader.getLength();
-                if (gapAhead < subject.getLength()) {
-                    return false;
-                }
-            }
-            return true;
-        }
-
-        if (newLeader != null) {
-            double gapAhead = newLeader.getPosition() - subjectPos - newLeader.getLength();
-            if (gapAhead < subject.getS0() + subject.getLength()) {
-                return false;
-            }
-        }
-        if (newFollower != null) {
-            double gapBehind = subjectPos - newFollower.getPosition() - subject.getLength();
-            if (gapBehind < newFollower.getS0()) {
-                return false;
-            }
-        }
-        return true;
-    }
-
-    /** Checks for obstacle conflicts in target lane (both ahead and behind subject position). */
-    private boolean hasObstacleConflictInTarget(
-            Vehicle subject, double subjectPos, Lane targetLane) {
-        Obstacle targetObstacle = findNearestObstacleAhead(targetLane, subjectPos);
-        if (targetObstacle != null) {
-            double gapToObstacle =
-                    targetObstacle.getPosition() - subjectPos - targetObstacle.getLength();
-            double minObstacleGap =
-                    subject.getS0()
-                            + subject.getLength()
-                            + subject.getSpeed() * subject.getTimeHeadway();
-            if (gapToObstacle < minObstacleGap) {
-                return true;
-            }
-        }
-        for (Obstacle obs : targetLane.getObstaclesView()) {
-            double gapBehindObs = subjectPos - obs.getPosition();
-            if (gapBehindObs > 0 && gapBehindObs < subject.getLength() + subject.getS0()) {
-                return true;
-            }
-        }
-        return false;
-    }
-
-    /** Computes MOBIL incentive criterion and returns intent if threshold is exceeded. */
-    private LaneChangeIntent evaluateIncentive(
-            IncentiveContext ctx,
-            AccelerationPair accel,
-            Vehicle newLeader,
-            Vehicle newFollower,
-            double aThreshold,
-            Lane targetLane) {
-        Vehicle oldFollower = ctx.currentLane.findFollowerAt(ctx.subjectPos);
-
-        double aOldFollowerBefore =
-                (oldFollower != null) ? computeIdmAccelWithLeader(oldFollower, ctx.subject) : 0.0;
-        double aOldFollowerAfter =
-                (oldFollower != null) ? computeIdmAccel(oldFollower, ctx.currentLeader) : 0.0;
-
-        double aNewFollowerBefore =
-                (newFollower != null) ? computeIdmAccel(newFollower, newLeader) : 0.0;
-        double aNewFollowerAfter =
-                (newFollower != null) ? computeIdmAccelWithLeader(newFollower, ctx.subject) : 0.0;
-
-        double subjectGain = accel.target - accel.current;
-        double neighborCost =
-                aOldFollowerAfter - aOldFollowerBefore + (aNewFollowerAfter - aNewFollowerBefore);
-        double incentive = subjectGain - POLITENESS * neighborCost;
-
-        return incentive > aThreshold
-                ? new LaneChangeIntent(
-                        ctx.subject, ctx.currentLane, targetLane, ctx.subjectPos, incentive)
-                : null;
-    }
-
-    /**
-     * Compute IDM acceleration for vehicle in a lane, considering both vehicle leader and obstacles
-     * (nearest ahead wins). This mirrors PhysicsEngine.tick() logic.
-     */
-    private double computeIdmAccelInLane(Vehicle vehicle, Vehicle vehicleLeader, Lane lane) {
-        Obstacle nearestObstacle = findNearestObstacleAhead(lane, vehicle.getPosition());
-
-        EffectiveLeader leader = resolveEffectiveLeader(vehicleLeader, nearestObstacle);
-        if (leader == null) {
-            return physicsEngine.computeAcceleration(vehicle, 0, 0, 0, false);
-        }
-        return physicsEngine.computeAcceleration(
-                vehicle, leader.position(), leader.speed(), leader.length(), true);
-    }
-
-    /**
-     * Resolves the effective leader from a vehicle leader and/or obstacle. Returns null if neither
-     * is present (free-flow).
-     */
-    private EffectiveLeader resolveEffectiveLeader(
-            Vehicle vehicleLeader, Obstacle nearestObstacle) {
-        if (vehicleLeader != null && nearestObstacle != null) {
-            if (vehicleLeader.getPosition() <= nearestObstacle.getPosition()) {
-                return new EffectiveLeader(
-                        vehicleLeader.getPosition(),
-                        vehicleLeader.getSpeed(),
-                        vehicleLeader.getLength());
-            }
-            return new EffectiveLeader(
-                    nearestObstacle.getPosition(), 0.0, nearestObstacle.getLength());
-        }
-        if (vehicleLeader != null) {
-            return new EffectiveLeader(
-                    vehicleLeader.getPosition(),
-                    vehicleLeader.getSpeed(),
-                    vehicleLeader.getLength());
-        }
-        if (nearestObstacle != null) {
-            return new EffectiveLeader(
-                    nearestObstacle.getPosition(), 0.0, nearestObstacle.getLength());
-        }
-        return null;
-    }
-
-    /** Find nearest obstacle ahead of the given position in a lane. */
-    private Obstacle findNearestObstacleAhead(Lane lane, double position) {
-        Obstacle nearest = null;
-        double nearestPos = Double.MAX_VALUE;
-        for (Obstacle obs : lane.getObstaclesView()) {
-            if (obs.getPosition() > position && obs.getPosition() < nearestPos) {
-                nearest = obs;
-                nearestPos = obs.getPosition();
-            }
-        }
-        return nearest;
-    }
-
-    /**
-     * Compute IDM acceleration for vehicle following its leader (or free-flow if null). Used when
-     * we don't need obstacle awareness (e.g., follower-with-specific-leader).
-     */
-    private double computeIdmAccel(Vehicle vehicle, Vehicle leader) {
-        if (leader == null) {
-            return physicsEngine.computeAcceleration(vehicle, 0, 0, 0, false);
-        }
-        return physicsEngine.computeAcceleration(
-                vehicle, leader.getPosition(), leader.getSpeed(), leader.getLength(), true);
-    }
-
-    /** Compute IDM acceleration for follower with a specific vehicle as leader. */
-    private double computeIdmAccelWithLeader(Vehicle follower, Vehicle leader) {
-        return physicsEngine.computeAcceleration(
-                follower, leader.getPosition(), leader.getSpeed(), leader.getLength(), true);
+        return mobilCalculator.evaluateMOBIL(vehicle, currentLane, targetLane, threshold);
     }
 
     /**
@@ -443,7 +208,7 @@ public class LaneChangeEngine implements ILaneChangeEngine {
 
             // Record zipper merge time for rate-limiting
             if (vehicle.isZipperCandidate()) {
-                recordZipperMerge(vehicle, source, currentTick);
+                zipperMergeEngine.recordZipperMerge(vehicle, source, currentTick);
                 vehicle.setZipperCandidate(false);
             }
 
@@ -453,86 +218,6 @@ public class LaneChangeEngine implements ILaneChangeEngine {
                     source.getId(),
                     target.getId());
         }
-    }
-
-    /** Records the tick of a zipper merge for the obstacle this vehicle was queued behind. */
-    private void recordZipperMerge(Vehicle vehicle, Lane source, long currentTick) {
-        for (Obstacle obs : source.getObstaclesView()) {
-            double dist = obs.getPosition() - vehicle.getPosition();
-            if (dist > -5 && dist < OBSTACLE_PROXIMITY) {
-                lastZipperMergeTick.put(obs.getId(), currentTick);
-                break;
-            }
-        }
-    }
-
-    /**
-     * Returns true if the vehicle is slow/stopped and within OBSTACLE_PROXIMITY of an obstacle
-     * ahead.
-     */
-    private boolean isStuckBehindObstacle(Vehicle vehicle, Lane lane) {
-        if (vehicle.getSpeed() > 2.0) {
-            return false;
-        }
-        for (Obstacle obs : lane.getObstaclesView()) {
-            double dist = obs.getPosition() - vehicle.getPosition();
-            if (dist > 0 && dist < OBSTACLE_PROXIMITY) {
-                return true;
-            }
-        }
-        return false;
-    }
-
-    /**
-     * Marks the first stopped/slow vehicle behind each obstacle as a zipper merge candidate. Only
-     * one vehicle per obstacle gets zipper status -> 1-by-1 merge. Enforces ZIPPER_INTERVAL_TICKS
-     * between merges per obstacle.
-     */
-    private void markZipperCandidates(RoadNetwork network, long currentTick) {
-        for (Road road : network.getRoads().values()) {
-            for (Lane lane : road.getLanes()) {
-                clearZipperMarks(lane);
-                markZipperCandidatesInLane(lane, currentTick);
-            }
-        }
-    }
-
-    /** Clears zipper candidate marks from all vehicles in the lane. */
-    private void clearZipperMarks(Lane lane) {
-        for (Vehicle v : lane.getVehiclesView()) {
-            v.setZipperCandidate(false);
-        }
-    }
-
-    /**
-     * For each obstacle in the lane, marks the closest slow/stopped vehicle as zipper candidate,
-     * subject to the merge interval constraint.
-     */
-    private void markZipperCandidatesInLane(Lane lane, long currentTick) {
-        for (Obstacle obs : lane.getObstaclesView()) {
-            Long lastMerge = lastZipperMergeTick.get(obs.getId());
-            if (lastMerge != null && currentTick - lastMerge < ZIPPER_INTERVAL_TICKS) {
-                continue; // too soon since last merge from this obstacle
-            }
-            Vehicle closest = findClosestVehicleBehindObstacle(lane, obs);
-            if (closest != null && closest.getSpeed() < 2.0) {
-                closest.setZipperCandidate(true);
-            }
-        }
-    }
-
-    /** Finds the closest vehicle behind the given obstacle within OBSTACLE_PROXIMITY. */
-    private Vehicle findClosestVehicleBehindObstacle(Lane lane, Obstacle obs) {
-        Vehicle closest = null;
-        double closestDist = Double.MAX_VALUE;
-        for (Vehicle v : lane.getVehiclesView()) {
-            double dist = obs.getPosition() - v.getPosition();
-            if (dist > 0 && dist < OBSTACLE_PROXIMITY && dist < closestDist) {
-                closest = v;
-                closestDist = dist;
-            }
-        }
-        return closest;
     }
 
     /**
