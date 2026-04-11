@@ -1,33 +1,35 @@
 package com.trafficsimulator.model;
 
-import org.junit.jupiter.api.Test;
+import static org.assertj.core.api.Assertions.assertThat;
 
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Set;
 
-import static org.assertj.core.api.Assertions.assertThat;
+import org.junit.jupiter.api.Test;
 
 class TrafficLightTest {
 
     private TrafficLight buildTwoPhaseLight() {
         List<TrafficLightPhase> phases = new ArrayList<>();
-        phases.add(TrafficLightPhase.builder()
-            .greenRoadIds(Set.of("r1", "r3"))
-            .durationMs(30000)
-            .type(TrafficLightPhase.PhaseType.GREEN)
-            .build());
-        phases.add(TrafficLightPhase.builder()
-            .greenRoadIds(Set.of("r1", "r3"))
-            .durationMs(3000)
-            .type(TrafficLightPhase.PhaseType.YELLOW)
-            .build());
+        phases.add(
+                TrafficLightPhase.builder()
+                        .greenRoadIds(Set.of("r1", "r3"))
+                        .durationMs(30000)
+                        .type(TrafficLightPhase.PhaseType.GREEN)
+                        .build());
+        phases.add(
+                TrafficLightPhase.builder()
+                        .greenRoadIds(Set.of("r1", "r3"))
+                        .durationMs(3000)
+                        .type(TrafficLightPhase.PhaseType.YELLOW)
+                        .build());
         return TrafficLight.builder()
-            .intersectionId("ix1")
-            .phases(phases)
-            .currentPhaseIndex(0)
-            .phaseElapsedMs(0)
-            .build();
+                .intersectionId("ix1")
+                .phases(phases)
+                .currentPhaseIndex(0)
+                .phaseElapsedMs(0)
+                .build();
     }
 
     @Test
@@ -90,11 +92,12 @@ class TrafficLightTest {
 
         // Replace phases with a single phase
         List<TrafficLightPhase> newPhases = new ArrayList<>();
-        newPhases.add(TrafficLightPhase.builder()
-            .greenRoadIds(Set.of("r5"))
-            .durationMs(20000)
-            .type(TrafficLightPhase.PhaseType.GREEN)
-            .build());
+        newPhases.add(
+                TrafficLightPhase.builder()
+                        .greenRoadIds(Set.of("r5"))
+                        .durationMs(20000)
+                        .type(TrafficLightPhase.PhaseType.GREEN)
+                        .build());
         light.replacePhases(newPhases);
 
         assertThat(light.getPhaseElapsedMs()).isZero();

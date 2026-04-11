@@ -1,27 +1,24 @@
 package com.trafficsimulator.engine;
 
-import com.trafficsimulator.engine.command.SimulationCommand;
-import com.trafficsimulator.model.RoadNetwork;
+import static org.assertj.core.api.Assertions.assertThat;
+
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.SpringBootTest;
 
-import static org.assertj.core.api.Assertions.assertThat;
+import com.trafficsimulator.engine.command.SimulationCommand;
+import com.trafficsimulator.model.RoadNetwork;
 
 @SpringBootTest
 class CommandDispatcherLoadMapTest {
 
-    @Autowired
-    private SimulationEngine engine;
+    @Autowired private SimulationEngine engine;
 
-    @Autowired
-    private CommandDispatcher dispatcher;
+    @Autowired private CommandDispatcher dispatcher;
 
-    @Autowired
-    private ObstacleManager obstacleManager;
+    @Autowired private ObstacleManager obstacleManager;
 
-    @Autowired
-    private VehicleSpawner vehicleSpawner;
+    @Autowired private VehicleSpawner vehicleSpawner;
 
     @Test
     void loadMapClearsVehiclesFromOldNetwork() {

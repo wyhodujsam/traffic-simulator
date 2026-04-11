@@ -1,15 +1,16 @@
 package com.trafficsimulator.engine;
 
-import com.trafficsimulator.model.Lane;
-import com.trafficsimulator.model.Road;
-import com.trafficsimulator.model.Vehicle;
+import static org.assertj.core.api.Assertions.assertThat;
+
+import java.util.ArrayList;
+
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Tag;
 import org.junit.jupiter.api.Test;
 
-import java.util.ArrayList;
-
-import static org.assertj.core.api.Assertions.assertThat;
+import com.trafficsimulator.model.Lane;
+import com.trafficsimulator.model.Road;
+import com.trafficsimulator.model.Vehicle;
 
 class PhysicsEngineTest {
 
@@ -17,43 +18,57 @@ class PhysicsEngineTest {
     private Lane lane;
     private Road road;
 
-    private static final double DT = 0.05;           // 20 Hz
-    private static final double MAX_SPEED = 33.3;     // m/s (~120 km/h)
+    private static final double DT = 0.05; // 20 Hz
+    private static final double MAX_SPEED = 33.3; // m/s (~120 km/h)
     private static final double LANE_LENGTH = 2000.0; // metres
 
     @BeforeEach
     void setUp() {
         engine = new PhysicsEngine();
 
-        road = Road.builder()
-            .id("r1").name("Test Road").length(LANE_LENGTH).speedLimit(MAX_SPEED)
-            .startX(0).startY(0).endX(LANE_LENGTH).endY(0)
-            .fromNodeId("n1").toNodeId("n2")
-            .lanes(new ArrayList<>())
-            .build();
+        road =
+                Road.builder()
+                        .id("r1")
+                        .name("Test Road")
+                        .length(LANE_LENGTH)
+                        .speedLimit(MAX_SPEED)
+                        .startX(0)
+                        .startY(0)
+                        .endX(LANE_LENGTH)
+                        .endY(0)
+                        .fromNodeId("n1")
+                        .toNodeId("n2")
+                        .lanes(new ArrayList<>())
+                        .build();
 
-        lane = Lane.builder()
-            .id("r1-lane0").laneIndex(0).road(road)
-            .length(LANE_LENGTH).maxSpeed(MAX_SPEED).active(true)
-            .build();
+        lane =
+                Lane.builder()
+                        .id("r1-lane0")
+                        .laneIndex(0)
+                        .road(road)
+                        .length(LANE_LENGTH)
+                        .maxSpeed(MAX_SPEED)
+                        .active(true)
+                        .build();
         road.getLanes().add(lane);
     }
 
     private Vehicle createVehicle(String id, double position, double speed) {
-        Vehicle v = Vehicle.builder()
-            .id(id)
-            .position(position)
-            .speed(speed)
-            .acceleration(0.0)
-            .lane(lane)
-            .length(4.5)
-            .v0(MAX_SPEED)
-            .aMax(1.4)
-            .b(2.0)
-            .s0(2.0)
-            .timeHeadway(1.5)
-            .spawnedAt(0)
-            .build();
+        Vehicle v =
+                Vehicle.builder()
+                        .id(id)
+                        .position(position)
+                        .speed(speed)
+                        .acceleration(0.0)
+                        .lane(lane)
+                        .length(4.5)
+                        .v0(MAX_SPEED)
+                        .aMax(1.4)
+                        .b(2.0)
+                        .s0(2.0)
+                        .timeHeadway(1.5)
+                        .spawnedAt(0)
+                        .build();
         lane.addVehicle(v);
         return v;
     }
@@ -71,14 +86,16 @@ class PhysicsEngineTest {
             engine.tick(lane, DT);
 
             // Post-tick invariants every tick
-            assertThat(v.getSpeed()).as("speed >= 0 at tick %d", tick)
-                .isGreaterThanOrEqualTo(0.0);
-            assertThat(v.getSpeed()).as("speed <= maxSpeed at tick %d", tick)
-                .isLessThanOrEqualTo(MAX_SPEED);
-            assertThat(Double.isFinite(v.getSpeed())).as("speed is finite at tick %d", tick)
-                .isTrue();
-            assertThat(Double.isFinite(v.getPosition())).as("position is finite at tick %d", tick)
-                .isTrue();
+            assertThat(v.getSpeed()).as("speed >= 0 at tick %d", tick).isGreaterThanOrEqualTo(0.0);
+            assertThat(v.getSpeed())
+                    .as("speed <= maxSpeed at tick %d", tick)
+                    .isLessThanOrEqualTo(MAX_SPEED);
+            assertThat(Double.isFinite(v.getSpeed()))
+                    .as("speed is finite at tick %d", tick)
+                    .isTrue();
+            assertThat(Double.isFinite(v.getPosition()))
+                    .as("position is finite at tick %d", tick)
+                    .isTrue();
         }
 
         // After 3 seconds of free-flow acceleration from 0, speed should be significant
@@ -101,10 +118,10 @@ class PhysicsEngineTest {
             engine.tick(lane, DT);
 
             double gap = leader.getPosition() - follower.getPosition() - leader.getLength();
-            assertThat(gap).as("gap at tick %d", tick)
-                .isGreaterThanOrEqualTo(follower.getS0());
-            assertThat(follower.getSpeed()).as("follower speed at tick %d", tick)
-                .isGreaterThanOrEqualTo(0.0);
+            assertThat(gap).as("gap at tick %d", tick).isGreaterThanOrEqualTo(follower.getS0());
+            assertThat(follower.getSpeed())
+                    .as("follower speed at tick %d", tick)
+                    .isGreaterThanOrEqualTo(0.0);
             assertThat(Double.isFinite(follower.getSpeed())).isTrue();
         }
     }
@@ -130,15 +147,18 @@ class PhysicsEngineTest {
             engine.tick(lane, DT);
 
             // Speed must never go negative (SIM-07)
-            assertThat(follower.getSpeed()).as("follower speed >= 0 at tick %d", tick)
-                .isGreaterThanOrEqualTo(0.0);
-            assertThat(follower.getSpeed()).as("follower speed <= maxSpeed at tick %d", tick)
-                .isLessThanOrEqualTo(MAX_SPEED);
+            assertThat(follower.getSpeed())
+                    .as("follower speed >= 0 at tick %d", tick)
+                    .isGreaterThanOrEqualTo(0.0);
+            assertThat(follower.getSpeed())
+                    .as("follower speed <= maxSpeed at tick %d", tick)
+                    .isLessThanOrEqualTo(MAX_SPEED);
 
             // No overlap: follower position < leader position - leader length
-            assertThat(follower.getPosition()).as("no collision at tick %d", tick)
-                .isLessThan(leader.getPosition() - leader.getLength() + 1.0);
-                // +1.0 tolerance for S_MIN guard numerical boundary
+            assertThat(follower.getPosition())
+                    .as("no collision at tick %d", tick)
+                    .isLessThan(leader.getPosition() - leader.getLength() + 1.0);
+            // +1.0 tolerance for S_MIN guard numerical boundary
 
             assertThat(Double.isFinite(follower.getSpeed())).isTrue();
             assertThat(Double.isFinite(follower.getPosition())).isTrue();
@@ -163,15 +183,14 @@ class PhysicsEngineTest {
         engine.tick(lane, DT);
 
         assertThat(Double.isFinite(follower.getAcceleration()))
-            .as("acceleration is finite despite overlap").isTrue();
+                .as("acceleration is finite despite overlap")
+                .isTrue();
         assertThat(follower.getAcceleration())
-            .as("acceleration is negative (braking)").isLessThan(0.0);
-        assertThat(follower.getSpeed())
-            .as("speed >= 0 after zero-gap").isGreaterThanOrEqualTo(0.0);
-        assertThat(Double.isFinite(follower.getSpeed()))
-            .as("speed is finite").isTrue();
-        assertThat(Double.isFinite(follower.getPosition()))
-            .as("position is finite").isTrue();
+                .as("acceleration is negative (braking)")
+                .isLessThan(0.0);
+        assertThat(follower.getSpeed()).as("speed >= 0 after zero-gap").isGreaterThanOrEqualTo(0.0);
+        assertThat(Double.isFinite(follower.getSpeed())).as("speed is finite").isTrue();
+        assertThat(Double.isFinite(follower.getPosition())).as("position is finite").isTrue();
     }
 
     // =========================================================================
@@ -186,23 +205,32 @@ class PhysicsEngineTest {
 
         // Rebuild follower with corrupt parameters to force NaN in IDM formula
         lane.removeVehicle(follower);
-        follower = Vehicle.builder()
-            .id("follower").position(100.0).speed(20.0).acceleration(0.0)
-            .lane(lane).length(4.5).v0(MAX_SPEED).aMax(0.0).b(0.0).s0(2.0).timeHeadway(1.5).spawnedAt(0)
-            .build();
+        follower =
+                Vehicle.builder()
+                        .id("follower")
+                        .position(100.0)
+                        .speed(20.0)
+                        .acceleration(0.0)
+                        .lane(lane)
+                        .length(4.5)
+                        .v0(MAX_SPEED)
+                        .aMax(0.0)
+                        .b(0.0)
+                        .s0(2.0)
+                        .timeHeadway(1.5)
+                        .spawnedAt(0)
+                        .build();
         lane.addVehicle(follower);
 
         engine.tick(lane, DT);
 
         // Must not produce NaN or Infinity
         assertThat(Double.isFinite(follower.getAcceleration()))
-            .as("acceleration is finite despite aMax=0, b=0").isTrue();
-        assertThat(Double.isFinite(follower.getSpeed()))
-            .as("speed is finite").isTrue();
-        assertThat(Double.isFinite(follower.getPosition()))
-            .as("position is finite").isTrue();
-        assertThat(follower.getSpeed())
-            .as("speed >= 0").isGreaterThanOrEqualTo(0.0);
+                .as("acceleration is finite despite aMax=0, b=0")
+                .isTrue();
+        assertThat(Double.isFinite(follower.getSpeed())).as("speed is finite").isTrue();
+        assertThat(Double.isFinite(follower.getPosition())).as("position is finite").isTrue();
+        assertThat(follower.getSpeed()).as("speed >= 0").isGreaterThanOrEqualTo(0.0);
     }
 
     // =========================================================================
@@ -213,18 +241,29 @@ class PhysicsEngineTest {
     @Test
     void velocityClamp_speedNeverExceedsLaneMaxSpeed() {
         // Build vehicle with speed just below maxSpeed, with high v0 to push past limit
-        Vehicle v = Vehicle.builder()
-            .id("v1").position(100.0).speed(MAX_SPEED - 0.01).acceleration(0.0)
-            .lane(lane).length(4.5).v0(MAX_SPEED + 10.0).aMax(1.4).b(2.0).s0(2.0).timeHeadway(1.5).spawnedAt(0)
-            .build();
+        Vehicle v =
+                Vehicle.builder()
+                        .id("v1")
+                        .position(100.0)
+                        .speed(MAX_SPEED - 0.01)
+                        .acceleration(0.0)
+                        .lane(lane)
+                        .length(4.5)
+                        .v0(MAX_SPEED + 10.0)
+                        .aMax(1.4)
+                        .b(2.0)
+                        .s0(2.0)
+                        .timeHeadway(1.5)
+                        .spawnedAt(0)
+                        .build();
         lane.addVehicle(v); // personal v0 exceeds lane max
 
         engine.tick(lane, DT);
 
-        assertThat(v.getSpeed()).as("speed clamped to lane maxSpeed")
-            .isLessThanOrEqualTo(MAX_SPEED);
-        assertThat(v.getSpeed()).as("speed >= 0")
-            .isGreaterThanOrEqualTo(0.0);
+        assertThat(v.getSpeed())
+                .as("speed clamped to lane maxSpeed")
+                .isLessThanOrEqualTo(MAX_SPEED);
+        assertThat(v.getSpeed()).as("speed >= 0").isGreaterThanOrEqualTo(0.0);
     }
 
     // =========================================================================
@@ -251,8 +290,9 @@ class PhysicsEngineTest {
         }
         long elapsedMs = (System.nanoTime() - startNanos) / 1_000_000;
 
-        assertThat(elapsedMs).as("100 ticks with 500 vehicles must complete in < 500ms")
-            .isLessThan(500);
+        assertThat(elapsedMs)
+                .as("100 ticks with 500 vehicles must complete in < 500ms")
+                .isLessThan(500);
 
         // Verify no NaN leaked through
         for (Vehicle v : lane.getVehiclesView()) {
@@ -273,8 +313,9 @@ class PhysicsEngineTest {
         double previousPosition = v.getPosition();
         for (int tick = 0; tick < 100; tick++) {
             engine.tick(lane, DT);
-            assertThat(v.getPosition()).as("position non-decreasing at tick %d", tick)
-                .isGreaterThanOrEqualTo(previousPosition);
+            assertThat(v.getPosition())
+                    .as("position non-decreasing at tick %d", tick)
+                    .isGreaterThanOrEqualTo(previousPosition);
             previousPosition = v.getPosition();
         }
     }

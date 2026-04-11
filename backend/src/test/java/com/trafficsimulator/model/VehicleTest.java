@@ -1,25 +1,25 @@
 package com.trafficsimulator.model;
 
-import org.junit.jupiter.api.Test;
-
 import static org.assertj.core.api.Assertions.assertThat;
+
+import org.junit.jupiter.api.Test;
 
 class VehicleTest {
 
     private Vehicle createVehicle(double v0) {
         return Vehicle.builder()
-            .id("v1")
-            .position(100.0)
-            .speed(10.0)
-            .acceleration(0.0)
-            .length(4.5)
-            .v0(v0)
-            .aMax(1.4)
-            .b(2.0)
-            .s0(2.0)
-            .timeHeadway(1.5)
-            .spawnedAt(0)
-            .build();
+                .id("v1")
+                .position(100.0)
+                .speed(10.0)
+                .acceleration(0.0)
+                .length(4.5)
+                .v0(v0)
+                .aMax(1.4)
+                .b(2.0)
+                .s0(2.0)
+                .timeHeadway(1.5)
+                .spawnedAt(0)
+                .build();
     }
 
     @Test

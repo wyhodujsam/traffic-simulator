@@ -1,17 +1,18 @@
 package com.trafficsimulator.config;
 
+import static org.assertj.core.api.Assertions.assertThat;
+
+import java.io.IOException;
+import java.util.List;
+
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Test;
+
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.trafficsimulator.model.Intersection;
 import com.trafficsimulator.model.IntersectionType;
 import com.trafficsimulator.model.RoadNetwork;
 import com.trafficsimulator.model.TrafficLight;
-import org.junit.jupiter.api.BeforeEach;
-import org.junit.jupiter.api.Test;
-
-import java.io.IOException;
-import java.util.List;
-
-import static org.assertj.core.api.Assertions.assertThat;
 
 class MapLoaderScenarioTest {
 
@@ -111,8 +112,8 @@ class MapLoaderScenarioTest {
 
         // All 3 intersection types present
         assertThat(network.getIntersections().values())
-            .extracting(i -> i.getType().name())
-            .contains("ROUNDABOUT", "SIGNAL", "PRIORITY");
+                .extracting(i -> i.getType().name())
+                .contains("ROUNDABOUT", "SIGNAL", "PRIORITY");
 
         // Signal intersection has traffic light with 6 phases
         Intersection signal = network.getIntersections().get("n_signal");
@@ -123,14 +124,15 @@ class MapLoaderScenarioTest {
 
         // Roundabout nodes are ROUNDABOUT type
         assertThat(network.getIntersections().get("n_ring_n").getType())
-            .isEqualTo(IntersectionType.ROUNDABOUT);
+                .isEqualTo(IntersectionType.ROUNDABOUT);
 
         // Merge node is PRIORITY type
         assertThat(network.getIntersections().get("n_merge").getType())
-            .isEqualTo(IntersectionType.PRIORITY);
+                .isEqualTo(IntersectionType.PRIORITY);
 
         // Loop roads exist
-        assertThat(network.getRoads()).containsKeys("r_sig_to_loop", "r_loop_bottom", "r_loop_to_rndbt");
+        assertThat(network.getRoads())
+                .containsKeys("r_sig_to_loop", "r_loop_bottom", "r_loop_to_rndbt");
 
         // 5 spawn points, 2 despawn points
         assertThat(network.getSpawnPoints()).hasSize(5);
@@ -147,7 +149,6 @@ class MapLoaderScenarioTest {
         config.setId("test");
 
         List<String> errors = validator.validate(config);
-        assertThat(errors).isNotEmpty()
-            .anyMatch(e -> e.contains("At least one node is required"));
+        assertThat(errors).isNotEmpty().anyMatch(e -> e.contains("At least one node is required"));
     }
 }

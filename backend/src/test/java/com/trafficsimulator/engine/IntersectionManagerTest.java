@@ -1,12 +1,13 @@
 package com.trafficsimulator.engine;
 
-import com.trafficsimulator.model.*;
-import org.junit.jupiter.api.BeforeEach;
-import org.junit.jupiter.api.Test;
+import static org.assertj.core.api.Assertions.assertThat;
 
 import java.util.*;
 
-import static org.assertj.core.api.Assertions.assertThat;
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Test;
+
+import com.trafficsimulator.model.*;
 
 class IntersectionManagerTest {
 
@@ -19,84 +20,144 @@ class IntersectionManagerTest {
 
     // ---- Helper: build a minimal 4-way SIGNAL network ----
 
-    private static Road buildRoad(String id, double length, double startX, double startY,
-                                  double endX, double endY, String fromNode, String toNode) {
-        Road road = Road.builder()
-            .id(id).name(id).length(length).speedLimit(13.9)
-            .startX(startX).startY(startY).endX(endX).endY(endY)
-            .fromNodeId(fromNode).toNodeId(toNode)
-            .lanes(new ArrayList<>())
-            .build();
-        Lane lane = Lane.builder()
-            .id(id + "-lane0").laneIndex(0).road(road)
-            .length(length).maxSpeed(13.9).active(true)
-            .build();
+    private static Road buildRoad(
+            String id,
+            double length,
+            double startX,
+            double startY,
+            double endX,
+            double endY,
+            String fromNode,
+            String toNode) {
+        Road road =
+                Road.builder()
+                        .id(id)
+                        .name(id)
+                        .length(length)
+                        .speedLimit(13.9)
+                        .startX(startX)
+                        .startY(startY)
+                        .endX(endX)
+                        .endY(endY)
+                        .fromNodeId(fromNode)
+                        .toNodeId(toNode)
+                        .lanes(new ArrayList<>())
+                        .build();
+        Lane lane =
+                Lane.builder()
+                        .id(id + "-lane0")
+                        .laneIndex(0)
+                        .road(road)
+                        .length(length)
+                        .maxSpeed(13.9)
+                        .active(true)
+                        .build();
         road.getLanes().add(lane);
         return road;
     }
 
-    private static Vehicle buildVehicle(String id, double position, double speed, Lane lane, long spawnedAt) {
-        Vehicle v = Vehicle.builder()
-            .id(id).position(position).speed(speed).lane(lane)
-            .length(4.5).v0(13.9).aMax(1.5).b(2.0).s0(2.0).timeHeadway(1.5)
-            .spawnedAt(spawnedAt).laneChangeProgress(1.0).laneChangeSourceIndex(-1)
-            .build();
+    private static Vehicle buildVehicle(
+            String id, double position, double speed, Lane lane, long spawnedAt) {
+        Vehicle v =
+                Vehicle.builder()
+                        .id(id)
+                        .position(position)
+                        .speed(speed)
+                        .lane(lane)
+                        .length(4.5)
+                        .v0(13.9)
+                        .aMax(1.5)
+                        .b(2.0)
+                        .s0(2.0)
+                        .timeHeadway(1.5)
+                        .spawnedAt(spawnedAt)
+                        .laneChangeProgress(1.0)
+                        .laneChangeSourceIndex(-1)
+                        .build();
         lane.addVehicle(v);
         return v;
     }
 
     /**
-     * Builds a 4-way network with SIGNAL intersection. Roads:
-     * r_north_in (from north to center), r_south_in, r_west_in, r_east_in (inbound)
-     * r_north_out, r_south_out, r_west_out, r_east_out (outbound)
-     * Light: GREEN for north/south, RED for west/east
+     * Builds a 4-way network with SIGNAL intersection. Roads: r_north_in (from north to center),
+     * r_south_in, r_west_in, r_east_in (inbound) r_north_out, r_south_out, r_west_out, r_east_out
+     * (outbound) Light: GREEN for north/south, RED for west/east
      */
     private RoadNetwork buildFourWaySignalNetwork(Set<String> greenRoads) {
         Map<String, Road> roads = new LinkedHashMap<>();
         // Inbound roads (250m each, pointing toward center at 400,300)
-        roads.put("r_north_in", buildRoad("r_north_in", 250, 400, 50, 400, 300, "n_north", "n_center"));
-        roads.put("r_south_in", buildRoad("r_south_in", 250, 400, 550, 400, 300, "n_south", "n_center"));
-        roads.put("r_west_in",  buildRoad("r_west_in",  350, 50, 300, 400, 300, "n_west", "n_center"));
-        roads.put("r_east_in",  buildRoad("r_east_in",  350, 750, 300, 400, 300, "n_east", "n_center"));
+        roads.put(
+                "r_north_in",
+                buildRoad("r_north_in", 250, 400, 50, 400, 300, "n_north", "n_center"));
+        roads.put(
+                "r_south_in",
+                buildRoad("r_south_in", 250, 400, 550, 400, 300, "n_south", "n_center"));
+        roads.put(
+                "r_west_in", buildRoad("r_west_in", 350, 50, 300, 400, 300, "n_west", "n_center"));
+        roads.put(
+                "r_east_in", buildRoad("r_east_in", 350, 750, 300, 400, 300, "n_east", "n_center"));
         // Outbound roads
-        roads.put("r_north_out", buildRoad("r_north_out", 250, 400, 300, 420, 50, "n_center", "n_north_exit"));
-        roads.put("r_south_out", buildRoad("r_south_out", 250, 400, 300, 380, 550, "n_center", "n_south_exit"));
-        roads.put("r_west_out",  buildRoad("r_west_out",  350, 400, 300, 50, 320, "n_center", "n_west_exit"));
-        roads.put("r_east_out",  buildRoad("r_east_out",  350, 400, 300, 750, 280, "n_center", "n_east_exit"));
+        roads.put(
+                "r_north_out",
+                buildRoad("r_north_out", 250, 400, 300, 420, 50, "n_center", "n_north_exit"));
+        roads.put(
+                "r_south_out",
+                buildRoad("r_south_out", 250, 400, 300, 380, 550, "n_center", "n_south_exit"));
+        roads.put(
+                "r_west_out",
+                buildRoad("r_west_out", 350, 400, 300, 50, 320, "n_center", "n_west_exit"));
+        roads.put(
+                "r_east_out",
+                buildRoad("r_east_out", 350, 400, 300, 750, 280, "n_center", "n_east_exit"));
 
         // Build traffic light
         List<TrafficLightPhase> phases = new ArrayList<>();
-        phases.add(TrafficLightPhase.builder()
-            .greenRoadIds(greenRoads)
-            .durationMs(30000)
-            .type(TrafficLightPhase.PhaseType.GREEN)
-            .build());
-        TrafficLight light = TrafficLight.builder()
-            .intersectionId("n_center")
-            .phases(phases)
-            .currentPhaseIndex(0)
-            .phaseElapsedMs(0)
-            .build();
+        phases.add(
+                TrafficLightPhase.builder()
+                        .greenRoadIds(greenRoads)
+                        .durationMs(30000)
+                        .type(TrafficLightPhase.PhaseType.GREEN)
+                        .build());
+        TrafficLight light =
+                TrafficLight.builder()
+                        .intersectionId("n_center")
+                        .phases(phases)
+                        .currentPhaseIndex(0)
+                        .phaseElapsedMs(0)
+                        .build();
 
-        Intersection ixtn = Intersection.builder()
-            .id("n_center")
-            .type(IntersectionType.SIGNAL)
-            .inboundRoadIds(new ArrayList<>(List.of("r_north_in", "r_south_in", "r_west_in", "r_east_in")))
-            .outboundRoadIds(new ArrayList<>(List.of("r_north_out", "r_south_out", "r_west_out", "r_east_out")))
-            .connectedRoadIds(new ArrayList<>(roads.keySet()))
-            .trafficLight(light)
-            .build();
+        Intersection ixtn =
+                Intersection.builder()
+                        .id("n_center")
+                        .type(IntersectionType.SIGNAL)
+                        .inboundRoadIds(
+                                new ArrayList<>(
+                                        List.of(
+                                                "r_north_in",
+                                                "r_south_in",
+                                                "r_west_in",
+                                                "r_east_in")))
+                        .outboundRoadIds(
+                                new ArrayList<>(
+                                        List.of(
+                                                "r_north_out",
+                                                "r_south_out",
+                                                "r_west_out",
+                                                "r_east_out")))
+                        .connectedRoadIds(new ArrayList<>(roads.keySet()))
+                        .trafficLight(light)
+                        .build();
 
         Map<String, Intersection> intersections = new LinkedHashMap<>();
         intersections.put(ixtn.getId(), ixtn);
 
         return RoadNetwork.builder()
-            .id("test-4way")
-            .roads(roads)
-            .intersections(intersections)
-            .spawnPoints(List.of())
-            .despawnPoints(List.of())
-            .build();
+                .id("test-4way")
+                .roads(roads)
+                .intersections(intersections)
+                .spawnPoints(List.of())
+                .despawnPoints(List.of())
+                .build();
     }
 
     // ---- Task 3 Tests ----
@@ -109,24 +170,25 @@ class IntersectionManagerTest {
         Map<String, Double> stopLines = manager.computeStopLines(network);
 
         // west_in and east_in lanes should have stop lines (RED)
-        assertThat(stopLines).containsKey("r_west_in-lane0")
-            .containsKey("r_east_in-lane0");
+        assertThat(stopLines).containsKey("r_west_in-lane0").containsKey("r_east_in-lane0");
     }
 
     @Test
     void noStopLinesForGreenLight() {
         // GREEN for all 4 inbound roads
-        RoadNetwork network = buildFourWaySignalNetwork(
-            Set.of("r_north_in", "r_south_in", "r_west_in", "r_east_in"));
+        RoadNetwork network =
+                buildFourWaySignalNetwork(
+                        Set.of("r_north_in", "r_south_in", "r_west_in", "r_east_in"));
 
         Map<String, Double> stopLines = manager.computeStopLines(network);
 
         // No red-light stop lines (box-blocking may still apply if outbound empty check fails,
         // but with empty outbound lanes, all should pass)
-        assertThat(stopLines).doesNotContainKey("r_north_in-lane0")
-            .doesNotContainKey("r_south_in-lane0")
-            .doesNotContainKey("r_west_in-lane0")
-            .doesNotContainKey("r_east_in-lane0");
+        assertThat(stopLines)
+                .doesNotContainKey("r_north_in-lane0")
+                .doesNotContainKey("r_south_in-lane0")
+                .doesNotContainKey("r_west_in-lane0")
+                .doesNotContainKey("r_east_in-lane0");
     }
 
     @Test
@@ -170,8 +232,11 @@ class IntersectionManagerTest {
         manager.processTransfers(network, 1);
 
         // Vehicle should still be on inbound lane (RED light)
-        assertThat(inLane.getVehiclesView()).hasSize(1)
-            .first().extracting(v -> ((Vehicle) v).getId()).isEqualTo("v1");
+        assertThat(inLane.getVehiclesView())
+                .hasSize(1)
+                .first()
+                .extracting(v -> ((Vehicle) v).getId())
+                .isEqualTo("v1");
     }
 
     @Test
@@ -183,7 +248,8 @@ class IntersectionManagerTest {
         // Place vehicle at end of inbound road
         buildVehicle("v1", 249.0, 5.0, inLane, 0);
 
-        // Block ALL outbound roads (except r_north_out which is U-turn) with vehicle at position 2.0 (< MIN_ENTRY_GAP=7.0)
+        // Block ALL outbound roads (except r_north_out which is U-turn) with vehicle at position
+        // 2.0 (< MIN_ENTRY_GAP=7.0)
         for (String outId : List.of("r_south_out", "r_west_out", "r_east_out")) {
             Road outRoad = network.getRoads().get(outId);
             Lane outLane = outRoad.getLanes().get(0);
@@ -193,8 +259,11 @@ class IntersectionManagerTest {
         manager.processTransfers(network, 1);
 
         // Vehicle should NOT be transferred — all outbound roads blocked
-        assertThat(inLane.getVehiclesView()).hasSize(1)
-            .first().extracting(v -> ((Vehicle) v).getId()).isEqualTo("v1");
+        assertThat(inLane.getVehiclesView())
+                .hasSize(1)
+                .first()
+                .extracting(v -> ((Vehicle) v).getId())
+                .isEqualTo("v1");
     }
 
     @Test
@@ -234,44 +303,56 @@ class IntersectionManagerTest {
         // Use NONE intersection type so canEnter is governed by right-of-way, not lights
         // Actually, we need all approaches blocked. Use SIGNAL with ALL_RED phase.
         Map<String, Road> roads = new LinkedHashMap<>();
-        roads.put("r_north_in", buildRoad("r_north_in", 250, 400, 50, 400, 300, "n_north", "n_center"));
-        roads.put("r_south_in", buildRoad("r_south_in", 250, 400, 550, 400, 300, "n_south", "n_center"));
-        roads.put("r_north_out", buildRoad("r_north_out", 250, 400, 300, 420, 50, "n_center", "n_north_exit"));
-        roads.put("r_south_out", buildRoad("r_south_out", 250, 400, 300, 380, 550, "n_center", "n_south_exit"));
+        roads.put(
+                "r_north_in",
+                buildRoad("r_north_in", 250, 400, 50, 400, 300, "n_north", "n_center"));
+        roads.put(
+                "r_south_in",
+                buildRoad("r_south_in", 250, 400, 550, 400, 300, "n_south", "n_center"));
+        roads.put(
+                "r_north_out",
+                buildRoad("r_north_out", 250, 400, 300, 420, 50, "n_center", "n_north_exit"));
+        roads.put(
+                "r_south_out",
+                buildRoad("r_south_out", 250, 400, 300, 380, 550, "n_center", "n_south_exit"));
 
         // ALL_RED phase — nobody can enter
         List<TrafficLightPhase> phases = new ArrayList<>();
-        phases.add(TrafficLightPhase.builder()
-            .greenRoadIds(Set.of())
-            .durationMs(999999)
-            .type(TrafficLightPhase.PhaseType.ALL_RED)
-            .build());
-        TrafficLight light = TrafficLight.builder()
-            .intersectionId("n_center")
-            .phases(phases)
-            .currentPhaseIndex(0)
-            .phaseElapsedMs(0)
-            .build();
+        phases.add(
+                TrafficLightPhase.builder()
+                        .greenRoadIds(Set.of())
+                        .durationMs(999999)
+                        .type(TrafficLightPhase.PhaseType.ALL_RED)
+                        .build());
+        TrafficLight light =
+                TrafficLight.builder()
+                        .intersectionId("n_center")
+                        .phases(phases)
+                        .currentPhaseIndex(0)
+                        .phaseElapsedMs(0)
+                        .build();
 
-        Intersection ixtn = Intersection.builder()
-            .id("n_center")
-            .type(IntersectionType.SIGNAL)
-            .inboundRoadIds(new ArrayList<>(List.of("r_north_in", "r_south_in")))
-            .outboundRoadIds(new ArrayList<>(List.of("r_north_out", "r_south_out")))
-            .connectedRoadIds(new ArrayList<>(roads.keySet()))
-            .trafficLight(light)
-            .build();
+        Intersection ixtn =
+                Intersection.builder()
+                        .id("n_center")
+                        .type(IntersectionType.SIGNAL)
+                        .inboundRoadIds(new ArrayList<>(List.of("r_north_in", "r_south_in")))
+                        .outboundRoadIds(new ArrayList<>(List.of("r_north_out", "r_south_out")))
+                        .connectedRoadIds(new ArrayList<>(roads.keySet()))
+                        .trafficLight(light)
+                        .build();
 
         Map<String, Intersection> intersections = new LinkedHashMap<>();
         intersections.put(ixtn.getId(), ixtn);
 
-        RoadNetwork network = RoadNetwork.builder()
-            .id("deadlock-test")
-            .roads(roads)
-            .intersections(intersections)
-            .spawnPoints(List.of())
-            .despawnPoints(List.of())
-            .build();
+        RoadNetwork network =
+                RoadNetwork.builder()
+                        .id("deadlock-test")
+                        .roads(roads)
+                        .intersections(intersections)
+                        .spawnPoints(List.of())
+                        .despawnPoints(List.of())
+                        .build();
 
         // Place waiting vehicles on both inbound roads (near end, speed ~0)
         Lane northLane = roads.get("r_north_in").getLanes().get(0);
@@ -284,7 +365,8 @@ class IntersectionManagerTest {
             manager.processTransfers(network, tick);
         }
 
-        // After deadlock resolution, one vehicle should have been force-advanced to an outbound road
+        // After deadlock resolution, one vehicle should have been force-advanced to an outbound
+        // road
         int totalInbound = northLane.getVehiclesView().size() + southLane.getVehiclesView().size();
         Lane northOut = roads.get("r_north_out").getLanes().get(0);
         Lane southOut = roads.get("r_south_out").getLanes().get(0);
@@ -297,57 +379,92 @@ class IntersectionManagerTest {
     // ---- Roundabout tests ----
 
     /**
-     * Builds a 4-way ROUNDABOUT network with ring roads.
-     * Ring nodes: n_ring_n, n_ring_e, n_ring_s, n_ring_w
-     * Ring roads: r_ring_nw, r_ring_ws, r_ring_se, r_ring_en (counterclockwise)
+     * Builds a 4-way ROUNDABOUT network with ring roads. Ring nodes: n_ring_n, n_ring_e, n_ring_s,
+     * n_ring_w Ring roads: r_ring_nw, r_ring_ws, r_ring_se, r_ring_en (counterclockwise)
      */
     private RoadNetwork buildFourWayRoundaboutNetwork(int capacity) {
         Map<String, Road> roads = new LinkedHashMap<>();
         // Approach roads → ring nodes
-        roads.put("r_north_in", buildRoad("r_north_in", 200, 393, 50, 393, 272, "n_north", "n_ring_n"));
-        roads.put("r_south_in", buildRoad("r_south_in", 200, 407, 550, 407, 328, "n_south", "n_ring_s"));
-        roads.put("r_west_in",  buildRoad("r_west_in",  300, 50, 307, 372, 307, "n_west", "n_ring_w"));
-        roads.put("r_east_in",  buildRoad("r_east_in",  300, 750, 293, 428, 293, "n_east", "n_ring_e"));
+        roads.put(
+                "r_north_in",
+                buildRoad("r_north_in", 200, 393, 50, 393, 272, "n_north", "n_ring_n"));
+        roads.put(
+                "r_south_in",
+                buildRoad("r_south_in", 200, 407, 550, 407, 328, "n_south", "n_ring_s"));
+        roads.put(
+                "r_west_in", buildRoad("r_west_in", 300, 50, 307, 372, 307, "n_west", "n_ring_w"));
+        roads.put(
+                "r_east_in", buildRoad("r_east_in", 300, 750, 293, 428, 293, "n_east", "n_ring_e"));
         // Departure roads ← ring nodes
-        roads.put("r_north_out", buildRoad("r_north_out", 200, 407, 272, 407, 50, "n_ring_n", "n_north_exit"));
-        roads.put("r_south_out", buildRoad("r_south_out", 200, 393, 328, 393, 550, "n_ring_s", "n_south_exit"));
-        roads.put("r_west_out",  buildRoad("r_west_out",  300, 372, 293, 50, 293, "n_ring_w", "n_west_exit"));
-        roads.put("r_east_out",  buildRoad("r_east_out",  300, 428, 307, 750, 307, "n_ring_e", "n_east_exit"));
+        roads.put(
+                "r_north_out",
+                buildRoad("r_north_out", 200, 407, 272, 407, 50, "n_ring_n", "n_north_exit"));
+        roads.put(
+                "r_south_out",
+                buildRoad("r_south_out", 200, 393, 328, 393, 550, "n_ring_s", "n_south_exit"));
+        roads.put(
+                "r_west_out",
+                buildRoad("r_west_out", 300, 372, 293, 50, 293, "n_ring_w", "n_west_exit"));
+        roads.put(
+                "r_east_out",
+                buildRoad("r_east_out", 300, 428, 307, 750, 307, "n_ring_e", "n_east_exit"));
         // Ring segments (counterclockwise: N→W→S→E→N)
-        roads.put("r_ring_nw", buildRoad("r_ring_nw", 22, 400, 272, 372, 300, "n_ring_n", "n_ring_w"));
-        roads.put("r_ring_ws", buildRoad("r_ring_ws", 22, 372, 300, 400, 328, "n_ring_w", "n_ring_s"));
-        roads.put("r_ring_se", buildRoad("r_ring_se", 22, 400, 328, 428, 300, "n_ring_s", "n_ring_e"));
-        roads.put("r_ring_en", buildRoad("r_ring_en", 22, 428, 300, 400, 272, "n_ring_e", "n_ring_n"));
+        roads.put(
+                "r_ring_nw",
+                buildRoad("r_ring_nw", 22, 400, 272, 372, 300, "n_ring_n", "n_ring_w"));
+        roads.put(
+                "r_ring_ws",
+                buildRoad("r_ring_ws", 22, 372, 300, 400, 328, "n_ring_w", "n_ring_s"));
+        roads.put(
+                "r_ring_se",
+                buildRoad("r_ring_se", 22, 400, 328, 428, 300, "n_ring_s", "n_ring_e"));
+        roads.put(
+                "r_ring_en",
+                buildRoad("r_ring_en", 22, 428, 300, 400, 272, "n_ring_e", "n_ring_n"));
 
         // Ring node intersections
         Map<String, Intersection> intersections = new LinkedHashMap<>();
-        for (var entry : Map.of(
-                "n_ring_n", new String[]{"r_north_in", "r_ring_en", "r_north_out", "r_ring_nw"},
-                "n_ring_w", new String[]{"r_west_in", "r_ring_nw", "r_west_out", "r_ring_ws"},
-                "n_ring_s", new String[]{"r_south_in", "r_ring_ws", "r_south_out", "r_ring_se"},
-                "n_ring_e", new String[]{"r_east_in", "r_ring_se", "r_east_out", "r_ring_en"}
-        ).entrySet()) {
+        for (var entry :
+                Map.of(
+                                "n_ring_n",
+                                        new String[] {
+                                            "r_north_in", "r_ring_en", "r_north_out", "r_ring_nw"
+                                        },
+                                "n_ring_w",
+                                        new String[] {
+                                            "r_west_in", "r_ring_nw", "r_west_out", "r_ring_ws"
+                                        },
+                                "n_ring_s",
+                                        new String[] {
+                                            "r_south_in", "r_ring_ws", "r_south_out", "r_ring_se"
+                                        },
+                                "n_ring_e",
+                                        new String[] {
+                                            "r_east_in", "r_ring_se", "r_east_out", "r_ring_en"
+                                        })
+                        .entrySet()) {
             String nodeId = entry.getKey();
             String[] roadIds = entry.getValue();
-            Intersection ixtn = Intersection.builder()
-                .id(nodeId)
-                .type(IntersectionType.ROUNDABOUT)
-                .roundaboutCapacity(capacity)
-                .intersectionSize(12)
-                .inboundRoadIds(new ArrayList<>(List.of(roadIds[0], roadIds[1])))
-                .outboundRoadIds(new ArrayList<>(List.of(roadIds[2], roadIds[3])))
-                .connectedRoadIds(new ArrayList<>(List.of(roadIds)))
-                .build();
+            Intersection ixtn =
+                    Intersection.builder()
+                            .id(nodeId)
+                            .type(IntersectionType.ROUNDABOUT)
+                            .roundaboutCapacity(capacity)
+                            .intersectionSize(12)
+                            .inboundRoadIds(new ArrayList<>(List.of(roadIds[0], roadIds[1])))
+                            .outboundRoadIds(new ArrayList<>(List.of(roadIds[2], roadIds[3])))
+                            .connectedRoadIds(new ArrayList<>(List.of(roadIds)))
+                            .build();
             intersections.put(nodeId, ixtn);
         }
 
         return RoadNetwork.builder()
-            .id("roundabout-test")
-            .roads(roads)
-            .intersections(intersections)
-            .spawnPoints(List.of())
-            .despawnPoints(List.of())
-            .build();
+                .id("roundabout-test")
+                .roads(roads)
+                .intersections(intersections)
+                .spawnPoints(List.of())
+                .despawnPoints(List.of())
+                .build();
     }
 
     @Test
@@ -465,28 +582,34 @@ class IntersectionManagerTest {
         // "Our" road approaches from west (left to right)
         roads.put("r_west_in", buildRoad("r_west_in", 200, 0, 200, 200, 200, "n_west", "n_center"));
         // Road from "right" approaches from south (bottom to top) — 90 degrees clockwise from west
-        roads.put("r_south_in", buildRoad("r_south_in", 200, 200, 400, 200, 200, "n_south", "n_center"));
+        roads.put(
+                "r_south_in",
+                buildRoad("r_south_in", 200, 200, 400, 200, 200, "n_south", "n_center"));
         // Outbound road
-        roads.put("r_east_out", buildRoad("r_east_out", 200, 200, 200, 400, 200, "n_center", "n_east_exit"));
+        roads.put(
+                "r_east_out",
+                buildRoad("r_east_out", 200, 200, 200, 400, 200, "n_center", "n_east_exit"));
 
-        Intersection ixtn = Intersection.builder()
-            .id("n_center")
-            .type(IntersectionType.PRIORITY)
-            .inboundRoadIds(new ArrayList<>(List.of("r_west_in", "r_south_in")))
-            .outboundRoadIds(new ArrayList<>(List.of("r_east_out")))
-            .connectedRoadIds(new ArrayList<>(roads.keySet()))
-            .build();
+        Intersection ixtn =
+                Intersection.builder()
+                        .id("n_center")
+                        .type(IntersectionType.PRIORITY)
+                        .inboundRoadIds(new ArrayList<>(List.of("r_west_in", "r_south_in")))
+                        .outboundRoadIds(new ArrayList<>(List.of("r_east_out")))
+                        .connectedRoadIds(new ArrayList<>(roads.keySet()))
+                        .build();
 
         Map<String, Intersection> intersections = new LinkedHashMap<>();
         intersections.put(ixtn.getId(), ixtn);
 
-        RoadNetwork network = RoadNetwork.builder()
-            .id("priority-test")
-            .roads(roads)
-            .intersections(intersections)
-            .spawnPoints(List.of())
-            .despawnPoints(List.of())
-            .build();
+        RoadNetwork network =
+                RoadNetwork.builder()
+                        .id("priority-test")
+                        .roads(roads)
+                        .intersections(intersections)
+                        .spawnPoints(List.of())
+                        .despawnPoints(List.of())
+                        .build();
 
         // Place vehicle approaching from our road (west)
         Lane westLane = roads.get("r_west_in").getLanes().get(0);
@@ -504,58 +627,73 @@ class IntersectionManagerTest {
 
     // ---- Merge lane targeting tests ----
 
-    /**
-     * Helper: build a road with a given number of lanes.
-     */
-    private static Road buildMultiLaneRoad(String id, double length, int laneCount,
-                                           String fromNode, String toNode) {
-        Road road = Road.builder()
-            .id(id).name(id).length(length).speedLimit(13.9)
-            .startX(0).startY(0).endX(length).endY(0)
-            .fromNodeId(fromNode).toNodeId(toNode)
-            .lanes(new ArrayList<>())
-            .build();
+    /** Helper: build a road with a given number of lanes. */
+    private static Road buildMultiLaneRoad(
+            String id, double length, int laneCount, String fromNode, String toNode) {
+        Road road =
+                Road.builder()
+                        .id(id)
+                        .name(id)
+                        .length(length)
+                        .speedLimit(13.9)
+                        .startX(0)
+                        .startY(0)
+                        .endX(length)
+                        .endY(0)
+                        .fromNodeId(fromNode)
+                        .toNodeId(toNode)
+                        .lanes(new ArrayList<>())
+                        .build();
         for (int i = 0; i < laneCount; i++) {
-            Lane lane = Lane.builder()
-                .id(id + "-lane" + i).laneIndex(i).road(road)
-                .length(length).maxSpeed(13.9).active(true)
-                .build();
+            Lane lane =
+                    Lane.builder()
+                            .id(id + "-lane" + i)
+                            .laneIndex(i)
+                            .road(road)
+                            .length(length)
+                            .maxSpeed(13.9)
+                            .active(true)
+                            .build();
             road.getLanes().add(lane);
         }
         return road;
     }
 
     /**
-     * Builds a highway-merge-like network: 1-lane ramp + 2-lane main highway merging
-     * at a PRIORITY intersection, with a 2-lane outbound road.
+     * Builds a highway-merge-like network: 1-lane ramp + 2-lane main highway merging at a PRIORITY
+     * intersection, with a 2-lane outbound road.
      */
     private RoadNetwork buildMergeNetwork() {
         Map<String, Road> roads = new LinkedHashMap<>();
         // 2-lane main highway before merge
-        roads.put("main_before", buildMultiLaneRoad("main_before", 300, 2, "main_entry", "merge_point"));
+        roads.put(
+                "main_before",
+                buildMultiLaneRoad("main_before", 300, 2, "main_entry", "merge_point"));
         // 1-lane on-ramp
         roads.put("ramp", buildMultiLaneRoad("ramp", 200, 1, "ramp_entry", "merge_point"));
         // 2-lane highway after merge
-        roads.put("main_after", buildMultiLaneRoad("main_after", 700, 2, "merge_point", "main_exit"));
+        roads.put(
+                "main_after", buildMultiLaneRoad("main_after", 700, 2, "merge_point", "main_exit"));
 
-        Intersection ixtn = Intersection.builder()
-            .id("merge_point")
-            .type(IntersectionType.PRIORITY)
-            .inboundRoadIds(new ArrayList<>(List.of("main_before", "ramp")))
-            .outboundRoadIds(new ArrayList<>(List.of("main_after")))
-            .connectedRoadIds(new ArrayList<>(roads.keySet()))
-            .build();
+        Intersection ixtn =
+                Intersection.builder()
+                        .id("merge_point")
+                        .type(IntersectionType.PRIORITY)
+                        .inboundRoadIds(new ArrayList<>(List.of("main_before", "ramp")))
+                        .outboundRoadIds(new ArrayList<>(List.of("main_after")))
+                        .connectedRoadIds(new ArrayList<>(roads.keySet()))
+                        .build();
 
         Map<String, Intersection> intersections = new LinkedHashMap<>();
         intersections.put(ixtn.getId(), ixtn);
 
         return RoadNetwork.builder()
-            .id("merge-test")
-            .roads(roads)
-            .intersections(intersections)
-            .spawnPoints(List.of())
-            .despawnPoints(List.of())
-            .build();
+                .id("merge-test")
+                .roads(roads)
+                .intersections(intersections)
+                .spawnPoints(List.of())
+                .despawnPoints(List.of())
+                .build();
     }
 
     @Test

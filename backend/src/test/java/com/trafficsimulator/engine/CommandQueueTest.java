@@ -1,20 +1,19 @@
 package com.trafficsimulator.engine;
 
-import com.trafficsimulator.engine.command.SimulationCommand;
-import org.junit.jupiter.api.Test;
+import static org.assertj.core.api.Assertions.assertThat;
 
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 import java.util.concurrent.TimeUnit;
 
-import static org.assertj.core.api.Assertions.assertThat;
+import org.junit.jupiter.api.Test;
+
+import com.trafficsimulator.engine.command.SimulationCommand;
 
 class CommandQueueTest {
 
-    /**
-     * Creates a SimulationEngine with a CommandDispatcher wired in (no Spring context needed).
-     */
+    /** Creates a SimulationEngine with a CommandDispatcher wired in (no Spring context needed). */
     private static SimulationEngine createEngine() {
         SimulationEngine engine = new SimulationEngine(null, null);
         CommandDispatcher dispatcher = new CommandDispatcher(engine, null, null, null);
@@ -23,7 +22,8 @@ class CommandQueueTest {
     }
 
     @Test
-    void concurrentEnqueue_100Threads_noConcurrentModificationException() throws InterruptedException {
+    void concurrentEnqueue_100Threads_noConcurrentModificationException()
+            throws InterruptedException {
         SimulationEngine engine = createEngine();
         int threadCount = 100;
         CountDownLatch latch = new CountDownLatch(threadCount);
@@ -31,13 +31,14 @@ class CommandQueueTest {
 
         for (int i = 0; i < threadCount; i++) {
             double rate = i * 0.1;
-            executor.submit(() -> {
-                try {
-                    engine.enqueue(new SimulationCommand.SetSpawnRate(rate));
-                } finally {
-                    latch.countDown();
-                }
-            });
+            executor.submit(
+                    () -> {
+                        try {
+                            engine.enqueue(new SimulationCommand.SetSpawnRate(rate));
+                        } finally {
+                            latch.countDown();
+                        }
+                    });
         }
 
         assertThat(latch.await(5, TimeUnit.SECONDS)).isTrue();
@@ -50,7 +51,8 @@ class CommandQueueTest {
     }
 
     @Test
-    void concurrentEnqueue_1000Threads_duringActiveTick_noConcurrentModificationException() throws InterruptedException {
+    void concurrentEnqueue_1000Threads_duringActiveTick_noConcurrentModificationException()
+            throws InterruptedException {
         SimulationEngine engine = createEngine();
         // Start the simulation so commands are processed against RUNNING state
         engine.enqueue(new SimulationCommand.Start());
@@ -63,28 +65,31 @@ class CommandQueueTest {
 
         for (int i = 0; i < threadCount; i++) {
             double rate = i * 0.01;
-            executor.submit(() -> {
-                try {
-                    startGate.await(5, TimeUnit.SECONDS);
-                    engine.enqueue(new SimulationCommand.SetSpawnRate(rate));
-                } catch (InterruptedException e) {
-                    Thread.currentThread().interrupt();
-                } finally {
-                    done.countDown();
-                }
-            });
+            executor.submit(
+                    () -> {
+                        try {
+                            startGate.await(5, TimeUnit.SECONDS);
+                            engine.enqueue(new SimulationCommand.SetSpawnRate(rate));
+                        } catch (InterruptedException e) {
+                            Thread.currentThread().interrupt();
+                        } finally {
+                            done.countDown();
+                        }
+                    });
         }
 
         // Release all threads simultaneously for maximum contention
         startGate.countDown();
 
         // Simulate tick thread draining commands concurrently
-        Thread tickThread = new Thread(() -> {
-            for (int i = 0; i < 100; i++) {
-                engine.drainCommands();
-                Thread.yield();
-            }
-        });
+        Thread tickThread =
+                new Thread(
+                        () -> {
+                            for (int i = 0; i < 100; i++) {
+                                engine.drainCommands();
+                                Thread.yield();
+                            }
+                        });
         tickThread.start();
 
         done.await(10, TimeUnit.SECONDS);

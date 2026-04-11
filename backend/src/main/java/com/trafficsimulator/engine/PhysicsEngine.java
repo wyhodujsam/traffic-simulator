@@ -1,49 +1,54 @@
 package com.trafficsimulator.engine;
 
+import java.util.ArrayList;
+import java.util.List;
+
+import org.springframework.stereotype.Component;
+
 import com.trafficsimulator.model.Lane;
 import com.trafficsimulator.model.Obstacle;
 import com.trafficsimulator.model.Vehicle;
-import lombok.extern.slf4j.Slf4j;
-import org.springframework.stereotype.Component;
 
-import java.util.ArrayList;
-import java.util.List;
+import lombok.extern.slf4j.Slf4j;
 
 @Component
 @Slf4j
 public class PhysicsEngine implements IPhysicsEngine {
 
-    private static final double S_MIN = 1.0;    // minimum gap guard (metres)
+    private static final double S_MIN = 1.0; // minimum gap guard (metres)
+
     // Zipper yield removed — was causing adjacent lane congestion at merge point
 
     private record LeaderInfo(double position, double speed, double length, boolean present) {}
 
     /**
-     * Advances all vehicles in the lane by one time step using the IDM model.
-     * Vehicles are processed front-to-back (descending position) so each vehicle
-     * reads its leader's pre-tick position for correct simultaneous-update semantics.
+     * Advances all vehicles in the lane by one time step using the IDM model. Vehicles are
+     * processed front-to-back (descending position) so each vehicle reads its leader's pre-tick
+     * position for correct simultaneous-update semantics.
      *
      * @param lane the lane containing vehicles to update
-     * @param dt   time step in seconds (e.g. 0.05 for 20 Hz)
+     * @param dt time step in seconds (e.g. 0.05 for 20 Hz)
      */
     @Override
     public void tick(Lane lane, double dt) {
-        tick(lane, dt, -1.0);  // no stop line
+        tick(lane, dt, -1.0); // no stop line
     }
 
     /**
-     * Advances vehicles with an optional stop line acting as a virtual stationary leader.
-     * Used for red traffic lights and box-blocking prevention.
+     * Advances vehicles with an optional stop line acting as a virtual stationary leader. Used for
+     * red traffic lights and box-blocking prevention.
      *
-     * @param lane             the lane containing vehicles
-     * @param dt               time step in seconds
-     * @param stopLinePosition if >= 0, acts as a stationary virtual leader at this position;
-     *                         if < 0, no stop line (normal behavior)
+     * @param lane the lane containing vehicles
+     * @param dt time step in seconds
+     * @param stopLinePosition if >= 0, acts as a stationary virtual leader at this position; if <
+     *     0, no stop line (normal behavior)
      */
     @Override
     public void tick(Lane lane, double dt, double stopLinePosition) {
         List<Vehicle> vehicles = new ArrayList<>(lane.getVehiclesView());
-        if (vehicles.isEmpty()) return;
+        if (vehicles.isEmpty()) {
+            return;
+        }
 
         // List is already sorted descending by Lane's sorted invariant — no sort needed here
 
@@ -54,10 +59,16 @@ public class PhysicsEngine implements IPhysicsEngine {
             Vehicle vehicle = vehicles.get(i);
             Vehicle vehicleLeader = (i > 0) ? vehicles.get(i - 1) : null;
             Obstacle nearestObstacle = findNearestObstacleAhead(obstacles, vehicle.getPosition());
-            LeaderInfo leader = findEffectiveLeader(vehicle, vehicleLeader, nearestObstacle, stopLinePosition);
+            LeaderInfo leader =
+                    findEffectiveLeader(vehicle, vehicleLeader, nearestObstacle, stopLinePosition);
 
-            double acceleration = computeAcceleration(vehicle,
-                leader.position(), leader.speed(), leader.length(), leader.present());
+            double acceleration =
+                    computeAcceleration(
+                            vehicle,
+                            leader.position(),
+                            leader.speed(),
+                            leader.length(),
+                            leader.present());
 
             applyGuardsAndIntegrate(vehicle, acceleration, dt, lane.getMaxSpeed(), leader);
         }
@@ -78,8 +89,11 @@ public class PhysicsEngine implements IPhysicsEngine {
         return nearest;
     }
 
-    private LeaderInfo findEffectiveLeader(Vehicle vehicle, Vehicle vehicleLeader,
-                                           Obstacle nearestObstacle, double stopLinePosition) {
+    private LeaderInfo findEffectiveLeader(
+            Vehicle vehicle,
+            Vehicle vehicleLeader,
+            Obstacle nearestObstacle,
+            double stopLinePosition) {
         double leaderPos;
         double leaderSpeed;
         double leaderLength;
@@ -114,8 +128,10 @@ public class PhysicsEngine implements IPhysicsEngine {
             hasLeader = false;
         }
 
-        // Stop line as virtual stationary leader (position = stopLinePosition, speed = 0, length = 0)
-        if (stopLinePosition >= 0 && stopLinePosition > vehicle.getPosition()
+        // Stop line as virtual stationary leader (position = stopLinePosition, speed = 0, length =
+        // 0)
+        if (stopLinePosition >= 0
+                && stopLinePosition > vehicle.getPosition()
                 && (!hasLeader || stopLinePosition < leaderPos)) {
             leaderPos = stopLinePosition;
             leaderSpeed = 0.0;
@@ -126,14 +142,21 @@ public class PhysicsEngine implements IPhysicsEngine {
         return new LeaderInfo(leaderPos, leaderSpeed, leaderLength, hasLeader);
     }
 
-    private void applyGuardsAndIntegrate(Vehicle vehicle, double acceleration, double dt,
-                                          double laneMaxSpeed, LeaderInfo leader) {
+    private void applyGuardsAndIntegrate(
+            Vehicle vehicle,
+            double acceleration,
+            double dt,
+            double laneMaxSpeed,
+            LeaderInfo leader) {
         double safeAcceleration = acceleration;
 
         // Guard 4: NaN / Infinity fallback
         if (!Double.isFinite(safeAcceleration)) {
-            log.warn("NaN acceleration guard triggered for vehicle={} aMax={} b={}",
-                vehicle.getId(), vehicle.getAMax(), vehicle.getB());
+            log.warn(
+                    "NaN acceleration guard triggered for vehicle={} aMax={} b={}",
+                    vehicle.getId(),
+                    vehicle.getAMax(),
+                    vehicle.getB());
             safeAcceleration = -vehicle.getB();
             // If b is also non-finite, fall back to zero
             if (!Double.isFinite(safeAcceleration)) {
@@ -163,23 +186,26 @@ public class PhysicsEngine implements IPhysicsEngine {
     }
 
     /**
-     * Computes IDM acceleration for a vehicle given optional leader data.
-     * Leader can be a vehicle or an obstacle — represented as position/speed/length primitives.
+     * Computes IDM acceleration for a vehicle given optional leader data. Leader can be a vehicle
+     * or an obstacle — represented as position/speed/length primitives.
      *
      * <p>IDM formula: a = aMax * [1 - (v/v0)^delta - (sStar/s)^2]
      *
      * <p>where sStar = s0 + max(0, v*T + v*deltaV / (2*sqrt(aMax*b)))
      *
-     * @param vehicle       the following vehicle
+     * @param vehicle the following vehicle
      * @param leaderPosition position of leader's front (metres from lane start), or -1 if no leader
-     * @param leaderSpeed    leader's speed (m/s), 0 for obstacles
-     * @param leaderLength   leader's length (metres)
-     * @param hasLeader      true if a leader exists
+     * @param leaderSpeed leader's speed (m/s), 0 for obstacles
+     * @param leaderLength leader's length (metres)
+     * @param hasLeader true if a leader exists
      */
     @Override
-    public double computeAcceleration(Vehicle vehicle, double leaderPosition,
-                                        double leaderSpeed, double leaderLength,
-                                        boolean hasLeader) {
+    public double computeAcceleration(
+            Vehicle vehicle,
+            double leaderPosition,
+            double leaderSpeed,
+            double leaderLength,
+            boolean hasLeader) {
         double v = vehicle.getSpeed();
         double v0 = vehicle.getV0();
         double aMax = vehicle.getAMax();
@@ -206,19 +232,17 @@ public class PhysicsEngine implements IPhysicsEngine {
         // Guard 5: s* floor via max(0, ...) on the dynamic term
         double sqrtTerm = 2.0 * Math.sqrt(aMax * vehicle.getB());
         double interactionTerm = (sqrtTerm > 0.0) ? (v * deltaV / sqrtTerm) : 0.0;
-        double sStar = vehicle.getS0() + Math.max(0.0, v * vehicle.getTimeHeadway() + interactionTerm);
+        double sStar =
+                vehicle.getS0() + Math.max(0.0, v * vehicle.getTimeHeadway() + interactionTerm);
 
         // IDM acceleration
         double sRatio = sStar / safeGap;
         return aMax * (1.0 - freeRoadTerm - sRatio * sRatio);
     }
 
-    /**
-     * Computes IDM free-flow acceleration (no leader).
-     */
+    /** Computes IDM free-flow acceleration (no leader). */
     @Override
     public double computeFreeFlowAcceleration(Vehicle vehicle) {
         return computeAcceleration(vehicle, 0, 0, 0, false);
     }
-
 }

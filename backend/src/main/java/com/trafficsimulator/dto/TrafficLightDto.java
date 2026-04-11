@@ -11,10 +11,10 @@ import lombok.NoArgsConstructor;
 @AllArgsConstructor
 public class TrafficLightDto {
     private String intersectionId;
-    private String roadId;         // which inbound road this light serves
-    private String state;          // "GREEN", "YELLOW", "RED"
-    private double x;              // pixel x at stop line
-    private double y;              // pixel y at stop line
-    private double angle;          // road direction for orientation
-    private boolean boxBlocked;    // true when GREEN but box-blocking prevents entry
+    private String roadId; // which inbound road this light serves
+    private String state; // "GREEN", "YELLOW", "RED"
+    private double x; // pixel x at stop line
+    private double y; // pixel y at stop line
+    private double angle; // road direction for orientation
+    private boolean boxBlocked; // true when GREEN but box-blocking prevents entry
 }

@@ -1,11 +1,12 @@
 package com.trafficsimulator.config;
 
-import com.fasterxml.jackson.databind.ObjectMapper;
-import com.trafficsimulator.model.*;
+import static org.assertj.core.api.Assertions.assertThat;
+
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 
-import static org.assertj.core.api.Assertions.assertThat;
+import com.fasterxml.jackson.databind.ObjectMapper;
+import com.trafficsimulator.model.*;
 
 class MapLoaderIntersectionTest {
 

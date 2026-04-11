@@ -1,5 +1,8 @@
 package com.trafficsimulator.model;
 
 public enum IntersectionType {
-    SIGNAL, ROUNDABOUT, PRIORITY, NONE
+    SIGNAL,
+    ROUNDABOUT,
+    PRIORITY,
+    NONE
 }

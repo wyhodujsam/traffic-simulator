@@ -1,12 +1,13 @@
 package com.trafficsimulator.engine;
 
-import com.trafficsimulator.model.*;
-import org.junit.jupiter.api.DisplayName;
-import org.junit.jupiter.api.Test;
+import static org.assertj.core.api.Assertions.*;
 
 import java.util.*;
 
-import static org.assertj.core.api.Assertions.*;
+import org.junit.jupiter.api.DisplayName;
+import org.junit.jupiter.api.Test;
+
+import com.trafficsimulator.model.*;
 
 class RoadNarrowingIntegrationTest {
 
@@ -15,25 +16,60 @@ class RoadNarrowingIntegrationTest {
 
     private Vehicle createVehicle(String id, double position, double speed, Lane lane) {
         return Vehicle.builder()
-            .id(id).position(position).speed(speed).acceleration(0)
-            .lane(lane).length(4.5).v0(33.33).aMax(1.5).b(2.0).s0(2.0).timeHeadway(1.5)
-            .spawnedAt(0).lastLaneChangeTick(0).forceLaneChange(false)
-            .laneChangeProgress(1.0).laneChangeSourceIndex(-1)
-            .build();
+                .id(id)
+                .position(position)
+                .speed(speed)
+                .acceleration(0)
+                .lane(lane)
+                .length(4.5)
+                .v0(33.33)
+                .aMax(1.5)
+                .b(2.0)
+                .s0(2.0)
+                .timeHeadway(1.5)
+                .spawnedAt(0)
+                .lastLaneChangeTick(0)
+                .forceLaneChange(false)
+                .laneChangeProgress(1.0)
+                .laneChangeSourceIndex(-1)
+                .build();
     }
 
     private Road createTwoLaneRoad() {
-        Lane lane0 = Lane.builder()
-            .id("r1-lane0").laneIndex(0).length(1000).maxSpeed(33.33).active(true)
-            .vehicles(new ArrayList<>()).obstacles(new ArrayList<>()).build();
-        Lane lane1 = Lane.builder()
-            .id("r1-lane1").laneIndex(1).length(1000).maxSpeed(33.33).active(true)
-            .vehicles(new ArrayList<>()).obstacles(new ArrayList<>()).build();
-        Road road = Road.builder()
-            .id("r1").name("Test Road").lanes(List.of(lane0, lane1))
-            .length(1000).speedLimit(33.33)
-            .startX(0).startY(300).endX(1000).endY(300)
-            .fromNodeId("n1").toNodeId("n2").build();
+        Lane lane0 =
+                Lane.builder()
+                        .id("r1-lane0")
+                        .laneIndex(0)
+                        .length(1000)
+                        .maxSpeed(33.33)
+                        .active(true)
+                        .vehicles(new ArrayList<>())
+                        .obstacles(new ArrayList<>())
+                        .build();
+        Lane lane1 =
+                Lane.builder()
+                        .id("r1-lane1")
+                        .laneIndex(1)
+                        .length(1000)
+                        .maxSpeed(33.33)
+                        .active(true)
+                        .vehicles(new ArrayList<>())
+                        .obstacles(new ArrayList<>())
+                        .build();
+        Road road =
+                Road.builder()
+                        .id("r1")
+                        .name("Test Road")
+                        .lanes(List.of(lane0, lane1))
+                        .length(1000)
+                        .speedLimit(33.33)
+                        .startX(0)
+                        .startY(300)
+                        .endX(1000)
+                        .endY(300)
+                        .fromNodeId("n1")
+                        .toNodeId("n2")
+                        .build();
         lane0.setRoad(road);
         lane1.setRoad(road);
         return road;
@@ -43,11 +79,12 @@ class RoadNarrowingIntegrationTest {
         Map<String, Road> roads = new LinkedHashMap<>();
         roads.put(road.getId(), road);
         return RoadNetwork.builder()
-            .id("test-network").roads(roads)
-            .intersections(Map.of())
-            .spawnPoints(List.of())
-            .despawnPoints(List.of())
-            .build();
+                .id("test-network")
+                .roads(roads)
+                .intersections(Map.of())
+                .spawnPoints(List.of())
+                .despawnPoints(List.of())
+                .build();
     }
 
     @Test
@@ -101,8 +138,9 @@ class RoadNarrowingIntegrationTest {
         }
 
         // Both vehicles should be in lane 1 now
-        assertThat(lane1.getVehiclesView()).extracting(Vehicle::getId)
-            .containsExactlyInAnyOrder("v1", "v2");
+        assertThat(lane1.getVehiclesView())
+                .extracting(Vehicle::getId)
+                .containsExactlyInAnyOrder("v1", "v2");
         assertThat(lane0.getVehiclesView()).isEmpty();
     }
 
@@ -133,10 +171,12 @@ class RoadNarrowingIntegrationTest {
         }
 
         // Measure baseline average speed
-        double baselineAvg = road.getLanes().stream()
-            .flatMap(l -> l.getVehiclesView().stream())
-            .mapToDouble(Vehicle::getSpeed)
-            .average().orElse(0);
+        double baselineAvg =
+                road.getLanes().stream()
+                        .flatMap(l -> l.getVehiclesView().stream())
+                        .mapToDouble(Vehicle::getSpeed)
+                        .average()
+                        .orElse(0);
 
         // Flag vehicles in lane 0 for forced merge (keep lane active so engine processes them)
         for (Vehicle v : lane0.getVehiclesView()) {
@@ -152,13 +192,13 @@ class RoadNarrowingIntegrationTest {
         }
 
         // Measure post-merge average speed (lane 1 has more vehicles now)
-        double postAvg = lane1.getVehiclesView().stream()
-            .mapToDouble(Vehicle::getSpeed)
-            .average().orElse(0);
+        double postAvg =
+                lane1.getVehiclesView().stream().mapToDouble(Vehicle::getSpeed).average().orElse(0);
 
         // Post-merge speed should be lower due to increased density
         // (more vehicles in fewer lanes)
-        assertThat(postAvg).as("Post-merge avg speed should be <= baseline")
-            .isLessThanOrEqualTo(baselineAvg + 1.0); // 1.0 tolerance
+        assertThat(postAvg)
+                .as("Post-merge avg speed should be <= baseline")
+                .isLessThanOrEqualTo(baselineAvg + 1.0); // 1.0 tolerance
     }
 }
