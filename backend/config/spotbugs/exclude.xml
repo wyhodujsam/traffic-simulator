@@ -1,0 +1,35 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<FindBugsFilter>
+    <!--
+        SpotBugs exclusions for traffic-simulator.
+        In-memory simulation — no DB, no user auth, no external input.
+    -->
+
+    <!-- Lombok @Data/@Builder generates getters returning mutable collections.
+         In this simulation all model objects are intentionally mutable. -->
+    <Match>
+        <Bug pattern="EI_EXPOSE_REP,EI_EXPOSE_REP2"/>
+    </Match>
+
+    <!-- CRLF injection in logs: all logged data comes from internal simulation state
+         or trusted JSON config files, not from user input. -->
+    <Match>
+        <Bug pattern="CRLF_INJECTION_LOGS"/>
+    </Match>
+
+    <!-- SPRING_ENDPOINT: informational only, not a real issue -->
+    <Match>
+        <Bug pattern="SPRING_ENDPOINT"/>
+    </Match>
+
+    <!-- Spring-generated proxy classes -->
+    <Match>
+        <Source name="~.*\$\$.*"/>
+    </Match>
+
+    <!-- Test classes -->
+    <Match>
+        <Class name="~.*Test$"/>
+        <Bug pattern="RV_RETURN_VALUE_IGNORED_NO_SIDE_EFFECT"/>
+    </Match>
+</FindBugsFilter>
