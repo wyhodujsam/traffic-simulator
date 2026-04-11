@@ -24,6 +24,10 @@ import lombok.extern.slf4j.Slf4j;
 @Component
 @RequiredArgsConstructor
 @Slf4j
+@org.springframework.boot.autoconfigure.condition.ConditionalOnProperty(
+        name = "simulation.tick-emitter.enabled",
+        havingValue = "true",
+        matchIfMissing = true)
 public class TickEmitter {
 
     /** Warn threshold for slow ticks (ms) */

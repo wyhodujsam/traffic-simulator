@@ -14,15 +14,8 @@ import io.cucumber.spring.CucumberContextConfiguration;
 @CucumberContextConfiguration
 @SpringBootTest(
         webEnvironment = SpringBootTest.WebEnvironment.NONE,
-        properties = "spring.task.scheduling.pool.size=0")
-public class CucumberSpringConfig {
-
-    @TestConfiguration
-    static class DisableScheduling {
-        @Bean
-        @Primary
-        public TickEmitter tickEmitter() {
-            return mock(TickEmitter.class);
-        }
-    }
-}
+        properties = {
+            "spring.task.scheduling.pool.size=0",
+            "simulation.tick-emitter.enabled=false"
+        })
+public class CucumberSpringConfig {}

@@ -15,7 +15,7 @@ Feature: Traffic signals and intersections
     Given mapa "four-way-signal" jest załadowana
     When uruchamiam symulację
     And ustawiam tempo spawnowania na 3.0 pojazdów/s
-    And wykonuję 600 ticków z krokiem 0.05s
+    And wykonuję 800 ticków z krokiem 0.05s
     Then istnieją pojazdy z prędkością 0.0
 
   @IXTN-03
