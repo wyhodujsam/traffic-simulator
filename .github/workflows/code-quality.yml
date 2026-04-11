@@ -53,10 +53,14 @@ jobs:
           echo "## Code Quality Report" > quality-report.md
           echo "" >> quality-report.md
 
-          PMD_COUNT=$(grep -c "<violation" target/pmd.xml 2>/dev/null || echo "0")
-          CPD_COUNT=$(grep -c "<duplication" target/cpd.xml 2>/dev/null || echo "0")
-          CS_COUNT=$(grep -c 'severity=' target/checkstyle-result.xml 2>/dev/null || echo "0")
-          SB_COUNT=$(grep -c "BugInstance" target/spotbugsXml.xml 2>/dev/null || echo "0")
+          PMD_COUNT="$(grep -c '<violation' target/pmd.xml 2>/dev/null || true)"
+          PMD_COUNT="${PMD_COUNT:-0}"
+          CPD_COUNT="$(grep -c '<duplication' target/cpd.xml 2>/dev/null || true)"
+          CPD_COUNT="${CPD_COUNT:-0}"
+          CS_COUNT="$(grep -c 'severity=' target/checkstyle-result.xml 2>/dev/null || true)"
+          CS_COUNT="${CS_COUNT:-0}"
+          SB_COUNT="$(grep -c 'BugInstance' target/spotbugsXml.xml 2>/dev/null || true)"
+          SB_COUNT="${SB_COUNT:-0}"
 
           echo "| Tool | Issues |" >> quality-report.md
           echo "|------|--------|" >> quality-report.md
