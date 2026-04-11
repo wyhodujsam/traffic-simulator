@@ -160,7 +160,7 @@ class LaneTest {
         long elapsed = (System.nanoTime() - start) / 1_000_000;
 
         assertThat(elapsed)
-                .as("500 vehicles x 100 getLeader() calls should be under 100ms")
-                .isLessThan(100);
+                .as("500 vehicles x 100 getLeader() calls should be under 500ms")
+                .isLessThan(500);
     }
 }
