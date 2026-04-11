@@ -1,14 +1,15 @@
 package com.trafficsimulator.config;
 
+import static org.assertj.core.api.Assertions.assertThat;
+import static org.assertj.core.api.Assertions.assertThatThrownBy;
+
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Test;
+
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.trafficsimulator.model.Lane;
 import com.trafficsimulator.model.Road;
 import com.trafficsimulator.model.RoadNetwork;
-import org.junit.jupiter.api.BeforeEach;
-import org.junit.jupiter.api.Test;
-
-import static org.assertj.core.api.Assertions.assertThat;
-import static org.assertj.core.api.Assertions.assertThatThrownBy;
 
 class MapLoaderTest {
 
@@ -91,7 +92,7 @@ class MapLoaderTest {
     @Test
     void loadNonexistentFile_throwsException() {
         assertThatThrownBy(() -> mapLoader.loadFromClasspath("maps/nonexistent.json"))
-            .isInstanceOf(IllegalArgumentException.class)
-            .hasMessageContaining("not found");
+                .isInstanceOf(IllegalArgumentException.class)
+                .hasMessageContaining("not found");
     }
 }

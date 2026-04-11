@@ -1,32 +1,32 @@
 package com.trafficsimulator.model;
 
-import org.junit.jupiter.api.Test;
-
 import static org.assertj.core.api.Assertions.assertThat;
+
+import org.junit.jupiter.api.Test;
 
 class VehicleTest {
 
     private Vehicle createVehicle(double v0) {
         return Vehicle.builder()
-            .id("v1")
-            .position(100.0)
-            .speed(10.0)
-            .acceleration(0.0)
-            .length(4.5)
-            .v0(v0)
-            .aMax(1.4)
-            .b(2.0)
-            .s0(2.0)
-            .T(1.5)
-            .spawnedAt(0)
-            .build();
+                .id("v1")
+                .position(100.0)
+                .speed(10.0)
+                .acceleration(0.0)
+                .length(4.5)
+                .v0(v0)
+                .aMax(1.4)
+                .b(2.0)
+                .s0(2.0)
+                .timeHeadway(1.5)
+                .spawnedAt(0)
+                .build();
     }
 
     @Test
     void testUpdatePhysics_clampsNegativeSpeed() {
         Vehicle v = createVehicle(33.3);
         v.updatePhysics(50.0, -5.0, -1.0);
-        assertThat(v.getSpeed()).isEqualTo(0.0);
+        assertThat(v.getSpeed()).isZero();
         assertThat(v.getPosition()).isEqualTo(50.0);
         assertThat(v.getAcceleration()).isEqualTo(-1.0);
     }
@@ -35,7 +35,7 @@ class VehicleTest {
     void testUpdatePhysics_clampsNegativePosition() {
         Vehicle v = createVehicle(33.3);
         v.updatePhysics(-1.0, 10.0, 0.5);
-        assertThat(v.getPosition()).isEqualTo(0.0);
+        assertThat(v.getPosition()).isZero();
     }
 
     @Test
@@ -55,7 +55,7 @@ class VehicleTest {
 
         assertThat(v.getLane()).isSameAs(targetLane);
         assertThat(v.getLaneChangeSourceIndex()).isZero();
-        assertThat(v.getLaneChangeProgress()).isEqualTo(0.0);
+        assertThat(v.getLaneChangeProgress()).isZero();
         assertThat(v.getLastLaneChangeTick()).isEqualTo(42L);
     }
 
@@ -84,7 +84,7 @@ class VehicleTest {
         v.completeLaneChange();
 
         assertThat(v.getLaneChangeSourceIndex()).isEqualTo(-1);
-        assertThat(v.getLaneChangeProgress()).isEqualTo(0.0);
+        assertThat(v.getLaneChangeProgress()).isZero();
     }
 
     @Test

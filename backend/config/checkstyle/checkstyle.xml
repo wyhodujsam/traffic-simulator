@@ -1,0 +1,103 @@
+<?xml version="1.0"?>
+<!DOCTYPE module PUBLIC
+        "-//Checkstyle//DTD Checkstyle Configuration 1.3//EN"
+        "https://checkstyle.org/dtds/configuration_1_3.dtd">
+
+<!--
+    Clean Code Checkstyle configuration for Java/Spring Boot.
+    Based on Google Java Style with pragmatic adjustments.
+-->
+<module name="Checker">
+    <property name="charset" value="UTF-8"/>
+    <property name="severity" value="warning"/>
+
+    <!-- ===== File-level checks ===== -->
+    <module name="FileLength">
+        <property name="max" value="500"/>
+    </module>
+    <module name="FileTabCharacter"/>
+    <module name="NewlineAtEndOfFile"/>
+    <module name="LineLength">
+        <property name="max" value="120"/>
+        <property name="ignorePattern" value="^package.*|^import.*|a href|href|http://|https://|ftp://"/>
+    </module>
+
+    <module name="TreeWalker">
+
+        <!-- ===== Naming Conventions ===== -->
+        <module name="TypeName"/>                          <!-- PascalCase -->
+        <module name="MethodName"/>                        <!-- camelCase -->
+        <module name="MemberName"/>                        <!-- camelCase -->
+        <module name="ParameterName"/>                     <!-- camelCase -->
+        <module name="LocalVariableName"/>                 <!-- camelCase -->
+        <module name="ConstantName"/>                      <!-- UPPER_SNAKE -->
+        <module name="PackageName">
+            <property name="format" value="^[a-z]+(\.[a-z][a-z0-9]*)*$"/>
+        </module>
+
+        <!-- ===== Imports ===== -->
+        <module name="AvoidStarImport"/>
+        <module name="RedundantImport"/>
+        <module name="UnusedImports"/>
+
+        <!-- ===== Size / Complexity ===== -->
+        <module name="MethodLength">
+            <property name="max" value="60"/>
+        </module>
+        <module name="ParameterNumber">
+            <property name="max" value="5"/>
+            <property name="ignoreOverriddenMethods" value="true"/>
+        </module>
+
+        <!-- ===== Whitespace ===== -->
+        <module name="WhitespaceAround">
+            <property name="allowEmptyConstructors" value="true"/>
+            <property name="allowEmptyMethods" value="true"/>
+            <property name="allowEmptyTypes" value="true"/>
+        </module>
+        <module name="GenericWhitespace"/>
+        <module name="NoWhitespaceBefore"/>
+        <module name="NoWhitespaceAfter"/>
+
+        <!-- ===== Braces ===== -->
+        <module name="NeedBraces"/>
+        <module name="LeftCurly"/>
+        <module name="RightCurly"/>
+
+        <!-- ===== Coding ===== -->
+        <module name="EmptyStatement"/>
+        <module name="EqualsHashCode"/>
+        <module name="SimplifyBooleanExpression"/>
+        <module name="SimplifyBooleanReturn"/>
+        <module name="StringLiteralEquality"/>
+        <module name="OneStatementPerLine"/>
+        <module name="MultipleVariableDeclarations"/>
+        <module name="MissingSwitchDefault"/>
+        <module name="FallThrough"/>
+        <module name="DefaultComesLast"/>
+        <module name="OverloadMethodsDeclarationOrder"/>
+
+        <!-- ===== Exception handling ===== -->
+        <module name="IllegalCatch">
+            <property name="illegalClassNames" value="java.lang.Exception, java.lang.Throwable, java.lang.RuntimeException"/>
+        </module>
+        <module name="IllegalThrows"/>
+
+        <!-- ===== Annotations ===== -->
+        <module name="MissingOverride"/>
+
+        <!-- ===== Misc ===== -->
+        <module name="ArrayTypeStyle"/>
+        <module name="UpperEll"/>
+        <module name="OuterTypeFilename"/>
+
+        <!-- ===== Modifiers ===== -->
+        <module name="ModifierOrder"/>
+        <module name="RedundantModifier"/>
+
+        <!-- ===== Suppression via @SuppressWarnings ===== -->
+        <module name="SuppressWarningsHolder"/>
+    </module>
+
+    <module name="SuppressWarningsFilter"/>
+</module>

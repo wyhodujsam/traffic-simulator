@@ -1,5 +1,10 @@
 package com.trafficsimulator.scheduler;
 
+import java.util.Map;
+
+import org.springframework.scheduling.annotation.Scheduled;
+import org.springframework.stereotype.Component;
+
 import com.trafficsimulator.dto.SimulationStateDto;
 import com.trafficsimulator.engine.IIntersectionManager;
 import com.trafficsimulator.engine.ILaneChangeEngine;
@@ -12,16 +17,17 @@ import com.trafficsimulator.engine.StatePublisher;
 import com.trafficsimulator.model.Lane;
 import com.trafficsimulator.model.Road;
 import com.trafficsimulator.model.RoadNetwork;
+
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
-import org.springframework.scheduling.annotation.Scheduled;
-import org.springframework.stereotype.Component;
-
-import java.util.Map;
 
 @Component
 @RequiredArgsConstructor
 @Slf4j
+@org.springframework.boot.autoconfigure.condition.ConditionalOnProperty(
+        name = "simulation.tick-emitter.enabled",
+        havingValue = "true",
+        matchIfMissing = true)
 public class TickEmitter {
 
     /** Warn threshold for slow ticks (ms) */
@@ -61,9 +67,15 @@ public class TickEmitter {
             // 3. Build snapshot and broadcast (under lock to read consistent state)
             String mapId = network != null ? network.getId() : null;
             String error = simulationEngine.getLastError();
-            SimulationStateDto state = snapshotBuilder.buildSnapshot(
-                network, tick, simulationEngine.getStatus().name(),
-                vehicleSpawner, mapId, error);
+            SimulationStateDto state =
+                    snapshotBuilder.buildSnapshot(
+                            new SnapshotBuilder.SnapshotConfig(
+                                    network,
+                                    tick,
+                                    simulationEngine.getStatus().name(),
+                                    vehicleSpawner,
+                                    mapId,
+                                    error));
             statePublisher.broadcast(state);
 
             // Clear error after publishing once
@@ -78,7 +90,9 @@ public class TickEmitter {
     }
 
     private void runSimulationPipeline(RoadNetwork network, long tick) {
-        if (network == null) return;
+        if (network == null) {
+            return;
+        }
 
         double baseDt = 0.05; // 50ms = 1/20 Hz
         double multiplier = simulationEngine.getSpeedMultiplier();
@@ -120,12 +134,19 @@ public class TickEmitter {
     private void logTickMetrics(long tick, long tickStart, SimulationStateDto state) {
         long elapsedMs = (System.nanoTime() - tickStart) / 1_000_000;
         if (elapsedMs > TICK_WARN_MS) {
-            log.warn("Tick #{} took {}ms (threshold {}ms) — vehicles={}", tick, elapsedMs, TICK_WARN_MS,
-                state.getVehicles().size());
+            log.warn(
+                    "Tick #{} took {}ms (threshold {}ms) — vehicles={}",
+                    tick,
+                    elapsedMs,
+                    TICK_WARN_MS,
+                    state.getVehicles().size());
         }
         if (tick % 100 == 0) {
-            log.info("Tick #{} — status={}, vehicles={}", tick, state.getStatus(), state.getVehicles().size());
+            log.info(
+                    "Tick #{} — status={}, vehicles={}",
+                    tick,
+                    state.getStatus(),
+                    state.getVehicles().size());
         }
     }
-
 }

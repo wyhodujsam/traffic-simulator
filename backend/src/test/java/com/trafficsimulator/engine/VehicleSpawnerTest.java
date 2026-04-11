@@ -1,15 +1,16 @@
 package com.trafficsimulator.engine;
 
-import com.trafficsimulator.model.*;
-import org.junit.jupiter.api.BeforeEach;
-import org.junit.jupiter.api.Test;
+import static org.assertj.core.api.Assertions.assertThat;
 
 import java.util.ArrayList;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 
-import static org.assertj.core.api.Assertions.assertThat;
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Test;
+
+import com.trafficsimulator.model.*;
 
 class VehicleSpawnerTest {
 
@@ -22,29 +23,43 @@ class VehicleSpawnerTest {
         spawner = new VehicleSpawner();
         spawner.setVehiclesPerSecond(1.0);
 
-        Road road = Road.builder()
-            .id("r1").name("Test Road").length(800.0).speedLimit(33.3)
-            .startX(0).startY(0).endX(800).endY(0)
-            .fromNodeId("n1").toNodeId("n2")
-            .lanes(new ArrayList<>())
-            .build();
+        Road road =
+                Road.builder()
+                        .id("r1")
+                        .name("Test Road")
+                        .length(800.0)
+                        .speedLimit(33.3)
+                        .startX(0)
+                        .startY(0)
+                        .endX(800)
+                        .endY(0)
+                        .fromNodeId("n1")
+                        .toNodeId("n2")
+                        .lanes(new ArrayList<>())
+                        .build();
 
-        lane0 = Lane.builder()
-            .id("r1-lane0").laneIndex(0).road(road)
-            .length(800.0).maxSpeed(33.3).active(true)
-            .build();
+        lane0 =
+                Lane.builder()
+                        .id("r1-lane0")
+                        .laneIndex(0)
+                        .road(road)
+                        .length(800.0)
+                        .maxSpeed(33.3)
+                        .active(true)
+                        .build();
         road.getLanes().add(lane0);
 
         Map<String, Road> roads = new LinkedHashMap<>();
         roads.put("r1", road);
 
-        network = RoadNetwork.builder()
-            .id("test")
-            .roads(roads)
-            .intersections(new LinkedHashMap<>())
-            .spawnPoints(List.of(new SpawnPoint("r1", 0, 0.0)))
-            .despawnPoints(List.of(new DespawnPoint("r1", 0, 800.0)))
-            .build();
+        network =
+                RoadNetwork.builder()
+                        .id("test")
+                        .roads(roads)
+                        .intersections(new LinkedHashMap<>())
+                        .spawnPoints(List.of(new SpawnPoint("r1", 0, 0.0)))
+                        .despawnPoints(List.of(new DespawnPoint("r1", 0, 800.0)))
+                        .build();
     }
 
     @Test
@@ -62,7 +77,7 @@ class VehicleSpawnerTest {
 
         Vehicle v = lane0.getVehiclesView().get(0);
         assertThat(v.getId()).isNotNull();
-        assertThat(v.getPosition()).isEqualTo(0.0);
+        assertThat(v.getPosition()).isZero();
         // Vehicle spawns at 50% of lane maxSpeed to avoid braking cascade
         assertThat(v.getSpeed()).isEqualTo(0.5 * lane0.getMaxSpeed());
         assertThat(v.getLane()).isSameAs(lane0);
@@ -81,7 +96,7 @@ class VehicleSpawnerTest {
         assertThat(v.getAMax()).isBetween(1.4 * 0.8, 1.4 * 1.2);
         assertThat(v.getB()).isBetween(2.0 * 0.8, 2.0 * 1.2);
         assertThat(v.getS0()).isEqualTo(2.0); // s0 is NOT randomised
-        assertThat(v.getT()).isBetween(1.5 * 0.8, 1.5 * 1.2);
+        assertThat(v.getTimeHeadway()).isBetween(1.5 * 0.8, 1.5 * 1.2);
     }
 
     @Test
@@ -97,13 +112,14 @@ class VehicleSpawnerTest {
 
     @Test
     void tick_noSpawnPoints_doesNothing() {
-        RoadNetwork emptyNetwork = RoadNetwork.builder()
-            .id("empty")
-            .roads(new LinkedHashMap<>())
-            .intersections(new LinkedHashMap<>())
-            .spawnPoints(List.of())
-            .despawnPoints(List.of())
-            .build();
+        RoadNetwork emptyNetwork =
+                RoadNetwork.builder()
+                        .id("empty")
+                        .roads(new LinkedHashMap<>())
+                        .intersections(new LinkedHashMap<>())
+                        .spawnPoints(List.of())
+                        .despawnPoints(List.of())
+                        .build();
 
         spawner.tick(1.0, emptyNetwork, 1);
         // Verify no side effects: no roads created, no throughput recorded

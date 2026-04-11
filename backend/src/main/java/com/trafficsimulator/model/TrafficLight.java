@@ -1,8 +1,9 @@
 package com.trafficsimulator.model;
 
+import java.util.List;
+
 import lombok.Builder;
 import lombok.Data;
-import java.util.List;
 
 @Data
 @Builder
@@ -13,8 +14,8 @@ public class TrafficLight {
     private long phaseElapsedMs;
 
     /**
-     * Advances the traffic light by dt seconds.
-     * When phaseElapsedMs exceeds current phase duration, advances to next phase (wraps around).
+     * Advances the traffic light by dt seconds. When phaseElapsedMs exceeds current phase duration,
+     * advances to next phase (wraps around).
      */
     public void tick(double dtSeconds) {
         long dtMs = (long) (dtSeconds * 1000.0);
@@ -29,36 +30,32 @@ public class TrafficLight {
         return phases.get(currentPhaseIndex);
     }
 
-    /**
-     * Returns true if the given inbound road currently has a green signal.
-     */
+    /** Returns true if the given inbound road currently has a green signal. */
     public boolean isGreen(String inboundRoadId) {
         TrafficLightPhase phase = getCurrentPhase();
         return phase.getType() == TrafficLightPhase.PhaseType.GREEN
-            && phase.getGreenRoadIds().contains(inboundRoadId);
+                && phase.getGreenRoadIds().contains(inboundRoadId);
     }
 
-    /**
-     * Returns true if the given inbound road currently has a yellow signal.
-     */
+    /** Returns true if the given inbound road currently has a yellow signal. */
     public boolean isYellow(String inboundRoadId) {
         TrafficLightPhase phase = getCurrentPhase();
         return phase.getType() == TrafficLightPhase.PhaseType.YELLOW
-            && phase.getGreenRoadIds().contains(inboundRoadId);
+                && phase.getGreenRoadIds().contains(inboundRoadId);
     }
 
-    /**
-     * Returns the signal state for a given inbound road: "GREEN", "YELLOW", or "RED".
-     */
+    /** Returns the signal state for a given inbound road: "GREEN", "YELLOW", or "RED". */
     public String getSignalState(String inboundRoadId) {
-        if (isGreen(inboundRoadId)) return "GREEN";
-        if (isYellow(inboundRoadId)) return "YELLOW";
+        if (isGreen(inboundRoadId)) {
+            return "GREEN";
+        }
+        if (isYellow(inboundRoadId)) {
+            return "YELLOW";
+        }
         return "RED";
     }
 
-    /**
-     * Replaces phases and resets timer. Used by SET_LIGHT_CYCLE command.
-     */
+    /** Replaces phases and resets timer. Used by SET_LIGHT_CYCLE command. */
     public void replacePhases(List<TrafficLightPhase> newPhases) {
         this.phases = newPhases;
         this.phaseElapsedMs = 0;

@@ -1,5 +1,5 @@
 /** Global render scale — multiplies all coordinates and dimensions */
-export const RENDER_SCALE = 2;
+export const RENDER_SCALE = 3;
 
 /** Pixel width per lane — used by frontend projection */
 export const LANE_WIDTH_PX = 14 * RENDER_SCALE;

@@ -10,11 +10,11 @@ import lombok.NoArgsConstructor;
 @NoArgsConstructor
 @AllArgsConstructor
 public class SimulationStatusDto {
-    private String status;           // "RUNNING", "PAUSED", "STOPPED"
+    private String status; // "RUNNING", "PAUSED", "STOPPED"
     private long tick;
     private int vehicleCount;
     private double speedMultiplier;
     private double spawnRate;
-    private String mapId;            // currently loaded map ID, or null
-    private double maxSpeed;         // global max speed in m/s
+    private String mapId; // currently loaded map ID, or null
+    private double maxSpeed; // global max speed in m/s
 }

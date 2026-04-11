@@ -2,14 +2,14 @@
 gsd_state_version: 1.0
 milestone: v1.0
 milestone_name: milestone
-current_phase: 15
-status: Milestone complete
-last_updated: "2026-04-03T15:46:08.920Z"
+current_phase: 16
+status: Phase 16 Complete
+last_updated: "2026-04-08T16:51:00.000Z"
 progress:
-  total_phases: 15
-  completed_phases: 13
-  total_plans: 61
-  completed_plans: 63
+  total_phases: 16
+  completed_phases: 16
+  total_plans: 62
+  completed_plans: 64
 ---
 
 # Project State
@@ -42,6 +42,10 @@ See: .planning/PROJECT.md (updated 2026-03-27)
 | 10 | Roundabouts, Priority Intersections & Polish | ✓ Complete |
 | 11 | Architecture Refactoring | ✓ Complete |
 | 12 | Intersection Rendering Refactor | ✓ Complete |
+| 13 | Canvas Layout Fix & Merge Lane Targeting | ✓ Complete |
+| 14 | Overlap Fix & Responsive Layout | ✓ Complete |
+| 15 | SonarQube Code Quality Fixes | ✓ Complete |
+| 16 | Combined Scenario — Roundabout + Signal + Merge + Loop | ✓ Complete (1/1 plans done) |
 
 ## Session Log
 
@@ -63,3 +67,4 @@ See: .planning/PROJECT.md (updated 2026-03-27)
 - 2026-04-02: Phase 13 Plan 13-03 complete — Merge-aware lane targeting: ramp vehicles (1-lane inbound) now target lane 0 of multi-lane outbound road; pickTargetLane overloaded with inboundRoad parameter; 140 tests pass; FIX-03 satisfied
 - 2026-04-02: Phase 14 Plan 14-01 complete — BUG-1 fix: shared lastPlacedPosition map prevents same-tick vehicle overlap at merge intersections; effectivePosition = max(outBuffer, lastPlaced + MIN_ENTRY_GAP); all 140 tests pass
 - 2026-04-02: Phase 14 Plan 14-02 complete — Responsive flex layout (useIsMobile hook, 768px breakpoint), flexShrink:0 on sidebar (BUG-3 fix), CSS transform:scale canvas fill with ResizeObserver (BUG-4 fix), mobile stacked layout with 50vh canvas cap (BUG-2 fix); tsc --noEmit passes
+- 2026-04-08: Phase 16 Plan 16-01 complete — combined-loop.json capstone scenario: 14 nodes, 15 roads, 8 intersections (4 ROUNDABOUT + 1 SIGNAL + 3 PRIORITY); 6-phase traffic light; loop topology; MapLoaderScenarioTest.loadsCombinedLoop() passes; 7/7 scenario tests pass

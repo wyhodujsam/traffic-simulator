@@ -1,11 +1,11 @@
 package com.trafficsimulator.dto;
 
+import java.util.List;
+
 import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Data;
 import lombok.NoArgsConstructor;
-
-import java.util.List;
 
 @Data
 @Builder
@@ -14,7 +14,7 @@ import java.util.List;
 public class SimulationStateDto {
     private long tick;
     private long timestamp;
-    private String status;            // "RUNNING", "PAUSED", "STOPPED"
+    private String status; // "RUNNING", "PAUSED", "STOPPED"
     private List<VehicleDto> vehicles;
     private List<ObstacleDto> obstacles;
     private List<TrafficLightDto> trafficLights;

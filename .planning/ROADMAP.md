@@ -286,6 +286,17 @@ Plans:
 - [x] 15-02-PLAN.md — Refactor SnapshotBuilder, PhysicsEngine, TickEmitter, SimulationController (SQ-03, SQ-06)
 - [x] 15-03-PLAN.md — Refactor LaneChangeEngine (SQ-04) + IntersectionManager (SQ-05)
 
+### Phase 16: Combined Scenario — Roundabout + Signal + Merge + Loop
+
+**Goal:** Create a complex multi-feature scenario JSON map combining a roundabout, signalized intersection, highway merge, and a loop road — vehicles circulate on the loop or despawn off-screen
+**Requirements**: MAP-01
+**Depends on:** Phase 15
+
+**Plans:** 1/1 plans complete
+
+Plans:
+- [x] 16-01-PLAN.md — Create combined-loop.json scenario map with roundabout + signal + merge + loop (MAP-01)
+
 ---
 *Roadmap created: 2026-03-27*
 *All 33 v1 requirements mapped across 10 phases*

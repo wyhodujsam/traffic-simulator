@@ -1,0 +1,72 @@
+{
+  "id": "combined-loop",
+  "name": "Combined Loop — Roundabout + Signal + Merge",
+  "description": "Complex scenario combining a highway merge, 4-arm roundabout, signalised intersection, and a loop road. Vehicles enter from 3 directions, pass through the merge and roundabout, cross a traffic signal, and may loop back through the southern road to re-enter the roundabout.",
+  "nodes": [
+    { "id": "n_hwy_entry",   "type": "ENTRY",        "x": 50.0,  "y": 220.0 },
+    { "id": "n_ramp_entry",  "type": "ENTRY",        "x": 50.0,  "y": 100.0 },
+    { "id": "n_north_entry", "type": "ENTRY",        "x": 300.0, "y": 50.0 },
+    { "id": "n_east_entry",  "type": "ENTRY",        "x": 1000.0,"y": 250.0 },
+    { "id": "n_north_exit",  "type": "EXIT",         "x": 300.0, "y": 50.0 },
+    { "id": "n_east_exit",   "type": "EXIT",         "x": 1000.0,"y": 250.0 },
+    { "id": "n_merge",       "type": "INTERSECTION", "x": 150.0, "y": 220.0 },
+    { "id": "n_ring_n",      "type": "INTERSECTION", "x": 300.0, "y": 222.0 },
+    { "id": "n_ring_w",      "type": "INTERSECTION", "x": 272.0, "y": 250.0 },
+    { "id": "n_ring_s",      "type": "INTERSECTION", "x": 300.0, "y": 278.0 },
+    { "id": "n_ring_e",      "type": "INTERSECTION", "x": 328.0, "y": 250.0 },
+    { "id": "n_signal",      "type": "INTERSECTION", "x": 700.0, "y": 250.0 },
+    { "id": "n_loop_se",     "type": "INTERSECTION", "x": 700.0, "y": 500.0 },
+    { "id": "n_loop_sw",     "type": "INTERSECTION", "x": 300.0, "y": 500.0 }
+  ],
+  "roads": [
+    { "id": "r_hwy_in",         "name": "Highway Approach",      "fromNodeId": "n_hwy_entry",   "toNodeId": "n_merge",    "length": 100.0, "speedLimit": 22.2, "laneCount": 2 },
+    { "id": "r_ramp_in",        "name": "On-Ramp",               "fromNodeId": "n_ramp_entry",  "toNodeId": "n_merge",    "length": 150.0, "speedLimit": 16.7, "laneCount": 1 },
+    { "id": "r_merge_to_rndbt", "name": "Merge to Roundabout",   "fromNodeId": "n_merge",       "toNodeId": "n_ring_w",   "length": 120.0, "speedLimit": 16.7, "laneCount": 2 },
+    { "id": "r_north_in",       "name": "North Approach",        "fromNodeId": "n_north_entry", "toNodeId": "n_ring_n",   "length": 150.0, "speedLimit": 11.1, "laneCount": 1 },
+    { "id": "r_north_out",      "name": "North Departure",       "fromNodeId": "n_ring_n",      "toNodeId": "n_north_exit","length": 150.0, "speedLimit": 11.1, "laneCount": 1 },
+    { "id": "r_ring_nw",        "name": "Ring N-W",              "fromNodeId": "n_ring_n",      "toNodeId": "n_ring_w",   "length": 22.0,  "speedLimit": 8.3,  "laneCount": 1 },
+    { "id": "r_ring_ws",        "name": "Ring W-S",              "fromNodeId": "n_ring_w",      "toNodeId": "n_ring_s",   "length": 22.0,  "speedLimit": 8.3,  "laneCount": 1 },
+    { "id": "r_ring_se",        "name": "Ring S-E",              "fromNodeId": "n_ring_s",      "toNodeId": "n_ring_e",   "length": 22.0,  "speedLimit": 8.3,  "laneCount": 1 },
+    { "id": "r_ring_en",        "name": "Ring E-N",              "fromNodeId": "n_ring_e",      "toNodeId": "n_ring_n",   "length": 22.0,  "speedLimit": 8.3,  "laneCount": 1 },
+    { "id": "r_rndbt_to_sig",   "name": "Roundabout to Signal",  "fromNodeId": "n_ring_e",      "toNodeId": "n_signal",   "length": 350.0, "speedLimit": 16.7, "laneCount": 2 },
+    { "id": "r_east_out",       "name": "East Departure",        "fromNodeId": "n_signal",      "toNodeId": "n_east_exit","length": 280.0, "speedLimit": 16.7, "laneCount": 1 },
+    { "id": "r_east_in",        "name": "East Approach",         "fromNodeId": "n_east_entry",  "toNodeId": "n_signal",   "length": 280.0, "speedLimit": 16.7, "laneCount": 1 },
+    { "id": "r_sig_to_loop",    "name": "Signal to Loop SE",     "fromNodeId": "n_signal",      "toNodeId": "n_loop_se",  "length": 250.0, "speedLimit": 13.9, "laneCount": 1 },
+    { "id": "r_loop_bottom",    "name": "Loop Bottom",           "fromNodeId": "n_loop_se",     "toNodeId": "n_loop_sw",  "length": 400.0, "speedLimit": 13.9, "laneCount": 1 },
+    { "id": "r_loop_to_rndbt",  "name": "Loop to Roundabout",   "fromNodeId": "n_loop_sw",     "toNodeId": "n_ring_s",   "length": 220.0, "speedLimit": 13.9, "laneCount": 1 }
+  ],
+  "intersections": [
+    { "nodeId": "n_merge",   "type": "PRIORITY" },
+    { "nodeId": "n_ring_n",  "type": "ROUNDABOUT", "intersectionSize": 12, "roundaboutCapacity": 8 },
+    { "nodeId": "n_ring_w",  "type": "ROUNDABOUT", "intersectionSize": 12, "roundaboutCapacity": 8 },
+    { "nodeId": "n_ring_s",  "type": "ROUNDABOUT", "intersectionSize": 12, "roundaboutCapacity": 8 },
+    { "nodeId": "n_ring_e",  "type": "ROUNDABOUT", "intersectionSize": 12, "roundaboutCapacity": 8 },
+    {
+      "nodeId": "n_signal",
+      "type": "SIGNAL",
+      "intersectionSize": 40,
+      "signalPhases": [
+        { "greenRoadIds": ["r_rndbt_to_sig"], "durationMs": 25000, "type": "GREEN" },
+        { "greenRoadIds": ["r_rndbt_to_sig"], "durationMs": 3000,  "type": "YELLOW" },
+        { "greenRoadIds": [],                  "durationMs": 2000,  "type": "ALL_RED" },
+        { "greenRoadIds": ["r_east_in"],       "durationMs": 25000, "type": "GREEN" },
+        { "greenRoadIds": ["r_east_in"],       "durationMs": 3000,  "type": "YELLOW" },
+        { "greenRoadIds": [],                  "durationMs": 2000,  "type": "ALL_RED" }
+      ]
+    },
+    { "nodeId": "n_loop_se", "type": "PRIORITY" },
+    { "nodeId": "n_loop_sw", "type": "PRIORITY" }
+  ],
+  "spawnPoints": [
+    { "roadId": "r_hwy_in",    "laneIndex": 0, "position": 0.0 },
+    { "roadId": "r_hwy_in",    "laneIndex": 1, "position": 0.0 },
+    { "roadId": "r_ramp_in",   "laneIndex": 0, "position": 0.0 },
+    { "roadId": "r_north_in",  "laneIndex": 0, "position": 0.0 },
+    { "roadId": "r_east_in",   "laneIndex": 0, "position": 0.0 }
+  ],
+  "despawnPoints": [
+    { "roadId": "r_north_out", "laneIndex": 0, "position": 150.0 },
+    { "roadId": "r_east_out",  "laneIndex": 0, "position": 280.0 }
+  ],
+  "defaultSpawnRate": 0.8
+}

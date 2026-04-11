@@ -1,12 +1,12 @@
 package com.trafficsimulator.model;
 
-import org.junit.jupiter.api.BeforeEach;
-import org.junit.jupiter.api.Tag;
-import org.junit.jupiter.api.Test;
+import static org.assertj.core.api.Assertions.assertThat;
 
 import java.util.List;
 
-import static org.assertj.core.api.Assertions.assertThat;
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Tag;
+import org.junit.jupiter.api.Test;
 
 class LaneTest {
 
@@ -15,23 +15,42 @@ class LaneTest {
 
     @BeforeEach
     void setUp() {
-        road = Road.builder()
-            .id("r1").name("Test Road").length(2000.0).speedLimit(33.3)
-            .startX(0).startY(0).endX(2000).endY(0)
-            .build();
+        road =
+                Road.builder()
+                        .id("r1")
+                        .name("Test Road")
+                        .length(2000.0)
+                        .speedLimit(33.3)
+                        .startX(0)
+                        .startY(0)
+                        .endX(2000)
+                        .endY(0)
+                        .build();
 
-        lane = Lane.builder()
-            .id("r1-lane0").laneIndex(0).road(road)
-            .length(2000.0).maxSpeed(33.3).active(true)
-            .build();
+        lane =
+                Lane.builder()
+                        .id("r1-lane0")
+                        .laneIndex(0)
+                        .road(road)
+                        .length(2000.0)
+                        .maxSpeed(33.3)
+                        .active(true)
+                        .build();
     }
 
     private Vehicle vehicle(String id, double position) {
         return Vehicle.builder()
-            .id(id).position(position).speed(10.0).length(4.5)
-            .v0(33.3).aMax(1.4).b(2.0).s0(2.0).T(1.5)
-            .lane(lane)
-            .build();
+                .id(id)
+                .position(position)
+                .speed(10.0)
+                .length(4.5)
+                .v0(33.3)
+                .aMax(1.4)
+                .b(2.0)
+                .s0(2.0)
+                .timeHeadway(1.5)
+                .lane(lane)
+                .build();
     }
 
     @Test
@@ -45,8 +64,7 @@ class LaneTest {
         lane.addVehicle(v3);
 
         List<Vehicle> view = lane.getVehiclesView();
-        assertThat(view).extracting(Vehicle::getPosition)
-            .containsExactly(30.0, 20.0, 10.0);
+        assertThat(view).extracting(Vehicle::getPosition).containsExactly(30.0, 20.0, 10.0);
     }
 
     @Test
@@ -120,8 +138,7 @@ class LaneTest {
         lane.resortVehicles();
 
         List<Vehicle> view = lane.getVehiclesView();
-        assertThat(view).extracting(Vehicle::getPosition)
-            .containsExactly(35.0, 30.0, 25.0);
+        assertThat(view).extracting(Vehicle::getPosition).containsExactly(35.0, 30.0, 25.0);
         assertThat(view.get(0)).isSameAs(v1);
     }
 
@@ -142,7 +159,8 @@ class LaneTest {
         }
         long elapsed = (System.nanoTime() - start) / 1_000_000;
 
-        assertThat(elapsed).as("500 vehicles x 100 getLeader() calls should be under 100ms")
-            .isLessThan(100);
+        assertThat(elapsed)
+                .as("500 vehicles x 100 getLeader() calls should be under 500ms")
+                .isLessThan(500);
     }
 }

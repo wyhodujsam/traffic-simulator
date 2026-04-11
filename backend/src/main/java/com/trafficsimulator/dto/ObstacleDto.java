@@ -11,8 +11,8 @@ import lombok.NoArgsConstructor;
 @AllArgsConstructor
 public class ObstacleDto {
     private String id;
-    private String roadId;      // which road
+    private String roadId; // which road
     private String laneId;
-    private int laneIndex;      // 0-based lane index
-    private double position;    // metres from lane start
+    private int laneIndex; // 0-based lane index
+    private double position; // metres from lane start
 }

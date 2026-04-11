@@ -1,7 +1,8 @@
 package com.trafficsimulator.engine;
 
-import com.trafficsimulator.engine.command.SimulationCommand;
-import org.junit.jupiter.api.Test;
+import static org.assertj.core.api.Assertions.assertThat;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.ExecutorService;
@@ -9,20 +10,18 @@ import java.util.concurrent.Executors;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicInteger;
 
-import static org.assertj.core.api.Assertions.assertThat;
-import static org.junit.jupiter.api.Assertions.assertEquals;
-import static org.junit.jupiter.api.Assertions.assertTrue;
+import org.junit.jupiter.api.Test;
+
+import com.trafficsimulator.engine.command.SimulationCommand;
 
 /**
- * Concurrency safety tests for ReentrantReadWriteLock synchronization.
- * Verifies that concurrent command dispatch and tick-like operations
- * do not cause ConcurrentModificationException or deadlocks.
+ * Concurrency safety tests for ReentrantReadWriteLock synchronization. Verifies that concurrent
+ * command dispatch and tick-like operations do not cause ConcurrentModificationException or
+ * deadlocks.
  */
 class ConcurrencySafetyTest {
 
-    /**
-     * Creates a SimulationEngine with a CommandDispatcher wired in (no Spring context needed).
-     */
+    /** Creates a SimulationEngine with a CommandDispatcher wired in (no Spring context needed). */
     private static SimulationEngine createEngine() {
         SimulationEngine engine = new SimulationEngine(null, null);
         CommandDispatcher dispatcher = new CommandDispatcher(engine, null, null, null);
@@ -31,11 +30,11 @@ class ConcurrencySafetyTest {
     }
 
     /**
-     * 100 threads send commands while drainCommands() runs concurrently.
-     * No ConcurrentModificationException should occur thanks to writeLock.
+     * 100 threads send commands while drainCommands() runs concurrently. No
+     * ConcurrentModificationException should occur thanks to writeLock.
      */
     @Test
-    void concurrentCommandsDuringDrain_noException() throws Exception {
+    void concurrentCommandsDuringDrain_noException() throws InterruptedException {
         SimulationEngine engine = createEngine();
 
         // Start simulation so commands affect RUNNING state
@@ -49,26 +48,27 @@ class ConcurrencySafetyTest {
         // Spawn 100 command-sending threads that also trigger drainCommands
         for (int i = 0; i < 100; i++) {
             final int idx = i;
-            executor.submit(() -> {
-                try {
-                    // Mix of different commands
-                    if (idx % 3 == 0) {
-                        engine.enqueue(new SimulationCommand.SetSpawnRate(1.0 + idx * 0.1));
-                    } else if (idx % 3 == 1) {
-                        engine.enqueue(new SimulationCommand.SetSpeedMultiplier(1.0));
-                    } else {
-                        engine.enqueue(new SimulationCommand.SetMaxSpeed(33.33));
-                    }
-                    // Simultaneously drain commands (simulates tick thread contention)
-                    if (idx % 5 == 0) {
-                        engine.drainCommands();
-                    }
-                } catch (Exception e) {
-                    errors.incrementAndGet();
-                } finally {
-                    latch.countDown();
-                }
-            });
+            executor.submit(
+                    () -> {
+                        try {
+                            // Mix of different commands
+                            if (idx % 3 == 0) {
+                                engine.enqueue(new SimulationCommand.SetSpawnRate(1.0 + idx * 0.1));
+                            } else if (idx % 3 == 1) {
+                                engine.enqueue(new SimulationCommand.SetSpeedMultiplier(1.0));
+                            } else {
+                                engine.enqueue(new SimulationCommand.SetMaxSpeed(33.33));
+                            }
+                            // Simultaneously drain commands (simulates tick thread contention)
+                            if (idx % 5 == 0) {
+                                engine.drainCommands();
+                            }
+                        } catch (Exception e) {
+                            errors.incrementAndGet();
+                        } finally {
+                            latch.countDown();
+                        }
+                    });
         }
 
         latch.await(10, TimeUnit.SECONDS);
@@ -78,8 +78,8 @@ class ConcurrencySafetyTest {
     }
 
     /**
-     * Verify lock doesn't cause deadlock — drainCommands completes within timeout
-     * even under heavy concurrent load.
+     * Verify lock doesn't cause deadlock — drainCommands completes within timeout even under heavy
+     * concurrent load.
      */
     @Test
     void drainCompletesUnderLoad_noDeadlock() {
@@ -102,12 +102,13 @@ class ConcurrencySafetyTest {
         long elapsed = System.currentTimeMillis() - start;
 
         executor.shutdown();
-        assertTrue(elapsed < 5000, "50 drain calls should complete within 5s, took " + elapsed + "ms");
+        assertTrue(
+                elapsed < 5000, "50 drain calls should complete within 5s, took " + elapsed + "ms");
     }
 
     /**
-     * Verify that writeLock is reentrant — drainCommandsUnlocked works correctly
-     * when called within a writeLock context (simulating TickEmitter pattern).
+     * Verify that writeLock is reentrant — drainCommandsUnlocked works correctly when called within
+     * a writeLock context (simulating TickEmitter pattern).
      */
     @Test
     void writeLockReentrancy_drainUnlockedInsideWriteLock() {
@@ -127,11 +128,11 @@ class ConcurrencySafetyTest {
     }
 
     /**
-     * Heavy concurrent stress test: many threads enqueue + drain simultaneously.
-     * Verifies the lock correctly serializes access without data corruption.
+     * Heavy concurrent stress test: many threads enqueue + drain simultaneously. Verifies the lock
+     * correctly serializes access without data corruption.
      */
     @Test
-    void heavyConcurrentStress_mixedOperations() throws Exception {
+    void heavyConcurrentStress_mixedOperations() throws InterruptedException {
         SimulationEngine engine = createEngine();
 
         engine.enqueue(new SimulationCommand.Start());
@@ -145,28 +146,29 @@ class ConcurrencySafetyTest {
 
         for (int i = 0; i < threadCount; i++) {
             final int idx = i;
-            executor.submit(() -> {
-                try {
-                    startGate.await(5, TimeUnit.SECONDS);
-
-                    // Half enqueue, half drain — maximum contention
-                    if (idx % 2 == 0) {
-                        engine.enqueue(new SimulationCommand.SetSpawnRate(idx * 0.01));
-                    } else {
-                        // Simulate tick thread holding writeLock + drainUnlocked
-                        engine.writeLock().lock();
+            executor.submit(
+                    () -> {
                         try {
-                            engine.drainCommandsUnlocked();
+                            startGate.await(5, TimeUnit.SECONDS);
+
+                            // Half enqueue, half drain — maximum contention
+                            if (idx % 2 == 0) {
+                                engine.enqueue(new SimulationCommand.SetSpawnRate(idx * 0.01));
+                            } else {
+                                // Simulate tick thread holding writeLock + drainUnlocked
+                                engine.writeLock().lock();
+                                try {
+                                    engine.drainCommandsUnlocked();
+                                } finally {
+                                    engine.writeLock().unlock();
+                                }
+                            }
+                        } catch (Exception e) {
+                            errors.incrementAndGet();
                         } finally {
-                            engine.writeLock().unlock();
+                            done.countDown();
                         }
-                    }
-                } catch (Exception e) {
-                    errors.incrementAndGet();
-                } finally {
-                    done.countDown();
-                }
-            });
+                    });
         }
 
         // Release all threads at once for maximum contention

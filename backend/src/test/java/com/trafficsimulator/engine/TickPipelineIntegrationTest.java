@@ -1,5 +1,13 @@
 package com.trafficsimulator.engine;
 
+import static org.assertj.core.api.Assertions.assertThat;
+
+import java.io.IOException;
+import java.util.List;
+
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Test;
+
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.trafficsimulator.config.MapLoader;
 import com.trafficsimulator.config.MapValidator;
@@ -7,16 +15,10 @@ import com.trafficsimulator.model.Lane;
 import com.trafficsimulator.model.Road;
 import com.trafficsimulator.model.RoadNetwork;
 import com.trafficsimulator.model.Vehicle;
-import org.junit.jupiter.api.BeforeEach;
-import org.junit.jupiter.api.Test;
-
-import java.util.List;
-
-import static org.assertj.core.api.Assertions.assertThat;
 
 /**
- * Integration tests for the Phase 4 tick pipeline:
- * spawn -> physics -> despawn with command queue interaction.
+ * Integration tests for the Phase 4 tick pipeline: spawn -> physics -> despawn with command queue
+ * interaction.
  */
 class TickPipelineIntegrationTest {
 
@@ -25,7 +27,7 @@ class TickPipelineIntegrationTest {
     private PhysicsEngine physics;
 
     @BeforeEach
-    void setUp() throws Exception {
+    void setUp() throws IOException {
         MapLoader loader = new MapLoader(new ObjectMapper(), new MapValidator());
         network = loader.loadFromClasspath("maps/straight-road.json").network();
         spawner = new VehicleSpawner();
@@ -49,16 +51,19 @@ class TickPipelineIntegrationTest {
         }
 
         // Vehicles should exist and have non-zero positions (physics moved them)
-        List<Vehicle> allVehicles = network.getRoads().values().stream()
-            .flatMap(r -> r.getLanes().stream())
-            .flatMap(l -> l.getVehiclesView().stream())
-            .toList();
+        List<Vehicle> allVehicles =
+                network.getRoads().values().stream()
+                        .flatMap(r -> r.getLanes().stream())
+                        .flatMap(l -> l.getVehiclesView().stream())
+                        .toList();
 
-        assertThat(allVehicles).isNotEmpty()
-            .allSatisfy(v -> {
-            assertThat(v.getPosition()).isGreaterThan(0.0);
-            assertThat(v.getSpeed()).isGreaterThan(0.0);
-        });
+        assertThat(allVehicles)
+                .isNotEmpty()
+                .allSatisfy(
+                        v -> {
+                            assertThat(v.getPosition()).isGreaterThan(0.0);
+                            assertThat(v.getSpeed()).isGreaterThan(0.0);
+                        });
     }
 
     @Test
@@ -76,22 +81,24 @@ class TickPipelineIntegrationTest {
         }
 
         // Record positions after "running" phase
-        List<Double> positionsBeforePause = network.getRoads().values().stream()
-            .flatMap(r -> r.getLanes().stream())
-            .flatMap(l -> l.getVehiclesView().stream())
-            .map(Vehicle::getPosition)
-            .toList();
+        List<Double> positionsBeforePause =
+                network.getRoads().values().stream()
+                        .flatMap(r -> r.getLanes().stream())
+                        .flatMap(l -> l.getVehiclesView().stream())
+                        .map(Vehicle::getPosition)
+                        .toList();
 
         assertThat(positionsBeforePause).isNotEmpty();
 
         // Simulate PAUSE: skip physics for 10 ticks (only drain commands would happen)
         // Positions should remain exactly the same
 
-        List<Double> positionsAfterPause = network.getRoads().values().stream()
-            .flatMap(r -> r.getLanes().stream())
-            .flatMap(l -> l.getVehiclesView().stream())
-            .map(Vehicle::getPosition)
-            .toList();
+        List<Double> positionsAfterPause =
+                network.getRoads().values().stream()
+                        .flatMap(r -> r.getLanes().stream())
+                        .flatMap(l -> l.getVehiclesView().stream())
+                        .map(Vehicle::getPosition)
+                        .toList();
 
         assertThat(positionsAfterPause).isEqualTo(positionsBeforePause);
 
@@ -106,15 +113,18 @@ class TickPipelineIntegrationTest {
         }
 
         // Positions should have changed after resume
-        List<Double> positionsAfterResume = network.getRoads().values().stream()
-            .flatMap(r -> r.getLanes().stream())
-            .flatMap(l -> l.getVehiclesView().stream())
-            .map(Vehicle::getPosition)
-            .toList();
+        List<Double> positionsAfterResume =
+                network.getRoads().values().stream()
+                        .flatMap(r -> r.getLanes().stream())
+                        .flatMap(l -> l.getVehiclesView().stream())
+                        .map(Vehicle::getPosition)
+                        .toList();
 
         // At least some positions should differ (vehicles moved)
         boolean anyMoved = false;
-        for (int i = 0; i < Math.min(positionsBeforePause.size(), positionsAfterResume.size()); i++) {
+        for (int i = 0;
+                i < Math.min(positionsBeforePause.size(), positionsAfterResume.size());
+                i++) {
             if (!positionsBeforePause.get(i).equals(positionsAfterResume.get(i))) {
                 anyMoved = true;
                 break;
@@ -236,16 +246,16 @@ class TickPipelineIntegrationTest {
 
     private int countVehicles(RoadNetwork network) {
         return network.getRoads().values().stream()
-            .flatMap(r -> r.getLanes().stream())
-            .mapToInt(l -> l.getVehiclesView().size())
-            .sum();
+                .flatMap(r -> r.getLanes().stream())
+                .mapToInt(l -> l.getVehiclesView().size())
+                .sum();
     }
 
     private Vehicle findFirstVehicle(RoadNetwork network) {
         return network.getRoads().values().stream()
-            .flatMap(r -> r.getLanes().stream())
-            .flatMap(l -> l.getVehiclesView().stream())
-            .findFirst()
-            .orElse(null);
+                .flatMap(r -> r.getLanes().stream())
+                .flatMap(l -> l.getVehiclesView().stream())
+                .findFirst()
+                .orElse(null);
     }
 }

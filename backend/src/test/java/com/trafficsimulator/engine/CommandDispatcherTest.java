@@ -1,21 +1,22 @@
 package com.trafficsimulator.engine;
 
-import com.trafficsimulator.config.MapLoader;
-import com.trafficsimulator.config.MapValidator;
-import com.trafficsimulator.engine.command.SimulationCommand;
-import com.trafficsimulator.model.Lane;
-import com.trafficsimulator.model.Road;
-import com.trafficsimulator.model.RoadNetwork;
-import com.fasterxml.jackson.databind.ObjectMapper;
-import org.junit.jupiter.api.BeforeEach;
-import org.junit.jupiter.api.Test;
+import static org.assertj.core.api.Assertions.assertThat;
 
 import java.util.ArrayList;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 
-import static org.assertj.core.api.Assertions.assertThat;
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Test;
+
+import com.fasterxml.jackson.databind.ObjectMapper;
+import com.trafficsimulator.config.MapLoader;
+import com.trafficsimulator.config.MapValidator;
+import com.trafficsimulator.engine.command.SimulationCommand;
+import com.trafficsimulator.model.Lane;
+import com.trafficsimulator.model.Road;
+import com.trafficsimulator.model.RoadNetwork;
 
 class CommandDispatcherTest {
 
@@ -103,7 +104,7 @@ class CommandDispatcherTest {
     }
 
     @Test
-    void testLoadMap() throws Exception {
+    void testLoadMap() throws NoSuchFieldException, IllegalAccessException {
         // Wire in a real MapLoader so LoadMap can actually load
         ObjectMapper objectMapper = new ObjectMapper();
         MapValidator mapValidator = new MapValidator();
@@ -128,37 +129,41 @@ class CommandDispatcherTest {
 
     private Road createRoadWithLanes(String roadId, int laneCount) {
         List<Lane> lanes = new ArrayList<>();
-        Road road = Road.builder()
-            .id(roadId)
-            .name(roadId)
-            .length(500.0)
-            .speedLimit(33.33)
-            .fromNodeId("n1")
-            .toNodeId("n2")
-            .startX(0).startY(0)
-            .endX(500).endY(0)
-            .lanes(lanes)
-            .build();
+        Road road =
+                Road.builder()
+                        .id(roadId)
+                        .name(roadId)
+                        .length(500.0)
+                        .speedLimit(33.33)
+                        .fromNodeId("n1")
+                        .toNodeId("n2")
+                        .startX(0)
+                        .startY(0)
+                        .endX(500)
+                        .endY(0)
+                        .lanes(lanes)
+                        .build();
         for (int i = 0; i < laneCount; i++) {
-            lanes.add(Lane.builder()
-                .id(roadId + "-lane" + i)
-                .laneIndex(i)
-                .road(road)
-                .length(500.0)
-                .maxSpeed(33.33)
-                .active(true)
-                .build());
+            lanes.add(
+                    Lane.builder()
+                            .id(roadId + "-lane" + i)
+                            .laneIndex(i)
+                            .road(road)
+                            .length(500.0)
+                            .maxSpeed(33.33)
+                            .active(true)
+                            .build());
         }
         return road;
     }
 
     private RoadNetwork createNetwork(Map<String, Road> roads) {
         return RoadNetwork.builder()
-            .id("test-network")
-            .roads(new LinkedHashMap<>(roads))
-            .intersections(new LinkedHashMap<>())
-            .spawnPoints(List.of())
-            .despawnPoints(List.of())
-            .build();
+                .id("test-network")
+                .roads(new LinkedHashMap<>(roads))
+                .intersections(new LinkedHashMap<>())
+                .spawnPoints(List.of())
+                .despawnPoints(List.of())
+                .build();
     }
 }

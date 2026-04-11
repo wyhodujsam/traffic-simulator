@@ -1,17 +1,18 @@
 package com.trafficsimulator.config;
 
+import static org.assertj.core.api.Assertions.assertThat;
+
+import java.io.IOException;
+import java.util.List;
+
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Test;
+
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.trafficsimulator.model.Intersection;
 import com.trafficsimulator.model.IntersectionType;
 import com.trafficsimulator.model.RoadNetwork;
 import com.trafficsimulator.model.TrafficLight;
-import org.junit.jupiter.api.BeforeEach;
-import org.junit.jupiter.api.Test;
-
-import java.io.IOException;
-import java.util.List;
-
-import static org.assertj.core.api.Assertions.assertThat;
 
 class MapLoaderScenarioTest {
 
@@ -98,6 +99,49 @@ class MapLoaderScenarioTest {
     }
 
     @Test
+    void loadsCombinedLoop() throws IOException {
+        MapLoader.LoadedMap loaded = mapLoader.loadFromClasspath("maps/combined-loop.json");
+
+        RoadNetwork network = loaded.network();
+
+        // 15 roads total
+        assertThat(network.getRoads()).hasSize(15);
+
+        // 8 intersections: 4 roundabout + 1 signal + 3 priority (merge + 2 loop bends)
+        assertThat(network.getIntersections()).hasSize(8);
+
+        // All 3 intersection types present
+        assertThat(network.getIntersections().values())
+                .extracting(i -> i.getType().name())
+                .contains("ROUNDABOUT", "SIGNAL", "PRIORITY");
+
+        // Signal intersection has traffic light with 6 phases
+        Intersection signal = network.getIntersections().get("n_signal");
+        assertThat(signal).isNotNull();
+        assertThat(signal.getType()).isEqualTo(IntersectionType.SIGNAL);
+        assertThat(signal.getTrafficLight()).isNotNull();
+        assertThat(signal.getTrafficLight().getPhases()).hasSize(6);
+
+        // Roundabout nodes are ROUNDABOUT type
+        assertThat(network.getIntersections().get("n_ring_n").getType())
+                .isEqualTo(IntersectionType.ROUNDABOUT);
+
+        // Merge node is PRIORITY type
+        assertThat(network.getIntersections().get("n_merge").getType())
+                .isEqualTo(IntersectionType.PRIORITY);
+
+        // Loop roads exist
+        assertThat(network.getRoads())
+                .containsKeys("r_sig_to_loop", "r_loop_bottom", "r_loop_to_rndbt");
+
+        // 5 spawn points, 2 despawn points
+        assertThat(network.getSpawnPoints()).hasSize(5);
+        assertThat(network.getDespawnPoints()).hasSize(2);
+
+        assertThat(loaded.defaultSpawnRate()).isEqualTo(0.8);
+    }
+
+    @Test
     void invalidMapThrowsWithDescriptiveError() {
         MapValidator validator = new MapValidator();
         MapConfig config = new MapConfig();
@@ -105,7 +149,6 @@ class MapLoaderScenarioTest {
         config.setId("test");
 
         List<String> errors = validator.validate(config);
-        assertThat(errors).isNotEmpty()
-            .anyMatch(e -> e.contains("At least one node is required"));
+        assertThat(errors).isNotEmpty().anyMatch(e -> e.contains("At least one node is required"));
     }
 }
