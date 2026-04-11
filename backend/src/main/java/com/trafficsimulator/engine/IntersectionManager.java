@@ -22,18 +22,19 @@ import lombok.extern.slf4j.Slf4j;
 @Slf4j
 public class IntersectionManager implements IIntersectionManager {
 
-    private static final double STOP_LINE_BUFFER_DEFAULT = 2.0; // metres before road end (fallback)
     private static final double MIN_ENTRY_GAP = 7.0; // vehicle length + s0
     private static final int DEADLOCK_THRESHOLD_TICKS = 200; // 200 ticks = 10s at 20Hz
-    private static final double ROUNDABOUT_YIELD_ZONE =
-            15.0; // metres — check circulating vehicles within this distance
-    private static final double ROUNDABOUT_GATING_RATIO = 0.8; // 80% capacity triggers entry gating
 
+    private final RoundaboutManager roundaboutManager;
     private final Map<String, IntersectionState> intersectionStates = new HashMap<>();
 
     private static final class IntersectionState {
         long lastTransferTick;
         int waitingVehicleCount;
+    }
+
+    public IntersectionManager() {
+        this.roundaboutManager = new RoundaboutManager();
     }
 
     /**
@@ -64,32 +65,11 @@ public class IntersectionManager implements IIntersectionManager {
 
     private void addStopLinesForRoad(
             Intersection ixtn, Road inboundRoad, Map<String, Double> stopLines) {
-        double buffer = computeStopLineBuffer(ixtn, inboundRoad);
+        double buffer = IntersectionGeometry.computeStopLineBuffer(ixtn, inboundRoad);
         double stopPos = Math.max(0, inboundRoad.getLength() - buffer);
         for (Lane lane : inboundRoad.getLanes()) {
             stopLines.put(lane.getId(), stopPos);
         }
-    }
-
-    /**
-     * Computes stop line buffer in domain units based on the intersection's pixel size and the
-     * road's pixel-to-domain ratio. This ensures vehicles stop at the visual edge of the
-     * intersection box, not inside it.
-     */
-    private double computeStopLineBuffer(Intersection ixtn, Road road) {
-        if (ixtn.getIntersectionSize() <= 0) {
-            return STOP_LINE_BUFFER_DEFAULT;
-        }
-        double halfSizePx = ixtn.getIntersectionSize() / 2.0;
-        double pixelLength =
-                Math.sqrt(
-                        Math.pow(road.getEndX() - road.getStartX(), 2)
-                                + Math.pow(road.getEndY() - road.getStartY(), 2));
-        if (pixelLength < 1) {
-            return STOP_LINE_BUFFER_DEFAULT;
-        }
-        // Convert pixel half-size to domain units using the road's scale
-        return halfSizePx * (road.getLength() / pixelLength) + 1.0; // +1m margin
     }
 
     /**
@@ -110,7 +90,7 @@ public class IntersectionManager implements IIntersectionManager {
         }
 
         if (ixtn.getType() == IntersectionType.ROUNDABOUT
-                && isRoundaboutEntryBlocked(ixtn, inboundRoadId, network)) {
+                && roundaboutManager.isRoundaboutEntryBlocked(ixtn, inboundRoadId, network)) {
             return false;
         }
 
@@ -129,14 +109,14 @@ public class IntersectionManager implements IIntersectionManager {
 
     private boolean hasSpaceOnOutboundRoad(
             Intersection ixtn, String inboundRoadId, String outRoadId, RoadNetwork network) {
-        if (outRoadId.equals(reverseRoadId(inboundRoadId))) {
+        if (outRoadId.equals(IntersectionGeometry.reverseRoadId(inboundRoadId))) {
             return false; // skip U-turn
         }
         Road outRoad = network.getRoads().get(outRoadId);
         if (outRoad == null) {
             return false;
         }
-        double outBuffer = computeStopLineBuffer(ixtn, outRoad);
+        double outBuffer = IntersectionGeometry.computeStopLineBuffer(ixtn, outRoad);
         return hasSpaceOnAnyActiveLane(outRoad, outBuffer);
     }
 
@@ -149,88 +129,6 @@ public class IntersectionManager implements IIntersectionManager {
     private boolean isLaneSpaceFree(Lane lane, double outBuffer) {
         Vehicle first = lane.findLeaderAt(outBuffer - 1.0);
         return first == null || first.getPosition() >= outBuffer + MIN_ENTRY_GAP;
-    }
-
-    /**
-     * Roundabout entry check. Returns true if entry should be BLOCKED. Approach roads (from
-     * outside) yield to ring roads (circulating traffic). Ring roads never yield — they have
-     * priority.
-     */
-    private boolean isRoundaboutEntryBlocked(
-            Intersection ixtn, String inboundRoadId, RoadNetwork network) {
-        Road myRoad = network.getRoads().get(inboundRoadId);
-        if (myRoad == null) {
-            return false;
-        }
-
-        boolean isRingRoad = network.getIntersections().containsKey(myRoad.getFromNodeId());
-        if (isRingRoad) {
-            return false;
-        }
-
-        return hasCirculatingRingTraffic(ixtn, inboundRoadId, network)
-                || isRoundaboutCapacityExceeded(ixtn, network);
-    }
-
-    private boolean hasCirculatingRingTraffic(
-            Intersection ixtn, String inboundRoadId, RoadNetwork network) {
-        return ixtn.getInboundRoadIds().stream()
-                .anyMatch(
-                        otherInboundId ->
-                                isCirculatingRingRoad(otherInboundId, inboundRoadId, network));
-    }
-
-    private boolean isCirculatingRingRoad(
-            String otherInboundId, String inboundRoadId, RoadNetwork network) {
-        if (otherInboundId.equals(inboundRoadId)) {
-            return false;
-        }
-        Road otherRoad = network.getRoads().get(otherInboundId);
-        if (otherRoad == null) {
-            return false;
-        }
-        boolean otherIsRing = network.getIntersections().containsKey(otherRoad.getFromNodeId());
-        return otherIsRing && hasVehiclesNearEnd(otherRoad, ROUNDABOUT_YIELD_ZONE);
-    }
-
-    private boolean hasVehiclesNearEnd(Road road, double zone) {
-        double threshold = road.getLength() - zone;
-        return road.getLanes().stream()
-                .flatMap(lane -> lane.getVehiclesView().stream())
-                .anyMatch(v -> v.getPosition() >= threshold);
-    }
-
-    private boolean isRoundaboutCapacityExceeded(Intersection ixtn, RoadNetwork network) {
-        int capacity = ixtn.getRoundaboutCapacity();
-        if (capacity <= 0) {
-            return false;
-        }
-        int occupancy = countRoundaboutOccupancy(ixtn, network);
-        return occupancy >= (int) (capacity * ROUNDABOUT_GATING_RATIO);
-    }
-
-    /** Counts vehicles on ring roads connected to this intersection (circulating traffic). */
-    int countRoundaboutOccupancy(Intersection ixtn, RoadNetwork network) {
-        int count = 0;
-        for (String inRoadId : ixtn.getInboundRoadIds()) {
-            count += countRingRoadVehicles(inRoadId, network, true);
-        }
-        for (String outRoadId : ixtn.getOutboundRoadIds()) {
-            count += countRingRoadVehicles(outRoadId, network, false);
-        }
-        return count;
-    }
-
-    private int countRingRoadVehicles(String roadId, RoadNetwork network, boolean inbound) {
-        Road road = network.getRoads().get(roadId);
-        if (road == null) {
-            return 0;
-        }
-        String nodeId = inbound ? road.getFromNodeId() : road.getToNodeId();
-        if (!network.getIntersections().containsKey(nodeId)) {
-            return 0;
-        }
-        return road.getLanes().stream().mapToInt(Lane::getVehicleCount).sum();
     }
 
     /**
@@ -265,7 +163,8 @@ public class IntersectionManager implements IIntersectionManager {
         if (otherRoad == null) {
             return false;
         }
-        double threshold = otherRoad.getLength() - STOP_LINE_BUFFER_DEFAULT - 10.0;
+        double threshold =
+                otherRoad.getLength() - IntersectionGeometry.STOP_LINE_BUFFER_DEFAULT - 10.0;
         if (!hasWaitingVehicleOnRoad(otherRoad, threshold)) {
             return false;
         }
@@ -273,7 +172,7 @@ public class IntersectionManager implements IIntersectionManager {
                 Math.atan2(
                         otherRoad.getEndY() - otherRoad.getStartY(),
                         otherRoad.getEndX() - otherRoad.getStartX());
-        return isApproachFromRight(myAngle, otherAngle);
+        return IntersectionGeometry.isApproachFromRight(myAngle, otherAngle);
     }
 
     /** Returns true if any vehicle on the given road is at or past the threshold position. */
@@ -281,27 +180,6 @@ public class IntersectionManager implements IIntersectionManager {
         return road.getLanes().stream()
                 .flatMap(lane -> lane.getVehiclesView().stream())
                 .anyMatch(v -> v.getPosition() >= threshold);
-    }
-
-    /**
-     * Returns true if otherAngle is approximately 90 degrees clockwise from myAngle (i.e., the
-     * other road approaches from the right).
-     */
-    private boolean isApproachFromRight(double myAngle, double otherAngle) {
-        double diff = normalizeAngle(otherAngle - myAngle);
-        // diff around -PI/2 means from the right
-        return diff > -Math.PI * 0.75 && diff < -Math.PI * 0.25;
-    }
-
-    private double normalizeAngle(double angle) {
-        double result = angle;
-        while (result > Math.PI) {
-            result -= 2 * Math.PI;
-        }
-        while (result <= -Math.PI) {
-            result += 2 * Math.PI;
-        }
-        return result;
     }
 
     /**
@@ -347,7 +225,7 @@ public class IntersectionManager implements IIntersectionManager {
         if (inboundRoad == null) {
             return 0;
         }
-        double buffer = computeStopLineBuffer(ixtn, inboundRoad);
+        double buffer = IntersectionGeometry.computeStopLineBuffer(ixtn, inboundRoad);
         double waitThreshold = inboundRoad.getLength() - buffer - 5.0;
         return (int)
                 inboundRoad.getLanes().stream()
@@ -453,7 +331,7 @@ public class IntersectionManager implements IIntersectionManager {
         if (inRoad == null) {
             return null;
         }
-        double buffer = computeStopLineBuffer(ixtn, inRoad);
+        double buffer = IntersectionGeometry.computeStopLineBuffer(ixtn, inRoad);
         double threshold = inRoad.getLength() - buffer - 5.0;
         return inRoad.getLanes().stream()
                 .flatMap(lane -> lane.getVehiclesView().stream())
@@ -488,7 +366,7 @@ public class IntersectionManager implements IIntersectionManager {
         }
 
         // Force transfer -- ignores space check; start at clip edge
-        double outBuffer = computeStopLineBuffer(ixtn, outRoad);
+        double outBuffer = IntersectionGeometry.computeStopLineBuffer(ixtn, outRoad);
         victim.updatePhysics(outBuffer, victim.getSpeed(), victim.getAcceleration());
         victim.setLane(targetLane); // transfer = special case, not a lane change
         victim.completeLaneChange();
@@ -512,8 +390,8 @@ public class IntersectionManager implements IIntersectionManager {
         Road inboundRoad = network.getRoads().get(inboundRoadId);
         double buffer =
                 inboundRoad != null
-                        ? computeStopLineBuffer(ixtn, inboundRoad)
-                        : STOP_LINE_BUFFER_DEFAULT;
+                        ? IntersectionGeometry.computeStopLineBuffer(ixtn, inboundRoad)
+                        : IntersectionGeometry.STOP_LINE_BUFFER_DEFAULT;
         double threshold = inLane.getLength() - buffer;
         List<Vehicle> toTransfer =
                 collectTransferableVehicles(
@@ -582,7 +460,7 @@ public class IntersectionManager implements IIntersectionManager {
             Road outRoad,
             Lane targetLane,
             Map<String, Double> lastPlacedPosition) {
-        double outBuffer = computeStopLineBuffer(ixtn, outRoad);
+        double outBuffer = IntersectionGeometry.computeStopLineBuffer(ixtn, outRoad);
         double lastPos = lastPlacedPosition.getOrDefault(targetLane.getId(), -1.0);
         double effectivePosition = (lastPos >= outBuffer) ? lastPos + MIN_ENTRY_GAP : outBuffer;
 
@@ -634,7 +512,8 @@ public class IntersectionManager implements IIntersectionManager {
 
     private boolean isValidOutboundCandidate(
             String outId, String inboundRoadId, RoadNetwork network) {
-        return !outId.equals(reverseRoadId(inboundRoadId)) && network.getRoads().get(outId) != null;
+        return !outId.equals(IntersectionGeometry.reverseRoadId(inboundRoadId))
+                && network.getRoads().get(outId) != null;
     }
 
     private Lane pickTargetLane(Road outRoad, Road inboundRoad) {
@@ -659,11 +538,8 @@ public class IntersectionManager implements IIntersectionManager {
         return pickTargetLane(road, null);
     }
 
-    /**
-     * Simple heuristic: "r_north_in" -> "r_north_out" is a U-turn. Replace "_in" with "_out" to
-     * guess the reverse road ID. Not all maps follow this convention, so this is best-effort.
-     */
-    private String reverseRoadId(String inboundRoadId) {
-        return inboundRoadId.replace("_in", "_out");
+    /** Delegates to {@link RoundaboutManager#countRoundaboutOccupancy}. */
+    int countRoundaboutOccupancy(Intersection ixtn, RoadNetwork network) {
+        return roundaboutManager.countRoundaboutOccupancy(ixtn, network);
     }
 }
