@@ -17,6 +17,8 @@ class ZipperMergeEngine {
 
     static final double OBSTACLE_PROXIMITY = 30.0; // metres — "stuck behind obstacle" threshold
     static final int ZIPPER_INTERVAL_TICKS = 40; // ticks between zipper merges per obstacle (~2s)
+    private static final double STUCK_SPEED_THRESHOLD =
+            2.0; // m/s — vehicle considered slow/stopped
 
     /** Tracks last zipper merge tick per obstacle ID to enforce merge interval */
     private final Map<String, Long> lastZipperMergeTick = new HashMap<>();
@@ -89,7 +91,7 @@ class ZipperMergeEngine {
      * ahead.
      */
     boolean isStuckBehindObstacle(Vehicle vehicle, Lane lane) {
-        if (vehicle.getSpeed() > 2.0) {
+        if (vehicle.getSpeed() > STUCK_SPEED_THRESHOLD) {
             return false;
         }
         for (Obstacle obs : lane.getObstaclesView()) {

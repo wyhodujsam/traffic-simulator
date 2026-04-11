@@ -23,6 +23,7 @@ public class LaneChangeEngine implements ILaneChangeEngine {
     private static final double COOLDOWN_SECONDS = 3.0; // seconds between lane changes
     private static final double BASE_DT = 0.05; // 50ms tick
     private static final int TRANSITION_TICKS = 10; // ticks for lane change animation
+    private static final double LANE_CHANGE_COMPLETE = 1.0;
 
     private final MOBILCalculator mobilCalculator;
     private final ZipperMergeEngine zipperMergeEngine;
@@ -235,11 +236,12 @@ public class LaneChangeEngine implements ILaneChangeEngine {
 
     private void advanceLaneChangeInLane(Lane lane, double progressStep) {
         for (Vehicle v : lane.getVehiclesView()) {
-            if (v.getLaneChangeProgress() >= 1.0 || v.getLaneChangeSourceIndex() < 0) {
+            if (v.getLaneChangeProgress() >= LANE_CHANGE_COMPLETE
+                    || v.getLaneChangeSourceIndex() < 0) {
                 continue;
             }
             v.advanceLaneChangeProgress(progressStep);
-            if (v.getLaneChangeProgress() >= 1.0) {
+            if (v.getLaneChangeProgress() >= LANE_CHANGE_COMPLETE) {
                 v.completeLaneChange();
             }
         }

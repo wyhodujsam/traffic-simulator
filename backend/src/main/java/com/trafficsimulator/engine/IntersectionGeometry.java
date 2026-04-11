@@ -7,6 +7,7 @@ import com.trafficsimulator.model.Road;
 final class IntersectionGeometry {
 
     static final double STOP_LINE_BUFFER_DEFAULT = 2.0; // metres before road end (fallback)
+    private static final double MIN_PIXEL_LENGTH = 1;
 
     private IntersectionGeometry() {}
 
@@ -24,7 +25,7 @@ final class IntersectionGeometry {
                 Math.sqrt(
                         Math.pow(road.getEndX() - road.getStartX(), 2)
                                 + Math.pow(road.getEndY() - road.getStartY(), 2));
-        if (pixelLength < 1) {
+        if (pixelLength < MIN_PIXEL_LENGTH) {
             return STOP_LINE_BUFFER_DEFAULT;
         }
         // Convert pixel half-size to domain units using the road's scale
@@ -32,11 +33,10 @@ final class IntersectionGeometry {
     }
 
     static double normalizeAngle(double angle) {
-        double result = angle;
-        while (result > Math.PI) {
+        double result = angle % (2 * Math.PI);
+        if (result > Math.PI) {
             result -= 2 * Math.PI;
-        }
-        while (result <= -Math.PI) {
+        } else if (result <= -Math.PI) {
             result += 2 * Math.PI;
         }
         return result;

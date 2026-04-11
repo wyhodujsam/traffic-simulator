@@ -32,6 +32,8 @@ import lombok.extern.slf4j.Slf4j;
 @Slf4j
 public class CommandDispatcher {
 
+    private static final long MIN_ACTIVE_LANES = 1;
+
     private final SimulationEngine engine;
     private final VehicleSpawner vehicleSpawner;
     private final ObstacleManager obstacleManager;
@@ -199,7 +201,7 @@ public class CommandDispatcher {
 
             // Count active lanes — don't close the last one
             long activeLanes = road.getLanes().stream().filter(Lane::isActive).count();
-            if (activeLanes <= 1) {
+            if (activeLanes <= MIN_ACTIVE_LANES) {
                 log.warn(
                         "Cannot close lane {} — it's the last active lane on road {}",
                         cmd.laneIndex(),

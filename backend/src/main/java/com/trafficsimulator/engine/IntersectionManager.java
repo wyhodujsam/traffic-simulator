@@ -24,6 +24,7 @@ public class IntersectionManager implements IIntersectionManager {
 
     private static final double MIN_ENTRY_GAP = 7.0; // vehicle length + s0
     private static final int DEADLOCK_THRESHOLD_TICKS = 200; // 200 ticks = 10s at 20Hz
+    private static final int MIN_WAITING_FOR_DEADLOCK = 2;
 
     private final RoundaboutManager roundaboutManager;
     private final Map<String, IntersectionState> intersectionStates = new HashMap<>();
@@ -289,7 +290,7 @@ public class IntersectionManager implements IIntersectionManager {
             Intersection ixtn, RoadNetwork network, long currentTick) {
         IntersectionState state =
                 intersectionStates.computeIfAbsent(ixtn.getId(), k -> new IntersectionState());
-        if (state.waitingVehicleCount < 2) {
+        if (state.waitingVehicleCount < MIN_WAITING_FOR_DEADLOCK) {
             return;
         }
         long ticksSinceTransfer = currentTick - state.lastTransferTick;

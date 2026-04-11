@@ -16,6 +16,7 @@ public class MapValidator {
 
     private static final String ROAD_PREFIX = "Road ";
     private static final String INTERSECTION_PREFIX = "Intersection ";
+    private static final String SIGNAL_TYPE = "SIGNAL";
 
     public List<String> validate(MapConfig config) {
         List<String> errors = new ArrayList<>();
@@ -133,7 +134,7 @@ public class MapValidator {
             if (!connectedNodeIds.contains(ic.getNodeId())) {
                 errors.add(INTERSECTION_PREFIX + ic.getNodeId() + " has no roads connecting to it");
             }
-            if ("SIGNAL".equals(ic.getType())) {
+            if (SIGNAL_TYPE.equals(ic.getType())) {
                 validateSignalPhases(ic, errors, roadIds);
             }
         }

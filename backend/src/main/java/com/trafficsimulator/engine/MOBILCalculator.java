@@ -108,13 +108,7 @@ class MOBILCalculator {
             Vehicle newFollower,
             boolean isZipper) {
         if (isZipper) {
-            if (newLeader != null) {
-                double gapAhead = newLeader.getPosition() - subjectPos - newLeader.getLength();
-                if (gapAhead < subject.getLength()) {
-                    return false;
-                }
-            }
-            return true;
+            return checkZipperGap(subject, subjectPos, newLeader);
         }
 
         if (newLeader != null) {
@@ -130,6 +124,15 @@ class MOBILCalculator {
             }
         }
         return true;
+    }
+
+    /** Zipper merges only check ahead gap — follower will brake naturally via IDM after merge. */
+    private boolean checkZipperGap(Vehicle subject, double subjectPos, Vehicle newLeader) {
+        if (newLeader == null) {
+            return true;
+        }
+        double gapAhead = newLeader.getPosition() - subjectPos - newLeader.getLength();
+        return gapAhead >= subject.getLength();
     }
 
     /** Checks for obstacle conflicts in target lane (both ahead and behind subject position). */

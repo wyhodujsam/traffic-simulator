@@ -22,6 +22,12 @@
         <Bug pattern="SPRING_ENDPOINT"/>
     </Match>
 
+    <!-- PREDICTABLE_RANDOM: ThreadLocalRandom is correct for simulation randomness.
+         No cryptographic security requirement — vehicles just need non-deterministic behaviour. -->
+    <Match>
+        <Bug pattern="PREDICTABLE_RANDOM"/>
+    </Match>
+
     <!-- Spring-generated proxy classes -->
     <Match>
         <Source name="~.*\$\$.*"/>

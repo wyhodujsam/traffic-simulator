@@ -90,10 +90,11 @@ public class SimulationEngine {
         }
     }
 
-    @SuppressWarnings(
-            "java:S899") // LinkedBlockingQueue.offer() always returns true for unbounded queues
     public void enqueue(SimulationCommand command) {
-        commandQueue.offer(command);
+        if (!commandQueue.offer(command)) {
+            log.warn(
+                    "Command queue full, dropping command: {}", command.getClass().getSimpleName());
+        }
     }
 
     /**
