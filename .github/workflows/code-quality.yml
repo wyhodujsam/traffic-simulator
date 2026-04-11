@@ -1,0 +1,106 @@
+name: Code Quality
+
+on:
+  pull_request:
+    branches: [master, main]
+    paths:
+      - 'backend/**'
+
+defaults:
+  run:
+    working-directory: backend
+
+jobs:
+  quality:
+    name: Static Analysis & Tests
+    runs-on: ubuntu-latest
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: 17
+          cache: maven
+
+      # Compile (required for SpotBugs + Error Prone)
+      - name: Compile
+        run: mvn clean compile -q
+
+      # Run all analysis tools in parallel-safe order
+      - name: PMD
+        run: mvn pmd:pmd pmd:cpd -q
+
+      - name: Checkstyle
+        run: mvn checkstyle:checkstyle -q
+
+      - name: SpotBugs
+        run: mvn spotbugs:spotbugs -q
+
+      - name: Spotless Check
+        run: mvn spotless:check -q
+
+      # Tests (unit + ArchUnit + Cucumber)
+      - name: Tests
+        run: mvn test -q
+
+      # Parse results and post PR comment
+      - name: Collect Results
+        if: always()
+        id: results
+        run: |
+          echo "## Code Quality Report" > quality-report.md
+          echo "" >> quality-report.md
+
+          # PMD
+          PMD_COUNT=$(grep -c "<violation" target/pmd.xml 2>/dev/null || echo "0")
+          CPD_COUNT=$(grep -c "<duplication" target/cpd.xml 2>/dev/null || echo "0")
+          echo "| Tool | Issues |" >> quality-report.md
+          echo "|------|--------|" >> quality-report.md
+          echo "| PMD | ${PMD_COUNT} violations |" >> quality-report.md
+          echo "| CPD | ${CPD_COUNT} duplications |" >> quality-report.md
+
+          # Checkstyle
+          CS_COUNT=$(grep -c 'severity=' target/checkstyle-result.xml 2>/dev/null || echo "0")
+          echo "| Checkstyle | ${CS_COUNT} warnings |" >> quality-report.md
+
+          # SpotBugs
+          SB_COUNT=$(grep -c "BugInstance" target/spotbugsXml.xml 2>/dev/null || echo "0")
+          echo "| SpotBugs | ${SB_COUNT} bugs |" >> quality-report.md
+
+          # Spotless
+          if mvn spotless:check -q 2>/dev/null; then
+            echo "| Spotless | OK |" >> quality-report.md
+          else
+            echo "| Spotless | **FAIL** — run \`mvn spotless:apply\` |" >> quality-report.md
+          fi
+
+          echo "" >> quality-report.md
+
+          # Top PMD violations by rule
+          if [ "$PMD_COUNT" -gt 0 ] 2>/dev/null; then
+            echo "### PMD — top violations" >> quality-report.md
+            echo '```' >> quality-report.md
+            python3 -c "
+          import xml.etree.ElementTree as ET
+          from collections import Counter
+          t = ET.parse('target/pmd.xml')
+          ns = {'p': 'http://pmd.sourceforge.net/report/2.0.0'}
+          r = Counter()
+          for f in t.getroot().findall('p:file', ns):
+              for v in f.findall('p:violation', ns):
+                  r[v.get('rule')] += 1
+          for rule, c in r.most_common(10):
+              print(f'  {c:3d} | {rule}')
+          " >> quality-report.md
+            echo '```' >> quality-report.md
+          fi
+
+          cat quality-report.md
+
+      - name: Comment PR
+        if: always() && github.event_name == 'pull_request'
+        uses: marocchino/sticky-pull-request-comment@v2
+        with:
+          path: backend/quality-report.md
