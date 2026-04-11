@@ -22,12 +22,32 @@ import com.trafficsimulator.model.Vehicle;
 @Component
 public class SnapshotBuilder {
 
+    /** Groups the parameters needed to build a simulation snapshot. */
+    public record SnapshotConfig(
+            RoadNetwork network,
+            long tick,
+            String status,
+            IVehicleSpawner vehicleSpawner,
+            String mapId,
+            String error) {}
+
     private record VehicleObstacleCollection(
             List<VehicleDto> vehicles,
             List<ObstacleDto> obstacles,
             double totalSpeed,
             int vehicleCount,
             double totalRoadLength) {}
+
+    /** Builds a complete SimulationStateDto snapshot from the current state. */
+    public SimulationStateDto buildSnapshot(SnapshotConfig config) {
+        return buildSnapshot(
+                config.network(),
+                config.tick(),
+                config.status(),
+                config.vehicleSpawner(),
+                config.mapId(),
+                config.error());
+    }
 
     /** Builds a complete SimulationStateDto snapshot from the current state. */
     public SimulationStateDto buildSnapshot(

@@ -4,7 +4,7 @@ import com.trafficsimulator.model.Intersection;
 import com.trafficsimulator.model.Road;
 
 /** Static utility methods for intersection geometry and math calculations. */
-class IntersectionGeometry {
+final class IntersectionGeometry {
 
     static final double STOP_LINE_BUFFER_DEFAULT = 2.0; // metres before road end (fallback)
 

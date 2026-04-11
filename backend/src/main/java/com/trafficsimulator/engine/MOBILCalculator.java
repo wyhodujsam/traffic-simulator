@@ -41,6 +41,10 @@ class MOBILCalculator {
     /** Acceleration data for subject in current vs target lane. */
     private record AccelerationPair(double current, double target) {}
 
+    /** Target lane context for MOBIL incentive evaluation. */
+    private record TargetLaneContext(
+            Vehicle newLeader, Vehicle newFollower, double aThreshold, Lane targetLane) {}
+
     /**
      * Evaluates MOBIL safety + incentive criteria for one vehicle moving to targetLane. Returns an
      * intent if the move is both safe and beneficial, null otherwise.
@@ -77,7 +81,8 @@ class MOBILCalculator {
 
         var ctx = new IncentiveContext(subject, currentLane, currentLeader, subjectPos);
         var accel = new AccelerationPair(aSubjectCurrent, aSubjectTarget);
-        return evaluateIncentive(ctx, accel, newLeader, newFollower, aThreshold, targetLane);
+        var tlCtx = new TargetLaneContext(newLeader, newFollower, aThreshold, targetLane);
+        return evaluateIncentive(ctx, accel, tlCtx);
     }
 
     /**
@@ -153,12 +158,7 @@ class MOBILCalculator {
 
     /** Computes MOBIL incentive criterion and returns intent if threshold is exceeded. */
     private LaneChangeIntent evaluateIncentive(
-            IncentiveContext ctx,
-            AccelerationPair accel,
-            Vehicle newLeader,
-            Vehicle newFollower,
-            double aThreshold,
-            Lane targetLane) {
+            IncentiveContext ctx, AccelerationPair accel, TargetLaneContext tlCtx) {
         Vehicle oldFollower = ctx.currentLane.findFollowerAt(ctx.subjectPos);
 
         double aOldFollowerBefore =
@@ -167,18 +167,22 @@ class MOBILCalculator {
                 (oldFollower != null) ? computeIdmAccel(oldFollower, ctx.currentLeader) : 0.0;
 
         double aNewFollowerBefore =
-                (newFollower != null) ? computeIdmAccel(newFollower, newLeader) : 0.0;
+                (tlCtx.newFollower() != null)
+                        ? computeIdmAccel(tlCtx.newFollower(), tlCtx.newLeader())
+                        : 0.0;
         double aNewFollowerAfter =
-                (newFollower != null) ? computeIdmAccelWithLeader(newFollower, ctx.subject) : 0.0;
+                (tlCtx.newFollower() != null)
+                        ? computeIdmAccelWithLeader(tlCtx.newFollower(), ctx.subject)
+                        : 0.0;
 
         double subjectGain = accel.target - accel.current;
         double neighborCost =
                 aOldFollowerAfter - aOldFollowerBefore + (aNewFollowerAfter - aNewFollowerBefore);
         double incentive = subjectGain - POLITENESS * neighborCost;
 
-        return incentive > aThreshold
+        return incentive > tlCtx.aThreshold()
                 ? new LaneChangeIntent(
-                        ctx.subject, ctx.currentLane, targetLane, ctx.subjectPos, incentive)
+                        ctx.subject, ctx.currentLane, tlCtx.targetLane(), ctx.subjectPos, incentive)
                 : null;
     }
 

@@ -2,9 +2,12 @@ package com.trafficsimulator.engine;
 
 import java.io.IOException;
 import java.util.ArrayList;
+import java.util.LinkedHashMap;
 import java.util.LinkedHashSet;
 import java.util.List;
+import java.util.Map;
 import java.util.Set;
+import java.util.function.Consumer;
 
 import org.springframework.lang.Nullable;
 import org.springframework.stereotype.Component;
@@ -34,6 +37,9 @@ public class CommandDispatcher {
     private final ObstacleManager obstacleManager;
     private final MapLoader mapLoader;
 
+    @SuppressWarnings("rawtypes")
+    private final Map<Class, Consumer> handlers = new LinkedHashMap<>();
+
     public CommandDispatcher(
             SimulationEngine engine,
             @Nullable VehicleSpawner vehicleSpawner,
@@ -43,33 +49,45 @@ public class CommandDispatcher {
         this.vehicleSpawner = vehicleSpawner;
         this.obstacleManager = obstacleManager;
         this.mapLoader = mapLoader;
+        registerHandlers();
     }
 
+    private void registerHandlers() {
+        handlers.put(SimulationCommand.Start.class, cmd -> handleStart());
+        handlers.put(SimulationCommand.Stop.class, cmd -> handleStop());
+        handlers.put(SimulationCommand.Pause.class, cmd -> handlePause());
+        handlers.put(SimulationCommand.Resume.class, cmd -> handleResume());
+        handlers.put(
+                SimulationCommand.SetSpawnRate.class,
+                cmd -> handleSetSpawnRate((SimulationCommand.SetSpawnRate) cmd));
+        handlers.put(
+                SimulationCommand.SetSpeedMultiplier.class,
+                cmd -> handleSetSpeedMultiplier((SimulationCommand.SetSpeedMultiplier) cmd));
+        handlers.put(
+                SimulationCommand.SetMaxSpeed.class,
+                cmd -> handleSetMaxSpeed((SimulationCommand.SetMaxSpeed) cmd));
+        handlers.put(
+                SimulationCommand.AddObstacle.class,
+                cmd -> handleAddObstacle((SimulationCommand.AddObstacle) cmd));
+        handlers.put(
+                SimulationCommand.RemoveObstacle.class,
+                cmd -> handleRemoveObstacle((SimulationCommand.RemoveObstacle) cmd));
+        handlers.put(
+                SimulationCommand.CloseLane.class,
+                cmd -> handleCloseLane((SimulationCommand.CloseLane) cmd));
+        handlers.put(
+                SimulationCommand.SetLightCycle.class,
+                cmd -> handleSetLightCycle((SimulationCommand.SetLightCycle) cmd));
+        handlers.put(
+                SimulationCommand.LoadMap.class,
+                cmd -> handleLoadMap((SimulationCommand.LoadMap) cmd));
+    }
+
+    @SuppressWarnings("unchecked")
     public void dispatch(SimulationCommand cmd) {
-        if (cmd instanceof SimulationCommand.Start) {
-            handleStart();
-        } else if (cmd instanceof SimulationCommand.Stop) {
-            handleStop();
-        } else if (cmd instanceof SimulationCommand.Pause) {
-            handlePause();
-        } else if (cmd instanceof SimulationCommand.Resume) {
-            handleResume();
-        } else if (cmd instanceof SimulationCommand.SetSpawnRate setSpawnRate) {
-            handleSetSpawnRate(setSpawnRate);
-        } else if (cmd instanceof SimulationCommand.SetSpeedMultiplier setSpeedMultiplier) {
-            handleSetSpeedMultiplier(setSpeedMultiplier);
-        } else if (cmd instanceof SimulationCommand.SetMaxSpeed setMaxSpeed) {
-            handleSetMaxSpeed(setMaxSpeed);
-        } else if (cmd instanceof SimulationCommand.AddObstacle addObs) {
-            handleAddObstacle(addObs);
-        } else if (cmd instanceof SimulationCommand.RemoveObstacle removeObs) {
-            handleRemoveObstacle(removeObs);
-        } else if (cmd instanceof SimulationCommand.CloseLane closeLane) {
-            handleCloseLane(closeLane);
-        } else if (cmd instanceof SimulationCommand.SetLightCycle slc) {
-            handleSetLightCycle(slc);
-        } else if (cmd instanceof SimulationCommand.LoadMap loadMap) {
-            handleLoadMap(loadMap);
+        Consumer handler = handlers.get(cmd.getClass());
+        if (handler != null) {
+            handler.accept(cmd);
         } else {
             log.warn("Unhandled command type: {}", cmd.getClass().getSimpleName());
         }

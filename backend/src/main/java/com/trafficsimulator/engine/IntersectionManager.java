@@ -33,6 +33,14 @@ public class IntersectionManager implements IIntersectionManager {
         int waitingVehicleCount;
     }
 
+    record TransferContext(
+            Intersection ixtn,
+            String inboundRoadId,
+            Road inboundRoad,
+            Lane inLane,
+            RoadNetwork network,
+            Map<String, Double> lastPlacedPosition) {}
+
     public IntersectionManager() {
         this.roundaboutManager = new RoundaboutManager();
     }
@@ -393,15 +401,10 @@ public class IntersectionManager implements IIntersectionManager {
                         ? IntersectionGeometry.computeStopLineBuffer(ixtn, inboundRoad)
                         : IntersectionGeometry.STOP_LINE_BUFFER_DEFAULT;
         double threshold = inLane.getLength() - buffer;
-        List<Vehicle> toTransfer =
-                collectTransferableVehicles(
-                        ixtn,
-                        inboundRoadId,
-                        inboundRoad,
-                        inLane,
-                        network,
-                        lastPlacedPosition,
-                        threshold);
+        var ctx =
+                new TransferContext(
+                        ixtn, inboundRoadId, inboundRoad, inLane, network, lastPlacedPosition);
+        List<Vehicle> toTransfer = collectTransferableVehicles(ctx, threshold);
 
         for (Vehicle v : toTransfer) {
             inLane.removeVehicle(v);
@@ -409,19 +412,10 @@ public class IntersectionManager implements IIntersectionManager {
         return !toTransfer.isEmpty();
     }
 
-    private List<Vehicle> collectTransferableVehicles(
-            Intersection ixtn,
-            String inboundRoadId,
-            Road inboundRoad,
-            Lane inLane,
-            RoadNetwork network,
-            Map<String, Double> lastPlacedPosition,
-            double threshold) {
+    private List<Vehicle> collectTransferableVehicles(TransferContext ctx, double threshold) {
         List<Vehicle> toTransfer = new ArrayList<>();
-        for (Vehicle v : inLane.getVehiclesView()) {
-            if (v.getPosition() >= threshold
-                    && tryTransferVehicle(
-                            v, ixtn, inboundRoadId, inboundRoad, network, lastPlacedPosition)) {
+        for (Vehicle v : ctx.inLane().getVehiclesView()) {
+            if (v.getPosition() >= threshold && tryTransferVehicle(v, ctx)) {
                 toTransfer.add(v);
             }
         }
@@ -432,26 +426,21 @@ public class IntersectionManager implements IIntersectionManager {
      * Attempts to transfer a single vehicle through the intersection to an outbound road. Returns
      * true if the transfer succeeded.
      */
-    private boolean tryTransferVehicle(
-            Vehicle v,
-            Intersection ixtn,
-            String inboundRoadId,
-            Road inboundRoad,
-            RoadNetwork network,
-            Map<String, Double> lastPlacedPosition) {
-        String outRoadId = pickOutboundRoad(ixtn, inboundRoadId, network);
+    private boolean tryTransferVehicle(Vehicle v, TransferContext ctx) {
+        String outRoadId = pickOutboundRoad(ctx.ixtn(), ctx.inboundRoadId(), ctx.network());
         if (outRoadId == null) {
             return false;
         }
 
-        Road outRoad = network.getRoads().get(outRoadId);
+        Road outRoad = ctx.network().getRoads().get(outRoadId);
         if (outRoad == null) {
             return false;
         }
 
-        Lane targetLane = pickTargetLane(outRoad, inboundRoad);
+        Lane targetLane = pickTargetLane(outRoad, ctx.inboundRoad());
         return targetLane != null
-                && placeVehicleOnTargetLane(v, ixtn, outRoad, targetLane, lastPlacedPosition);
+                && placeVehicleOnTargetLane(
+                        v, ctx.ixtn(), outRoad, targetLane, ctx.lastPlacedPosition());
     }
 
     private boolean placeVehicleOnTargetLane(
