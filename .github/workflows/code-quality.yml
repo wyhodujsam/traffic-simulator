@@ -6,6 +6,10 @@ on:
     paths:
       - 'backend/**'
 
+permissions:
+  contents: read
+  pull-requests: write
+
 defaults:
   run:
     working-directory: backend
@@ -24,11 +28,9 @@ jobs:
           java-version: 17
           cache: maven
 
-      # Compile (required for SpotBugs + Error Prone)
       - name: Compile
         run: mvn clean compile -q
 
-      # Run all analysis tools in parallel-safe order
       - name: PMD
         run: mvn pmd:pmd pmd:cpd -q
 
@@ -41,35 +43,27 @@ jobs:
       - name: Spotless Check
         run: mvn spotless:check -q
 
-      # Tests (unit + ArchUnit + Cucumber)
       - name: Tests
-        run: mvn test -q
+        run: mvn test
 
-      # Parse results and post PR comment
       - name: Collect Results
         if: always()
-        id: results
         run: |
           echo "## Code Quality Report" > quality-report.md
           echo "" >> quality-report.md
 
-          # PMD
           PMD_COUNT=$(grep -c "<violation" target/pmd.xml 2>/dev/null || echo "0")
           CPD_COUNT=$(grep -c "<duplication" target/cpd.xml 2>/dev/null || echo "0")
+          CS_COUNT=$(grep -c 'severity=' target/checkstyle-result.xml 2>/dev/null || echo "0")
+          SB_COUNT=$(grep -c "BugInstance" target/spotbugsXml.xml 2>/dev/null || echo "0")
+
           echo "| Tool | Issues |" >> quality-report.md
           echo "|------|--------|" >> quality-report.md
           echo "| PMD | ${PMD_COUNT} violations |" >> quality-report.md
           echo "| CPD | ${CPD_COUNT} duplications |" >> quality-report.md
-
-          # Checkstyle
-          CS_COUNT=$(grep -c 'severity=' target/checkstyle-result.xml 2>/dev/null || echo "0")
           echo "| Checkstyle | ${CS_COUNT} warnings |" >> quality-report.md
-
-          # SpotBugs
-          SB_COUNT=$(grep -c "BugInstance" target/spotbugsXml.xml 2>/dev/null || echo "0")
           echo "| SpotBugs | ${SB_COUNT} bugs |" >> quality-report.md
 
-          # Spotless
           if mvn spotless:check -q 2>/dev/null; then
             echo "| Spotless | OK |" >> quality-report.md
           else
@@ -78,7 +72,6 @@ jobs:
 
           echo "" >> quality-report.md
 
-          # Top PMD violations by rule
           if [ "$PMD_COUNT" -gt 0 ] 2>/dev/null; then
             echo "### PMD — top violations" >> quality-report.md
             echo '```' >> quality-report.md
