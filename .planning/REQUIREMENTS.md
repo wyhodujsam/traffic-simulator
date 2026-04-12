@@ -99,9 +99,38 @@ Requirements for initial release. Each maps to roadmap phases.
 - [x] **SQ-06**: [CRITICAL] PhysicsEngine.tick() complexity 37, TickEmitter.emitTick() complexity 20, SimulationController complexity 16 — refaktor (java:S3776)
 - [x] **SQ-07**: [CRITICAL] MapValidator zduplikowane literały "Road " i "Intersection " — wydzielić stałe (java:S1192)
 
-## v2 Requirements
+## v2.0 Requirements — Map Screenshot to Simulation
 
-Deferred to future release. Tracked but not in current roadmap.
+Requirements for milestone v2.0. Adds real-world map import via OSM + optional AI vision.
+
+### Map Embed
+
+- [ ] **MAP-01**: Użytkownik może otworzyć stronę /map z interaktywną mapą OSM (Leaflet)
+- [ ] **MAP-02**: Użytkownik może przesuwać i zoomować mapę do wybranego obszaru
+- [ ] **MAP-03**: Użytkownik widzi bounding box pokazujący obszar do pobrania
+- [ ] **MAP-04**: Aplikacja ma routing między stroną symulacji (/) a stroną mapy (/map)
+
+### OSM Data Pipeline
+
+- [ ] **OSM-01**: Backend pobiera dane drogowe z Overpass API dla wybranego bbox
+- [ ] **OSM-02**: Konwerter zamienia OSM way/node na MapConfig (Road, Lane, Intersection)
+- [ ] **OSM-03**: Konwerter rozpoznaje typy skrzyżowań z tagów OSM (traffic_signals→SIGNAL, roundabout→ROUNDABOUT)
+- [ ] **OSM-04**: Konwerter wykrywa liczbę pasów z tagu lanes=X
+
+### Simulation Integration
+
+- [ ] **SINT-01**: Użytkownik może załadować wygenerowany MapConfig do silnika i uruchomić symulację
+- [ ] **SINT-02**: Użytkownik widzi podgląd wygenerowanego grafu dróg przed uruchomieniem
+- [ ] **SINT-03**: Użytkownik może wyeksportować wygenerowany MapConfig jako plik JSON
+
+### AI Vision (Claude CLI)
+
+- [ ] **AVI-01**: Użytkownik może wgrać zdjęcie/screenshot drogi
+- [ ] **AVI-02**: Backend wywołuje Claude CLI do analizy obrazu i generowania MapConfig
+
+## Future Requirements
+
+Deferred to future releases.
 
 ### Live Editing
 
@@ -123,7 +152,7 @@ Deferred to future release. Tracked but not in current roadmap.
 | Pedestrians/cyclists | Scope-doubles with minimal educational gain |
 | Persistent storage/database | In-memory simulation, no persistence needed |
 | Authentication | Single-user app |
-| OpenStreetMap import | High complexity, JSON config is sufficient |
+| Google Maps embed | ToS prohibits AI analysis of Google Maps content; Leaflet + OSM used instead |
 | Accident simulation | Out of scope — focus is on congestion, not collisions |
 
 ## Traceability
@@ -183,4 +212,4 @@ Which phases cover which requirements. Updated during roadmap creation.
 
 ---
 *Requirements defined: 2026-03-27*
-*Last updated: 2026-03-27 after initial definition*
+*Last updated: 2026-04-12 — v2.0 requirements added (Map Screenshot to Simulation)*
