@@ -1,30 +1,30 @@
 ---
 gsd_state_version: 1.0
-milestone: v1.0
-milestone_name: milestone
-current_phase: 16
-status: Phase 16 Complete
-last_updated: "2026-04-08T16:51:00.000Z"
+milestone: v2.0
+milestone_name: Map Screenshot to Simulation
+current_phase: 17
+status: Defining requirements
+last_updated: "2026-04-12T00:00:00.000Z"
 progress:
-  total_phases: 16
-  completed_phases: 16
-  total_plans: 62
-  completed_plans: 64
+  total_phases: 0
+  completed_phases: 0
+  total_plans: 0
+  completed_plans: 0
 ---
 
 # Project State
 
 **Project:** Traffic Simulator
-**Milestone:** v1.0
-**Current Phase:** 15
-**Last Updated:** 2026-04-02
+**Milestone:** v2.0 — Map Screenshot to Simulation
+**Current Phase:** Not started (defining requirements)
+**Last Updated:** 2026-04-12
 
 ## Project Reference
 
-See: .planning/PROJECT.md (updated 2026-03-27)
+See: .planning/PROJECT.md (updated 2026-04-12)
 
 **Core value:** Wierna symulacja fizyki ruchu drogowego
-**Current focus:** Phase 15 — sonarqube-quality-fixes
+**Current focus:** Milestone v2.0 — defining requirements
 
 ## Phase Status
 

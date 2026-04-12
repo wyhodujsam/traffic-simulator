@@ -8,6 +8,18 @@ Aplikacja webowa symulujaca ruch uliczny w widoku z gory (top-down). Samochody p
 
 Wierna symulacja fizyki ruchu drogowego — samochody realistycznie przyspieszaja, hamuja i reaguja na otoczenie, umozliwiajac obserwacje emergentnych zjawisk korkowych.
 
+## Current Milestone: v2.0 Map Screenshot to Simulation
+
+**Goal:** Umożliwienie budowy symulacji na podstawie zrzutu ekranu z Google Maps — użytkownik wybiera fragment mapy, robi screenshot, a aplikacja automatycznie rozpoznaje drogi i zamienia je na elementy symulacji.
+
+**Target features:**
+- Nowa strona z osadzoną mapą Google (Google Maps JavaScript API)
+- Nawigacja po mapie (przesuwanie, zoom) do wybranego fragmentu z drogami
+- Przycisk "Capture" robiący screenshot wybranego fragmentu mapy
+- Analiza screenshota (AI/CV) — rozpoznawanie dróg, skrzyżowań, rond, pasów
+- Konwersja rozpoznanych elementów na istniejący model symulacji (Road, Lane, Intersection, RoadNetwork)
+- Wczytanie wygenerowanej konfiguracji do istniejącego silnika symulacji i uruchomienie
+
 ## Requirements
 
 ### Validated
@@ -90,4 +102,4 @@ This document evolves at phase transitions and milestone boundaries.
 4. Update Context with current state
 
 ---
-*Last updated: 2026-04-03 after Phase 15 completion (SonarQube code quality fixes — all BLOCKER/CRITICAL violations resolved)*
+*Last updated: 2026-04-12 — Milestone v2.0 started (Map Screenshot to Simulation)*
