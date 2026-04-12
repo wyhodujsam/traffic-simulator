@@ -1,293 +1,295 @@
-# Traffic Simulator — Critical Pitfalls
+# Pitfalls Research
 
-Stack: Java 17 + Spring Boot 3.x, React 18 + TypeScript, WebSocket (STOMP/SockJS), HTML5 Canvas, tick-based simulation.
+**Domain:** Map Screenshot to Traffic Simulation Conversion
+**Researched:** 2026-04-10
+**Confidence:** HIGH (Google ToS), MEDIUM (coordinate systems, AI detection), MEDIUM (topology conversion)
 
 ---
 
 ## Critical Pitfalls
 
-### 1. Simulation-Rendering Coupling
+### Pitfall 1: Google Maps ToS Prohibits Using Map Content to Train or Feed ML/AI
 
-**Problem**: Tying simulation speed to the browser's `requestAnimationFrame` (60 fps) means the simulation runs at render speed, not at a deterministic fixed rate. Pausing the browser tab freezes simulation time. Speeding up simulation requires skipping frames or rendering at 60 fps with bogus physics steps, producing inconsistent results across machines.
+**What goes wrong:**
+The project captures a Google Maps screenshot and passes it to an AI/CV model to detect roads. This directly violates the Google Maps Platform Terms of Service. The ToS explicitly states: customers "will not use Google Maps Content to improve machine learning and artificial intelligence models, including to train, test, validate or fine-tune the models." Additionally, "customers will not create content based on Google Maps Content" and specifically will not "trace or digitize roadways... from the Maps JavaScript API Satellite base map type."
 
-**Root cause**: Putting the simulation loop inside the frontend render loop instead of on the backend scheduler.
+**Why it happens:**
+The ToS restriction is easy to overlook because Google Maps is the most convenient data source for road layout. Developers assume that if they have a paid API key, they can do anything with the rendered output.
 
-**Correct approach**:
-- Backend runs the simulation on a `ScheduledExecutorService` at a fixed tick rate (e.g., 20 ticks/sec = 50 ms/tick). The tick rate is a configuration constant, not a frame rate.
-- Frontend renders on `requestAnimationFrame` independently. If two ticks arrive between frames, the second one overwrites the first — that is fine, rendering is purely cosmetic.
-- Expose a simulation speed multiplier as a tick delta scalar (e.g., `dt = tickInterval * speedMultiplier`) applied inside the physics step, not by changing the scheduler frequency. Changing scheduler frequency causes jitter and thread re-creation overhead.
+**How to avoid:**
+Use an alternative map source whose license permits derivative work and AI processing:
+- **OpenStreetMap (OSM)** data is published under ODbL which permits derivative work including AI analysis. Render tiles via MapTiler, Stadia Maps, or self-hosted tile server. OSM data is also directly queryable as structured road vectors via Overpass API — potentially bypassing the need for AI detection entirely.
+- **Mapbox** Terms permit screenshot/static image use for display but not for AI training. Read Mapbox ToS carefully before using.
+- **Static Maps API** (Google) still applies the same content restrictions.
 
-**Spring Boot specifics**: Use `@Scheduled(fixedRate = 50)` with a separate `ThreadPoolTaskScheduler`. Do NOT use the default single-threaded `ThreadPoolTaskScheduler` shared with other Spring tasks or you will block HTTP handling.
+If Google Maps is kept for display/navigation on the map page, the AI analysis must use a separately sourced image (e.g., OSM tiles for the same viewport), not the Google Maps canvas.
 
----
+**Warning signs:**
+- The implementation passes `map.getDiv()` canvas content or `html2canvas` output of the Google Maps iframe directly to an AI API call.
+- Any prompt to an AI model includes "this is a Google Maps screenshot."
 
-### 2. WebSocket Bandwidth
-
-**Problem**: Sending full simulation state every tick. With 500 vehicles at 20 ticks/sec, each vehicle represented as a JSON object (~200 bytes), that is 500 × 200 × 20 = 2 MB/sec of outbound traffic per client. This saturates the WebSocket, causes message queue buildup, and the frontend rendering falls behind, creating a growing lag spike.
-
-**Symptoms**: Frontend appears to "replay" old state; UI controls feel sluggish; browser memory grows; eventual WebSocket disconnect.
-
-**Correct approaches** (pick one or combine):
-- **Delta updates**: Only send vehicles whose state changed by more than a threshold (position delta > 0.5 m, speed delta > 0.1 m/s). Stationary blocked vehicles behind a red light need only one update, not 20 per second.
-- **Tick rate vs render rate split**: Simulate at 20 ticks/sec but broadcast at 10 fps. Aggregate intermediate ticks server-side; only push the latest snapshot to the client.
-- **Binary protocol**: Replace JSON with a flat binary frame (vehicle ID as int16, x/y as float32, heading as float16). Reduces per-vehicle overhead from ~200 bytes to ~12 bytes — 16x reduction.
-- **Chunking**: If the vehicle count is expected to reach 1000+, stream only vehicles in the visible viewport (frontend sends viewport bounds, backend filters).
-
-**Do not**: Use STOMP `/topic/` broadcast to all connected clients with a full snapshot — this blocks the broker thread for every subscriber.
+**Phase to address:**
+Map page architecture/design phase — before any map page code is written.
 
 ---
 
-### 3. Canvas Performance
+### Pitfall 2: Screenshot of Google Maps iframe is Technically Blocked by CORS
 
-**Problem**: Calling `clearRect` on the full canvas and redrawing every element every frame regardless of what changed. With 500 vehicles, each requiring `save/restore`, `translate`, `rotate`, `fillRect`, `restore`, the per-frame draw call count reaches ~3000. Compound with road network, traffic lights, and statistics overlays and frame time exceeds 16 ms at 60 fps, causing jank.
+**What goes wrong:**
+Google Maps renders inside a cross-origin iframe. `html2canvas`, `dom-to-image`, and similar DOM-capture libraries cannot capture cross-origin iframe content — the browser blocks it with a security error. The capture silently produces a blank rectangle where the map should be, or throws a CORS exception.
 
-**Specific anti-patterns**:
-- `ctx.save()/ctx.restore()` inside a tight loop per vehicle — expensive due to state stack allocation.
-- Calling `ctx.strokeText()` per vehicle for speed labels every frame.
-- Recreating `Path2D` objects for roads every frame instead of caching them.
-- Using multiple overlapping `<canvas>` elements without understanding compositing cost.
+**Why it happens:**
+Developers see the map rendered on screen and assume `html2canvas` over the parent div will capture it. The iframe security model prevents this. Google Maps JavaScript API does not expose a programmatic method to export the current view as an image.
 
-**Correct approaches**:
-- **Layered canvas**: Split into at minimum three layers: static background (roads, lane markings — drawn once), dynamic vehicles layer (redrawn every frame), UI overlay (stats panel — redrawn only on data change). Roads never change; clearing and redrawing them every frame is pure waste.
-- **Dirty-rect optimization for vehicles**: Maintain a bounding-box list from the previous frame. Clear only those rects before redrawing. Only practical if vehicle density is low. At high density, full clear of the vehicle layer is often faster than hundreds of individual `clearRect` calls.
-- **Batch transform**: Instead of `save/translate/rotate/restore` per vehicle, pre-compute screen coordinates server-side or in a worker; draw all vehicles of the same color in one batch path.
-- **Object pooling for draw state**: Avoid per-frame object allocation. Pre-allocate typed arrays for vehicle positions (`Float32Array`) and iterate without creating JS objects inside the loop.
-- **OffscreenCanvas + Worker**: Move canvas rendering to a Web Worker via `OffscreenCanvas.transferControlToOffscreen()`. This frees the main thread for UI responsiveness. Spring WebSocket messages arrive on the main thread — transfer the data to the worker via `postMessage` with a `SharedArrayBuffer` or transferable `ArrayBuffer`.
+**How to avoid:**
+Use the **Maps Static API** endpoint — construct a Static API URL using the current center/zoom/size parameters from the live map and fetch that as the image to analyze. Or switch to a map library (Leaflet + OSM tiles, Mapbox GL JS) that renders to a WebGL/Canvas element you control, which can be exported via `canvas.toDataURL()`.
 
----
+Do NOT use `html2canvas` on a page containing Google Maps.
 
-### 4. Vehicle Physics Edge Cases
+**Warning signs:**
+- Implementation uses `html2canvas` or `domtoimage` anywhere near the map div.
+- `canvas.toDataURL()` is called on a canvas that has loaded cross-origin tiles (also blocked unless tiles include CORS headers).
 
-**Problem**: IDM (Intelligent Driver Model) and similar car-following models produce undefined behavior at boundary conditions.
-
-**Specific failure modes**:
-
-- **Overlap on spawn**: Spawning a vehicle at a position already occupied by another. The following distance becomes zero or negative, IDM produces infinite deceleration, vehicle gets a velocity of `NaN` or `-Infinity` on the next tick.
-- **Negative speed**: IDM's acceleration term `a * [1 - (v/v0)^delta - (s*/s)^2]` does not clamp speed to zero. A heavily braking vehicle can cross zero and start reversing if the time step is too large relative to deceleration. Fix: clamp velocity to `[0, maxSpeed]` after every integration step.
-- **Teleportation**: A vehicle at the end of a road segment that has no next segment assigned will have its position increment past the road length with no transition logic. The vehicle "teleports" or disappears. Fix: road graph traversal must be resolved before position update; if no successor exists, vehicle should decelerate to stop at road end.
-- **Infinite acceleration**: When the preceding vehicle's position is exactly equal to the following vehicle's position (gap = 0), IDM's `(s*/s)^2` term is `infinity`. Guard: enforce a minimum gap constant (`s_min >= 1.0 m`) and clamp the interaction term.
-- **Stopped vehicle chain**: When a full lane is stopped at a red light, each vehicle's desired gap `s*` includes a velocity-dependent term `v*T` which goes to zero. This is correct behavior, but only if `s_min` prevents collapse to zero gap.
-
-**Validation rule**: After every tick, assert `0 <= v <= maxSpeed` and `position >= 0` for all vehicles. Log and clamp violations rather than crashing; a production simulation should degrade gracefully.
+**Phase to address:**
+Screenshot capture proof-of-concept phase. Validate the capture mechanism before building the AI analysis pipeline.
 
 ---
 
-### 5. Floating Point Accumulation
+### Pitfall 3: Pixel Coordinates Not Converted to Real-World Meters Before IDM Physics
 
-**Problem**: In a tick-based simulation, vehicle position is updated as `position += velocity * dt` every tick. Over thousands of ticks, floating point rounding accumulates. At 20 ticks/sec running for 10 minutes = 12,000 ticks. A rounding error of `1e-7` per tick accumulates to `1.2e-3` over 12,000 ticks — roughly 1 mm. For a road length of 1000 m, this is negligible. However, when position is used to determine which road segment a vehicle is on (boundary checks like `position >= segmentLength`), accumulated error can cause a vehicle to miss a segment transition and end up "beyond the end" of a road.
+**What goes wrong:**
+The AI/CV pipeline outputs road geometry in pixel coordinates of the screenshot (e.g., road is 340px long, 8px wide, intersection at pixel (212, 178)). These pixel values are imported directly into the simulation JSON as road `length` and `position` fields. The IDM physics engine expects lengths in meters and speeds in m/s. At zoom level 17, 1 pixel is approximately 1.19 meters; at zoom level 15, approximately 4.77 meters. Using pixel values as meters produces physically nonsensical simulations: cars with 30 m/s max speed traverse a 340-meter "road" in 11 seconds when it should take around 45 seconds, or the safe-following-distance (IDM parameter `s0`, typically 2m) dwarfs the "road length" of 8 pixels.
 
-**Where it actually hurts**:
-- Segment transition logic using strict equality: `if (position == segmentLength)` — never triggers due to floating point.
-- Intersection clearance checks: a vehicle's bounding box calculated from accumulated position may drift out of its lane center.
-- Traffic light stop line: vehicle may stop 2–5 cm past the stop line depending on accumulated error and tick granularity. Visually invisible but logically it "ran the red light".
+**Why it happens:**
+Pixel-to-meter conversion requires knowing the zoom level and latitude of the captured viewport — values available during capture but easy to not persist into the analysis pipeline. The conversion formula is:
 
-**Fixes**:
-- Use `position >= segmentLength - EPSILON` (e.g., `EPSILON = 0.01`) for transition triggers.
-- Periodically snap vehicle position to lane center axis (lateral position) to prevent lateral drift.
-- Use `double` (64-bit) rather than `float` (32-bit) for all position and velocity calculations on the backend. The frontend only needs `float32` for canvas rendering.
-- For long-running simulations: track `totalDistanceTraveled` as a separate accumulator rather than deriving it from current position.
-
----
-
-### 6. Lane Change Collisions
-
-**Problem**: Two vehicles in adjacent lanes simultaneously decide to change into the same target lane at the same position. Both pass the "is target gap safe?" check at tick N because neither has committed the move yet. At tick N+1 both occupy the same lane slot — overlap occurs.
-
-**Why it happens**: The gap check reads the current state (tick N positions). The state write happens after all checks complete. This is the classic check-then-act race in a sequential but non-atomic update.
-
-**Fix — two-phase update**:
-1. **Intent phase**: All vehicles compute their desired action (including lane changes). Mark target lane slots as "reserved" in a scratch buffer, not in the live state.
-2. **Conflict resolution**: For each contested slot, use priority rules (e.g., the vehicle further along the road wins, or random tie-break with a seeded RNG for determinism).
-3. **Commit phase**: Apply the resolved intents to the live state.
-
-**Additional guards**:
-- Enforce a per-vehicle lane change cooldown (e.g., cannot change lane again within 3 seconds of the last change). This reduces contention frequency.
-- Apply a lateral position animation (gradual lane shift over N ticks) rather than instant teleportation. This creates a natural buffer during which a second vehicle will see the first as "occupying" the target lane.
-
----
-
-### 7. Intersection Deadlocks
-
-**Problem**: All approaches to a 4-way intersection are occupied by vehicles. Each vehicle is waiting for the vehicle ahead in the intersection to clear, but those vehicles are waiting for the opposite approach to clear. Classic deadlock: A waits for B, B waits for C, C waits for D, D waits for A.
-
-**How it manifests**: Traffic lights are green on all sides but no vehicle moves. The simulation continues to tick but the intersection is frozen. Vehicle counts in the intersection remain non-zero indefinitely.
-
-**Root causes**:
-1. No maximum occupancy limit on the intersection box — vehicles enter even when the exit road is blocked.
-2. Vehicles enter the intersection on green without checking if they can clear it before the light changes (box-blocking behavior).
-3. Right-of-way resolution for priority-from-right scenarios produces circular precedence.
-
-**Fixes**:
-- **Box blocking prevention**: Before entering an intersection, a vehicle checks if the target exit segment has enough free space to accommodate it. If not, it stops at the stop line even on green.
-- **Intersection occupancy limit**: Track the number of vehicles currently in the intersection box. Refuse entry beyond a capacity threshold (e.g., 2 vehicles per lane-pair).
-- **Deadlock detector**: A watchdog that checks if intersection occupancy has been non-zero and unchanged for more than 10 seconds of simulation time. On detection: log, then forcibly advance one vehicle to break the cycle. This is a recovery mechanism, not a prevention mechanism.
-- **Traffic light coordination**: Adjacent intersections' light cycles should be offset to create "green waves", reducing the probability of simultaneous blocking from multiple directions.
-
----
-
-### 8. Roundabout Gridlock
-
-**Problem**: Vehicles enter the roundabout from all entry points simultaneously until the roundabout is at 100% capacity. Vehicles already in the roundabout cannot exit because exit roads are blocked by vehicles waiting to enter. Vehicles waiting to enter cannot enter because the roundabout is full. Complete gridlock.
-
-**Differs from intersection deadlock** in that roundabouts have a circular flow — the issue is capacity saturation, not circular wait on rights-of-way.
-
-**Fixes**:
-- **Entry gating**: A vehicle may only enter the roundabout if there is at least one free slot inside (i.e., current roundabout occupancy < max capacity). Max capacity = `roundabout_circumference / average_vehicle_spacing`.
-- **Exit check before entry**: Before entering the roundabout, the vehicle checks if there is free space on its target exit road. If not, it yields even if the roundabout itself has space (prevents blocking from inside).
-- **Yield-to-circulating rule**: Entering vehicles always yield to circulating vehicles. This must be implemented as a hard priority rule, not a soft preference — no "pushing in" under any acceleration model.
-- **Forced yield on congestion**: If the roundabout has been at >80% capacity for more than 5 simulation seconds, disable new entries from all but the lowest-traffic entry point for a cooldown period.
-
----
-
-### 9. JSON Map Validation
-
-**Problem**: Loading a malformed or internally inconsistent map configuration causes a NullPointerException or ArrayIndexOutOfBoundsException deep inside the simulation engine on the first tick, with no diagnostic information about which map element is wrong.
-
-**Specific failure scenarios**:
-- A road segment references a lane index that does not exist on the target road.
-- An intersection references a road ID that does not exist in the map.
-- A roundabout's exit road is a one-way road pointing into the roundabout (impossible exit).
-- Negative road length, zero lane count, or speed limits of 0.
-- Cyclic road connections with no exit (a vehicle loop with no spawn/despawn points).
-- Missing required fields (null `id`, null `connections`).
-
-**Fix — validation layer before simulation start**:
-
-```java
-public class MapValidator {
-    public ValidationResult validate(MapConfig config) {
-        List<String> errors = new ArrayList<>();
-        // 1. Structural: all referenced IDs exist
-        // 2. Physical: lengths > 0, laneCount >= 1, speedLimit > 0
-        // 3. Topological: no dangling references, at least one spawn point
-        // 4. Reachability: every road is reachable from a spawn point (graph traversal)
-        // 5. Roundabout: all exits lead to non-roundabout segments
-        return new ValidationResult(errors);
-    }
-}
+```
+meters_per_pixel = 156543.03392 * cos(latitude_radians) / (2 ^ zoom_level)
 ```
 
-Apply `MapValidator` at config load time, before instantiating any simulation state. Return a structured error response to the frontend with the specific element and field that failed validation — do not swallow exceptions.
+This formula is not obvious, and the latitude-dependent cosine factor means screenshots from different cities have different scales at the same zoom level.
 
-**Additional**: Use Jackson's `@JsonProperty(required = true)` and a custom `@Valid` bean validation on the `MapConfig` DTO to catch structural issues before the validator runs.
+**How to avoid:**
+At capture time, record and embed in the image metadata (or pass as a side-channel JSON):
+1. Center latitude/longitude of the viewport
+2. Current zoom level
+3. Screenshot pixel dimensions
+
+In the conversion pipeline, compute `meters_per_pixel` from these values and scale all detected pixel distances to meters before writing to the simulation JSON. Add a validation step: a typical city block is 80–200 meters; if detected roads are outside 20m–2000m, reject or flag the output.
+
+**Warning signs:**
+- The conversion pipeline only accepts an image file with no associated geographic metadata.
+- Simulation output shows cars traversing roads in under 3 seconds (too short) or over 10 minutes (too long).
+- Road widths in JSON are single-digit numbers when they should be 3–5 meters per lane.
+
+**Phase to address:**
+Coordinate conversion layer, immediately after AI detection produces pixel-space output.
 
 ---
 
-### 10. Thread Safety
+### Pitfall 4: AI Road Detection Produces Disconnected Segments Instead of a Connected Graph
 
-**Problem**: The simulation engine runs on a `ScheduledExecutorService` thread (the tick thread). WebSocket message handlers (e.g., "add obstacle", "change speed limit", "pause simulation") run on the STOMP broker thread. Both threads access and mutate the simulation state concurrently. This produces data races: a vehicle position array being iterated by the tick thread while the broker thread inserts a new vehicle.
+**What goes wrong:**
+Semantic segmentation models (whether a dedicated road-detection model or GPT-4o vision) label pixels as "road" or "not road." Converting this raster mask to a vector road graph requires a vectorization/skeletonization step. The skeleton often breaks at intersections (where multiple roads meet, the thinning algorithm creates T-junctions with gaps or spurious branches), at image tile edges (the model has no context beyond the image boundary), and under occlusions (trees, buildings overlapping roads). The result: the simulation receives roads that dead-end at intersections or have phantom branches, causing vehicles to stop at non-existent dead-ends or be unable to navigate turns.
 
-**Java-specific risks**:
-- `ArrayList<Vehicle>` is not thread-safe. `ConcurrentModificationException` during iteration.
-- A vehicle's `position`, `velocity`, `laneIndex` fields read mid-update may produce a torn read — partially updated state sent to the frontend.
-- `HashMap` for road segment lookup accessed from both threads without synchronization can cause infinite loops on `get()` under Java's HashMap resize behavior.
+**Why it happens:**
+Researchers describe this as the fundamental topology recovery problem: "graph-based approaches usually suffer from incorrect crossroad connectivity and false disconnection on the road." Developers underestimate this step — the segmentation mask looks correct visually, but the graph extraction is the hard part.
 
-**Correct approach — command queue pattern**:
+**How to avoid:**
+- Build an explicit post-processing validation step that checks the extracted graph: every intersection node must have at least 3 connected road segments; no road segment should terminate within the image bounds unless it is at the image edge.
+- Use a snap-to-grid or node merging step: road endpoints within N pixels of each other should be merged into a single intersection node.
+- Consider using OSM structured data directly via Overpass API instead of image-based detection — the data already encodes correct topology.
+- If using AI detection, add a manual review/edit UI step where the user can correct topology before the simulation is generated.
 
-```java
-// Thread-safe command queue: broker thread enqueues, tick thread drains
-private final BlockingQueue<SimulationCommand> commandQueue = new LinkedBlockingQueue<>();
+**Warning signs:**
+- Detected road count is much higher than visually expected (spurious branches from thinning).
+- Simulation vehicles stop at unexpected points mid-network.
+- Intersection nodes with only 1 or 2 connected roads appear in the graph.
 
-// In tick loop (scheduler thread only):
-void tick() {
-    drainCommands();   // apply all pending commands before this tick
-    stepPhysics();     // update all vehicle positions
-    broadcastState();  // serialize and send — reads from state only
-}
+**Phase to address:**
+AI detection output post-processing phase, before topology-to-simulation conversion.
 
-void drainCommands() {
-    SimulationCommand cmd;
-    while ((cmd = commandQueue.poll()) != null) {
-        cmd.apply(simulationState);
-    }
-}
-```
+---
 
-This eliminates synchronization on the hot path. The tick thread exclusively owns the simulation state. WebSocket handlers only enqueue commands, never touching state directly.
+### Pitfall 5: Intersection Inbound/Outbound Road Mapping Is Wrong
 
-**Do not use `synchronized` on the simulation state object** — it will cause the tick thread to block on every WebSocket message, adding latency spikes visible as frame hitches.
+**What goes wrong:**
+The existing simulation engine (Java backend) uses an `Intersection` model with explicit `inboundRoads` and `outboundRoads` lists and turn routing logic. When importing from a detected road graph, the direction (which end of a road segment is "inbound" to an intersection) must be computed from geometry. A naive approach assigns roads randomly as inbound or outbound, or treats all connected roads as bidirectional when some are one-way. The result: vehicles enter intersections but cannot exit (no valid outbound road), or the traffic flow direction is reversed from the real map.
+
+**Why it happens:**
+In the manual JSON format, a human author consciously assigns inbound/outbound. In automated conversion from a detected graph, directionality must be inferred from either one-way tags (only available if using OSM data) or heuristics (road bearing angles). Map images contain no directionality information — a two-lane road looks the same as a one-way street visually.
+
+**How to avoid:**
+- Default all detected roads to bidirectional (both inbound and outbound at each connected intersection). This is physically wrong for one-way streets but produces a functioning simulation.
+- If using OSM data, extract `oneway` tags and apply them correctly.
+- Document in the simulation JSON schema that `inboundRoads`/`outboundRoads` at an intersection are directional, and validate after import: at every intersection, count inbound and outbound connections — an intersection with 0 outbound roads is invalid.
+
+**Warning signs:**
+- Vehicles accumulate at one intersection and the queue never drains.
+- Console errors like "no outbound road found for intersection X."
+- The simulation runs but vehicles never complete trips.
+
+**Phase to address:**
+Simulation JSON schema generation phase (topology-to-JSON converter).
+
+---
+
+### Pitfall 6: Google Maps API Key Exposed in Frontend Bundle
+
+**What goes wrong:**
+The Google Maps JavaScript API key is embedded in the React frontend (either hardcoded in source or in a `VITE_` environment variable that gets bundled). The key appears in plain text in the browser's network requests and in the compiled JS bundle. Anyone can extract it and use it to incur billing charges. In late 2025, researchers found 2,863 exposed Google API keys on the public internet — including at major financial institutions — that could authenticate to the Gemini API in addition to Maps.
+
+**Why it happens:**
+Developers set `VITE_GOOGLE_MAPS_API_KEY` in `.env` and consider this "hidden." Vite `VITE_` variables are explicitly designed to be bundled into client-side code — they are not secret.
+
+**How to avoid:**
+The Maps JavaScript API key exposed in the frontend cannot be fully hidden — this is by design. The correct mitigation is API key restrictions in the Google Cloud Console:
+1. Restrict the key to HTTP referrers (only your domain).
+2. Restrict the key to the Maps JavaScript API only.
+3. Set a billing alert and quota cap.
+4. Do NOT use the same key for backend calls (Static API, Geocoding, etc.) — create separate keys for each.
+
+Never use an unrestricted key in the frontend.
+
+**Warning signs:**
+- The same API key is used for both frontend Maps JS embed and any backend API calls.
+- The key has no HTTP referrer restriction in Google Cloud Console.
+- The key appears in a `.env` file committed to the repo (even in history).
+
+**Phase to address:**
+Map page setup phase, before any key is written into source code.
 
 ---
 
 ## Technical Debt Patterns
 
-These do not break the simulator immediately but compound into major refactors later:
+Shortcuts that seem reasonable but create long-term problems.
 
-| Pattern | How it sneaks in | Long-term cost |
-|---|---|---|
-| God `SimulationEngine` class | Start with one class, keep adding | Impossible to unit test individual behaviors; tick method grows to 500 lines |
-| Vehicle as mutable shared DTO | Same `Vehicle` object used for physics, serialization, and frontend state | Cannot safely send partial updates; physics bugs corrupt display |
-| Hardcoded road network | "Just testing" inline road definitions | Impossible to test with different maps; scenario system requires full rewrite |
-| Tick rate as magic constant | `Thread.sleep(50)` instead of a configurable `tickIntervalMs` | Cannot slow down for debugging or speed up for stress testing without code change |
-| No simulation event log | Skipping event recording to save time | Deadlock and gridlock bugs unreproducible — need deterministic replay to debug |
-| Frontend polling instead of WebSocket push | Easier to implement initially | Polling interval creates artificial latency; switch to WebSocket later requires protocol redesign |
+| Shortcut | Immediate Benefit | Long-term Cost | When Acceptable |
+|----------|-------------------|----------------|-----------------|
+| Use pixel coordinates directly in simulation JSON | Skip coordinate conversion math | Physically wrong simulation; all IDM tuning breaks | Never |
+| Keep Google Maps as AI analysis source | Simpler architecture | ToS violation, potential account ban, legal exposure | Never |
+| Skip post-processing topology validation | Faster first demo | Dead-end roads cause runtime simulation errors | Never in production |
+| Hardcode API key without HTTP referrer restriction | Faster dev setup | Unlimited billing exposure; key may access Gemini API | Never, not even in dev (use dev-only key with quota cap) |
+| Treat all roads as bidirectional | Correct intersections easier to implement | One-way streets simulated incorrectly | Acceptable for MVP; document explicitly |
+| Use OSM Overpass API data instead of AI image detection | Avoids AI accuracy issues, no ToS risk | Requires learning Overpass query language | Strongly recommended alternative path for topology |
 
 ---
 
-## Performance Traps — Tick Rate vs Vehicle Count Scaling
+## Integration Gotchas
 
-The simulation has two scaling dimensions that interact non-linearly:
+Common mistakes when connecting to external services.
 
-### Tick rate scaling
-- Each doubling of tick rate doubles CPU time AND doubles WebSocket traffic.
-- At 50 ticks/sec, with 1000 vehicles and full JSON serialization, serialization alone takes ~15 ms/tick on a modern JVM (first few ticks before JIT warms up: ~80 ms). If the tick period is 20 ms, the system is overloaded from the start.
-- Rule of thumb: `serializationTime + physicsTime < 0.7 * tickInterval`. Leave 30% headroom.
+| Integration | Common Mistake | Correct Approach |
+|-------------|----------------|------------------|
+| Google Maps JS API | Calling `html2canvas` on the map div to capture screenshot | Use Maps Static API URL with same center/zoom, or switch to Leaflet+OSM which exposes a real canvas |
+| OpenAI / AI vision API | Sending raw screenshot pixels, expecting structured road coordinates back | Prompt must request structured JSON output with normalized coordinates; validate schema before use |
+| Google Maps API key | One key for all purposes | Separate keys per API product, each with appropriate restrictions |
+| OSM Overpass API | No rate limiting, hammering the public instance | Use the overpass-api.de endpoint with ≤1 req/sec; for higher volume use a local Overpass instance |
+| IDM physics engine | Importing road lengths without unit check | Always assert `road.length > 10` (meters) and `road.length < 5000` after import |
 
-### Vehicle count scaling
-- IDM physics is O(N) per tick where N = vehicle count. That is fine.
-- Lane change checks are O(N * lanesPerRoad) in the naive implementation. Still fine up to ~2000 vehicles.
-- **The hidden O(N²) trap**: Checking every vehicle against every other vehicle for collision detection. Never implement naive O(N²) collision detection. Use spatial partitioning (grid cells by road segment) — vehicles on different segments cannot collide.
-- JSON serialization is O(N) but with a high constant. For 1000 vehicles: Jackson serializes ~10K fields per tick. Consider a custom serializer that writes a flat array rather than a list of named objects.
+---
 
-### Observed breaking points (estimates for this stack)
-| Vehicles | Tick rate | Expected behavior |
-|---|---|---|
-| < 200 | 20/sec | Comfortable, full JSON fine |
-| 200–500 | 20/sec | Monitor tick duration; JSON may need optimization |
-| 500–1000 | 20/sec | Delta updates required; consider binary format |
-| > 1000 | 20/sec | Viewport culling required; reduce tick rate to 10/sec |
+## Performance Traps
+
+Patterns that work at small scale but fail as usage grows.
+
+| Trap | Symptoms | Prevention | When It Breaks |
+|------|----------|------------|----------------|
+| Calling AI vision API synchronously during capture | Frontend hangs for 5–30 seconds on "Capture" button press | Process asynchronously; show loading state; stream partial results if API supports it | Immediately on first use |
+| Sending full-resolution screenshot to AI API | Slow API response; high token cost (GPT-4o vision charges per image tile) | Resize image to 1024x1024 before API call; most road detection does not benefit from higher resolution | Every request |
+| Re-analyzing same screenshot on every page visit | Repeated API costs | Cache detection results by image hash; store analyzed JSON in session | After a few repeated uses |
+| Loading full OSM road network for a city | Overpass query returns 100K+ roads; browser freezes | Bound the Overpass query to the viewport bounding box only | When viewport is larger than a few city blocks |
+
+---
+
+## Security Mistakes
+
+Domain-specific security issues beyond general web security.
+
+| Mistake | Risk | Prevention |
+|---------|------|------------|
+| Unrestricted Google Maps API key in frontend | Billing fraud; key may also access Gemini API per 2025 research | HTTP referrer + API restriction in Cloud Console; separate keys per API |
+| Passing user-uploaded images to AI API without validation | Oversized images causing timeout/cost spikes; malicious metadata | Validate file type, strip EXIF metadata, enforce size limit (max 5MB) before sending |
+| AI model returns road geometry used without sanitization | Malformed coordinates crash simulation engine | Validate all AI-returned coordinates are within image bounds and within expected range before import |
+| Backend proxying AI API without rate limiting | Endpoint abused to rack up AI API costs | Rate-limit the `/api/analyze-map` endpoint; require session/CSRF token |
 
 ---
 
 ## UX Pitfalls
 
-### Controls unresponsive during heavy simulation
-- If the Spring Boot application uses the default Tomcat thread pool and the tick scheduler shares threads with HTTP request handling, a slow tick blocks the thread pool. UI control POST requests time out.
-- Fix: dedicate a separate `ThreadPoolTaskScheduler` bean for the simulation with `poolSize = 1`.
-- Fix: make all UI control operations asynchronous — enqueue into the command queue, return `202 Accepted` immediately.
+Common user experience mistakes in this domain.
 
-### Speed slider causes simulation time jumps
-- Implementing "faster simulation" by multiplying `dt` by a large factor (e.g., 10x speed = `dt * 10`) causes vehicles to "jump" forward, skipping intermediate positions. At 10x speed a vehicle traveling 120 km/h moves 33 cm per real-world 50 ms tick, but 3.3 m per physics step — enough to jump over a stop line or through a vehicle ahead.
-- Fix: sub-step the physics. At 10x speed, run 10 physics steps of `dt/10` per tick. This keeps individual step sizes bounded and prevents tunneling.
-
-### Unclear visualization of simulation state
-- If the simulation is paused, nothing on screen indicates this — the canvas looks identical to a running simulation with zero vehicles.
-- If WebSocket disconnects, vehicles freeze in place — visually indistinguishable from a paused simulation.
-- Traffic light state (red/yellow/green) must be visually unambiguous at road intersections. A single pixel dot is not enough at zoom-out levels.
-- Lane change in progress should be visually distinct from a vehicle traveling straight.
-
-### Statistics panel lag
-- If statistics (average speed, throughput, density) are computed in the tick thread and serialized with each tick, they add to tick duration.
-- Compute statistics asynchronously on a separate thread triggered every 500 ms, independent of the tick rate.
-- Display a "calculating..." state if the stats are stale by more than 2 seconds.
+| Pitfall | User Impact | Better Approach |
+|---------|-------------|-----------------|
+| No feedback during AI analysis (5–30 seconds) | User thinks app froze; clicks Capture again causing double analysis | Show progress spinner + "Analyzing roads..." message; disable Capture button during processing |
+| Showing raw AI output (pixel coordinates, JSON) before simulation loads | Confusing; not actionable | Show a preview overlay of detected roads on the original screenshot before importing to simulation |
+| No way to correct bad AI detection before simulation starts | User sees broken simulation with no recourse | Provide a "detected roads" review step where user can accept/reject before loading |
+| Simulation fails silently if topology is invalid | User sees empty canvas with no error | Validate the imported map JSON and display specific errors: "Intersection 3 has no outbound roads" |
+| Map capture at wrong zoom level | Simulation is unworkably large (zoom 12) or contains only one intersection (zoom 19) | Recommend or enforce zoom range 16–18 for best road detection; show guidance message |
 
 ---
 
 ## "Looks Done But Isn't" Checklist
 
-The following scenarios are visually undetectable in a demo but represent broken behavior:
+Things that appear complete but are missing critical pieces.
 
-- [ ] **Phantom progress**: Vehicles appear to move smoothly but the simulation clock has stopped advancing. Frontend interpolates between the last two received states indefinitely.
-- [ ] **Spawn rate lies**: The UI shows "50 vehicles/min" but the actual spawn rate depends on available road space. Under congestion, spawning silently fails. The displayed rate is a target, not an actual.
-- [ ] **Traffic lights cycling but not enforced**: Lights visually change color but vehicles ignore them because the enforcement check was never wired to the vehicle behavior model.
-- [ ] **Lane changes visual only**: Vehicles appear to switch lanes on canvas but the physics model still treats them as being in the original lane. Speed and following distance calculations use wrong neighbors.
-- [ ] **Obstacle removed but collision box persists**: Removing an obstacle via UI sends a command that removes it from the render list but not from the physics collision check. Vehicles still slow down and stop at the invisible obstacle.
-- [ ] **Statistics correct but stale**: The stats panel shows average speed from 30 ticks ago. During congestion buildup, this makes the simulation appear healthier than it is.
-- [ ] **Round-trip latency hidden by tick rate**: The simulation appears real-time but there is a 500 ms buffer between backend state and frontend display because the WebSocket message queue backed up. Adding/removing an obstacle takes 500 ms to appear, which looks like a bug.
-- [ ] **Determinism lost silently**: Two identical starting conditions produce different outcomes because `Math.random()` is used inside the physics engine instead of a seeded `Random`. This makes bugs unreproducible.
-- [ ] **Memory leak via Vehicle object accumulation**: Despawned vehicles are removed from the active list but their references are retained in an event history list that is never pruned. After 30 minutes of simulation, the JVM heap grows to several GB.
-- [ ] **WebSocket reconnect resets simulation**: On WebSocket reconnect (tab sleep, network blip), the frontend receives the current state but the simulation has been running for minutes. The frontend has no mechanism to distinguish "first connect" from "reconnect" and reinitializes its local state, causing a visual reset that does not reflect actual simulation state.
+- [ ] **Screenshot capture:** Verify the captured image actually contains road pixels, not a blank white or black rectangle — the CORS iframe failure is silent.
+- [ ] **Coordinate conversion:** Verify `meters_per_pixel` is computed and applied — check road lengths in simulation JSON are in range 30m–2000m.
+- [ ] **Topology connectivity:** Verify every intersection node in the extracted graph has at least one inbound and one outbound road.
+- [ ] **IDM physics sanity:** Run a single-vehicle test on the imported road — vehicle should complete a city block (100m) in 5–15 seconds at 30 km/h.
+- [ ] **API key restriction:** Confirm in Google Cloud Console that the Maps JS key has HTTP referrer restriction set before first deploy.
+- [ ] **ToS compliance:** Confirm the image source used for AI analysis is NOT Google Maps content — must be OSM, or user-uploaded image.
+- [ ] **AI output schema validation:** Confirm the code handles malformed AI responses gracefully (try/catch + user-visible error, not crash).
 
 ---
 
-*Last updated: 2026-03-27*
+## Recovery Strategies
+
+When pitfalls occur despite prevention, how to recover.
+
+| Pitfall | Recovery Cost | Recovery Steps |
+|---------|---------------|----------------|
+| ToS violation discovered post-launch | HIGH | Swap map provider to OSM/Mapbox; rebuild capture flow; API key may be suspended forcing immediate action |
+| CORS screenshot capture returns blank | LOW | Switch to Static API URL or alternative map library; affects only one component |
+| Pixel coordinates used as meters throughout | HIGH | Add conversion layer in both frontend (capture metadata) and backend (simulation import); re-test all IDM physics |
+| Topology disconnection errors in simulation | MEDIUM | Add post-processing snap/merge step in converter; does not affect map display or capture |
+| API key billing fraud | MEDIUM | Revoke and regenerate key immediately; add restrictions; dispute fraudulent charges with Google |
+| AI detection produces wrong road structure | LOW-MEDIUM | Add manual correction UI step; the simulation engine itself does not need changes |
+
+---
+
+## Pitfall-to-Phase Mapping
+
+How roadmap phases should address these pitfalls.
+
+| Pitfall | Prevention Phase | Verification |
+|---------|------------------|--------------|
+| Google Maps ToS for AI analysis | Architecture/design phase — before any map page code | Confirm image source for AI is OSM or equivalent; document the decision |
+| CORS screenshot capture failure | Map page proof-of-concept phase | Capture test: assert returned image is non-blank and contains road pixels |
+| Pixel-to-meter coordinate conversion | Coordinate conversion layer phase | Unit test: zoom 17 at 52°N latitude → `meters_per_pixel` ≈ 0.75; imported road lengths in 20–2000m range |
+| Disconnected topology graph | AI detection post-processing phase | Graph validation: every node has at least 1 inbound and 1 outbound edge |
+| Wrong inbound/outbound road mapping | Simulation JSON generation phase | Simulation test: single vehicle navigates a loop without getting stuck |
+| API key exposure | Map page setup (day one) | Google Cloud Console: key shows HTTP referrer restriction before any frontend deploy |
+| IDM units wrong | Physics validation phase | IDM test: car at 13.9 m/s (50 km/h) covers 100m road in approximately 7 seconds |
+
+---
+
+## Sources
+
+- Google Maps Platform Service Specific Terms (content use, ML prohibition): https://cloud.google.com/maps-platform/terms/maps-service-terms
+- Google Maps Platform Terms of Service (general): https://cloud.google.com/maps-platform/terms
+- Google Maps API Security Best Practices: https://developers.google.com/maps/api-security-best-practices
+- html2canvas cross-origin iframe restriction (GitHub issue #1532): https://github.com/niklasvh/html2canvas/issues/1532
+- Google Maps zoom levels and meters-per-pixel: https://wiki.openstreetmap.org/wiki/Zoom_levels
+- MapTiler tile coordinate system and Mercator projection: https://docs.maptiler.com/google-maps-coordinates-tile-bounds-projection/
+- DeepRoadMapper topology error analysis: https://openaccess.thecvf.com/content_ICCV_2017/papers/Mattyus_DeepRoadMapper_Extracting_Road_ICCV_2017_paper.pdf
+- Segment Anything Model for road network graph extraction (topology gaps): https://arxiv.org/html/2403.16051v1
+- GPT-4o vision limitations for spatial/geometric tasks: https://community.openai.com/t/best-openai-model-for-image-analysis-in-2025-gpt-4o-gpt-4o-mini-or-something-else/1359595
+- Google API key exposure risk (Gemini API access, 2025): https://trufflesecurity.com/blog/google-api-keys-werent-secrets-but-then-gemini-changed-the-rules
+- SUMO road network inbound/outbound intersection model: https://sumo.dlr.de/docs/Simulation/Intersections.html
+- IDM physics parameters and units (meters, m/s): https://traffic-simulation.de/info/info_IDM.html
+
+---
+*Pitfalls research for: Map Screenshot to Traffic Simulation Conversion (v2.0 milestone)*
+*Researched: 2026-04-10*

@@ -1,12 +1,12 @@
 # Feature Research
 
 **Domain:** Traffic simulation web application
-**Researched:** 2026-03-27
-**Confidence:** HIGH
+**Researched:** 2026-03-27 (v1.0) / 2026-04-10 (v2.0 Map Screenshot to Simulation)
+**Confidence:** HIGH (v1.0 features) / MEDIUM (v2.0 features — screenshot/CORS from multiple sources; OSM extraction HIGH; LLM accuracy from academic papers)
 
 ---
 
-## Feature Landscape
+## v1.0 Feature Landscape (existing milestone — preserved)
 
 ### Table Stakes
 
@@ -27,9 +27,7 @@ Features users expect from any credible traffic simulator. Absence of these caus
 
 ---
 
-### Differentiators
-
-Features that go beyond the baseline and give this simulator a unique research/educational angle. Competitors rarely expose these as interactive controls.
+### Differentiators (v1.0)
 
 | Feature | Value Proposition | Complexity |
 |---------|-------------------|------------|
@@ -44,9 +42,7 @@ Features that go beyond the baseline and give this simulator a unique research/e
 
 ---
 
-### Anti-Features
-
-Commonly requested features that should be explicitly declined. Each adds cost that exceeds educational value for this tool's purpose.
+### Anti-Features (v1.0)
 
 | Feature | Why It's Problematic |
 |---------|----------------------|
@@ -58,12 +54,12 @@ Commonly requested features that should be explicitly declined. Each adds cost t
 | **Persistent storage / database** | Simulation is stateful in-memory by design. Adding a DB creates operational burden with no user-facing benefit — sessions are exploratory, not longitudinal. |
 | **User authentication** | Single-user local tool. Auth adds complexity with zero value. |
 | **Route planning / navigation** | GPS-style routing is a different problem domain. Vehicles in this simulator follow road topology, not optimal paths. |
-| **Real-world map import (OSM)** | OpenStreetMap parsing requires significant data cleaning, coordinate projection, and topology repair. Complexity far exceeds educational value. v3 at earliest. |
-| **Accident / crash simulation** | Collision detection requires response rules, cleanup logic, chain-reaction handling. Not necessary for congestion research; adds disturbing visual noise. |
+| **Real-world map import (OSM)** | OpenStreetMap parsing requires significant data cleaning, coordinate projection, and topology repair. Complexity far exceeds educational value. v3 at earliest. — NOTE: This was the v1.0 assessment. v2.0 specifically targets this. |
+| **Accident / crash simulation** | Collision detection requires response rules, cleanup rules, chain-reaction handling. Not necessary for congestion research; adds disturbing visual noise. |
 
 ---
 
-## Feature Dependencies
+## Feature Dependencies (v1.0)
 
 ```
 JSON Map Config
@@ -93,7 +89,7 @@ Key constraint: **Vehicle Physics** and **Road Network** must both be complete b
 
 ---
 
-## MVP Definition
+## MVP Definition (v1.0)
 
 The smallest runnable simulation that demonstrates phantom traffic jams.
 
@@ -111,18 +107,9 @@ The smallest runnable simulation that demonstrates phantom traffic jams.
 
 **What MVP proves:** The physics engine produces realistic following behaviour and shockwave propagation. Everything else is additive.
 
-**MVP excludes:** Intersections, signals, roundabouts, lane changing, JSON config, heatmap.
-
-**Definition of Done for MVP:**
-- Drop an obstacle → traffic backs up behind it within 10 seconds of sim time
-- Remove obstacle → jam dissipates naturally (not instantly)
-- Average speed metric visibly drops when jam forms
-
 ---
 
-## Feature Prioritization Matrix
-
-Scoring: **Value** (1–5, educational/user impact) × **Effort** (1–5, implementation cost, inverted so low effort = high score).
+## Feature Prioritization Matrix (v1.0)
 
 | Feature | Value | Effort | Score | Priority |
 |---------|-------|--------|-------|----------|
@@ -146,20 +133,197 @@ Scoring: **Value** (1–5, educational/user impact) × **Effort** (1–5, implem
 | Heatmap congestion overlay | 3 | 2 | 6 | P3 — v2 |
 | Map editor (graphical) | 2 | 1 | 2 | Backlog — v2 |
 
-**Priority tiers:**
-- **P0 — MVP:** Physics engine + rendering + basic controls. Goal: prove the simulation works.
-- **P1 — v1 Complete:** Full road network, all intersection types, JSON config, scenarios.
-- **P2 — v1 Polish:** Visual aids, roundabouts, less-common intersection types.
-- **P3 / Backlog:** Deferred post-validation.
+---
+
+---
+
+## v2.0 Feature Landscape — Map Screenshot to Simulation (NEW MILESTONE)
+
+**Context:** User navigates to a real-world area on an embedded map, triggers capture, and the app generates a simulation from the actual road network. This section covers only the NEW features needed; the existing simulation engine (IDM, MapConfig loader, Canvas renderer, WebSocket) is already built.
+
+### Table Stakes (v2.0)
+
+Features the user must see for this milestone to feel complete. Missing any of these makes the feature feel half-baked.
+
+| Feature | Why Expected | Complexity | Notes |
+|---------|--------------|------------|-------|
+| Embedded interactive map with pan/zoom | User must navigate to their area of interest before initiating capture | LOW | Google Maps JS API v3 or Leaflet + OSM tiles; both well-established. Leaflet avoids Google billing and is CORS-safe by default |
+| "Capture area" button | The core user interaction — triggers the road extraction pipeline | LOW | Button reads current map viewport bounding box coordinates |
+| Road network extraction from selected area | Without actual road data the feature is a dead end | HIGH | See differentiators — OSM Overpass API is strongly preferred over screenshot + CV; see anti-features for why |
+| Backend OSM-to-MapConfig converter | Bridges extracted road data to existing simulation engine format | HIGH | Converts OSM `way`/`node` JSON to existing `MapConfig` (Road, Lane, Intersection, spawn/despawn points) |
+| Load generated MapConfig into existing simulation engine | Closes the loop — user came to simulate, not just detect | LOW | Existing MapConfig loader endpoint already built; just needs to be called |
+| Loading/error states | Road extraction takes 1–5 seconds; network errors occur; empty results must be explained | LOW | Spinner during Overpass API call; error message if no roads found in area; retry button |
+
+### Differentiators (v2.0)
+
+Features that make this milestone genuinely useful vs a toy demo.
+
+| Feature | Value Proposition | Complexity | Notes |
+|---------|-------------------|------------|-------|
+| OSM Overpass API as data source (not screenshot CV) | Deterministic, accurate, free, no CORS issues — queries the actual road graph for the visible bounding box rather than trying to detect roads from pixels | MEDIUM | Overpass API `way["highway"](bbox)` returns nodes/edges; analogous pattern achieves ~96% simulation accuracy (ChatSUMO, 2024). Screenshot CV achieves 80–93% and requires coordinate calibration |
+| Lane count from OSM tags | OSM roads carry `lanes`, `oneway`, `highway` tags — enables realistic multi-lane roads without guessing from pixels | MEDIUM | `highway=primary` → 2 lanes default; explicit `lanes=4` tag → 4 lanes; maps to existing `Lane[]` model |
+| Traffic signal placement from OSM | OSM `highway=traffic_signals` nodes identify signalized intersections — populates existing traffic light system with no CV required | MEDIUM | Existing `Intersection` + signal cycle model already built; just needs population from OSM node tags |
+| Roundabout detection from OSM | OSM `junction=roundabout` tag identifies roundabouts explicitly — populates existing roundabout model | LOW | Existing roundabout model already built; OSM tag is unambiguous |
+| Spawn/despawn point auto-placement | Places spawn points at road entry edges automatically (terminal nodes = degree-1 nodes in road graph) | MEDIUM | Heuristic: dead-end nodes + map-boundary-crossing roads become spawn/despawn; existing model supports these |
+| Bounding box sync between map view and Overpass query | User pans/zooms map → bounding box auto-updates → Overpass query uses exact viewport bounds with no extra UI step | LOW | Google Maps `getBounds()` or Leaflet `getBounds()` returns lat/lng bounds; passes directly as Overpass bbox parameter |
+| Preview overlay of detected roads before simulation | Lets user verify road detection before running — catches misidentified areas, missing major roads | MEDIUM | SVG/Canvas overlay on captured map tile or separate preview pane; shows road segments and detected intersections |
+
+### Anti-Features (v2.0)
+
+Features that seem natural but create serious problems.
+
+| Feature | Why Requested | Why Problematic | Alternative |
+|---------|---------------|-----------------|-------------|
+| Client-side screenshot with html2canvas | Seems simple — "capture what you see" | Google Maps tiles from `googleapis.com` have no CORS headers. Canvas becomes tainted. `toDataURL()` throws `SecurityError`. `useCORS: true` does not work because Google does not set `Access-Control-Allow-Origin`. Proxy workarounds are fragile and break with Maps API tile URL changes. Open GitHub issues #277, #584, #1519, #1544 in html2canvas confirm this is a persistent, unsolved problem. | Use OSM Overpass API (skips screenshot entirely) or Google Maps Static API (server-side fetch, no CORS issue) |
+| GPT-4 Vision / LLM image analysis as primary road extraction | "AI reads the map" is impressive demo | 80–93% accuracy = broken simulations on 7–20% of captures. LLMs are documented to fail at precise spatial coordinate extraction (bounding box regression). Non-deterministic — same image gives different coordinates on re-run. Costly per request (~$0.01–0.05/image). Slower than Overpass API (3–10s vs 0.5–2s). Scale/coordinate calibration needed (pixel-to-meter). | Use OSM Overpass API as primary; LLM can be v3 enhancement for non-OSM user-uploaded satellite photos |
+| Manual road editor in this milestone | "Let me fix the detected roads" | Scope explosion — a road editor is an entire separate milestone explicitly deferred in PROJECT.md (`Out of Scope: Edytor map`). Adds weeks. | Show detected roads as read-only overlay; let user re-capture different area if result is wrong |
+| Real-time traffic data overlay from Google Maps | "Show actual current traffic jams" | Google Maps Terms of Service prohibits extracting or redistributing traffic data programmatically. Real-time traffic layer cannot be used as simulation input. | The simulation generates synthetic traffic — this is by design; frame it as "what would traffic look like under these conditions" |
+| Automatic pixel-to-meter scale calibration | "AI should figure out the zoom scale from the image" | Zoom level, DPI, tile size, and viewport size all vary; pixel-to-meter conversion requires known ground resolution at each zoom level. Complex and fragile. OSM makes this moot. | OSM data carries real WGS84 coordinates; convert to simulation units using known scale factor at load time |
+| Persist user-captured maps to database | "Save my maps for later" | PROJECT.md explicitly excludes persistence/database. Adds infrastructure cost with no simulation value in this milestone. | Keep in-memory; user can re-run the capture workflow; optionally allow JSON export/download of generated MapConfig |
+
+---
+
+## Feature Dependencies (v2.0)
+
+```
+[Map View Page — new React route]
+    └──requires──> [Interactive map embed (Google Maps JS API or Leaflet)]
+                       └──requires──> [API key (Google) or none (Leaflet+OSM)]
+
+[Capture Button click]
+    └──reads──> [Map viewport bounding box (getBounds())]
+                    └──sends to──> [Backend Spring Boot endpoint]
+                                       └──calls──> [Overpass API (free, external)]
+                                                       └──returns──> [OSM road JSON (ways, nodes, tags)]
+
+[OSM road JSON]
+    └──processed by──> [OSM → MapConfig converter (new backend service)]
+                            ├──uses──> [existing MapConfig schema: Road, Lane, Intersection, Node]
+                            ├──uses──> [OSM tags: highway, lanes, oneway, junction, traffic_signals]
+                            └──produces──> [MapConfig JSON]
+
+[MapConfig JSON]
+    └──feeds──> [Existing simulation engine (already built — no changes needed)]
+
+[Preview overlay]
+    └──requires──> [MapConfig JSON or raw road graph]
+    └──enhances──> [User confidence — optional P2 feature]
+
+[Spawn/despawn auto-placement]
+    └──requires──> [Road graph with terminal nodes identified (degree=1 in graph)]
+    └──part of──> [OSM → MapConfig converter]
+```
+
+### Dependency Notes
+
+- **OSM converter is the core backend work:** Converting OSM `way`/`node` JSON to the existing `MapConfig` (Road, Lane, Intersection, RoadNetwork) is the highest-complexity single task in this milestone. It requires understanding the existing JSON schema in detail — read current map config files before implementing.
+- **Map embed tiles are independent of data source:** The interactive map (for navigation/pan/zoom) can use Google Maps JS or Leaflet. The road data comes from Overpass API regardless of which tile layer is shown. Using Leaflet + OSM tiles means zero billing and zero CORS issues on the display side.
+- **Existing engine needs zero changes:** The MapConfig loader and simulation engine are already built. This milestone is entirely about building the pipeline that produces a valid MapConfig. If the converter produces valid MapConfig JSON, the rest works for free.
+- **Preview overlay blocks nothing:** Can be added after the simulation runs as a P2 enhancement. Show detected roads on Canvas alongside simulation start. Adds polish but does not block MVP.
+- **LLM road detection conflicts with OSM approach:** They solve the same problem differently. Pick one as primary. OSM Overpass API is strongly recommended as primary. LLM can be a v3 enhancement for non-OSM images (aerial photos, custom maps).
+
+---
+
+## MVP Definition (v2.0)
+
+Minimum viable feature set to prove "real road network → simulation" works end-to-end.
+
+- [ ] New map page (new React route `/map`) with embedded Leaflet map, pan/zoom
+- [ ] "Simulate this area" button reading current viewport bounding box
+- [ ] Spring Boot endpoint that calls Overpass API with bbox and returns OSM road data
+- [ ] OSM → MapConfig converter: roads, lanes (from `lanes`/`highway` tags), intersections (from shared nodes), spawn/despawn at terminal nodes
+- [ ] Load generated MapConfig into existing simulation engine and start
+- [ ] Loading spinner during Overpass call; error state if no roads found or API unreachable
+
+### Add After Validation (v2.x)
+
+- [ ] Preview overlay showing detected road graph before simulation starts
+- [ ] Traffic signal placement from OSM `highway=traffic_signals` nodes
+- [ ] Roundabout detection from OSM `junction=roundabout` tag
+- [ ] Zoom-level guard (warn user if viewport is too large — too many roads to simulate meaningfully; recommend 500m × 500m area)
+- [ ] JSON export/download of generated MapConfig (for user sharing/reproducibility)
+
+### Future Consideration (v3+)
+
+- [ ] LLM vision analysis for user-uploaded non-OSM aerial/satellite photos
+- [ ] Manual road correction overlay (full map editor — explicitly deferred per PROJECT.md)
+- [ ] Named area search ("simulate downtown Warsaw") using Nominatim geocoder
+- [ ] Multiple saved capture sessions (requires persistence infrastructure)
+
+---
+
+## Feature Prioritization Matrix (v2.0)
+
+| Feature | User Value | Implementation Cost | Priority |
+|---------|------------|---------------------|----------|
+| Embedded interactive map (Leaflet) | HIGH | LOW | P1 |
+| Bounding box → Overpass API call (backend) | HIGH | LOW | P1 |
+| OSM → MapConfig converter (backend) | HIGH | HIGH | P1 |
+| Load generated MapConfig into simulation | HIGH | LOW (already exists) | P1 |
+| Loading/error states | MEDIUM | LOW | P1 |
+| Spawn/despawn auto-placement heuristic | HIGH | MEDIUM | P1 |
+| Preview overlay of detected roads | MEDIUM | MEDIUM | P2 |
+| Traffic signal placement from OSM tags | MEDIUM | MEDIUM | P2 |
+| Roundabout detection from OSM tags | MEDIUM | LOW | P2 |
+| Zoom-level / area-size guard | MEDIUM | LOW | P2 |
+| JSON export of generated MapConfig | LOW | LOW | P2 |
+| LLM vision fallback for uploaded photos | LOW | HIGH | P3 |
+| Manual road editor | OUT OF SCOPE (next milestone) | VERY HIGH | — |
+
+**Priority key:**
+- P1: Must have for milestone launch
+- P2: Should have, add when core pipeline is working
+- P3: Nice to have, future milestone
+- OUT OF SCOPE: Explicitly deferred
+
+---
+
+## MapConfig Schema Dependencies (v2.0)
+
+The OSM-to-MapConfig converter must produce output compatible with the **existing** simulation engine's JSON format. Based on PROJECT.md and CLAUDE.md context:
+
+**Existing MapConfig fields (must produce):**
+- `roads` — array of Road objects, each with `lanes` array
+- `intersections` — junction points with signal cycle configuration
+- `nodes` — graph nodes with coordinate positions
+- `spawnPoints` / `despawnPoints` — vehicle entry/exit positions
+- `RoadNetwork` — top-level container
+
+**OSM provides (as input):**
+- `way` — road segments with geometry (list of node coordinates) and tags
+- `node` — points; shared by multiple `way` objects at intersections
+- `highway` tag — road type (primary, secondary, residential, etc.) → lane count heuristic
+- `lanes` tag — explicit lane count (overrides highway-based heuristic)
+- `oneway` tag — direction constraint
+- `junction=roundabout` — roundabout identification
+- `highway=traffic_signals` on `node` — signalized intersection
+
+**Key converter logic:**
+- Shared node between 2+ `way` objects → `Intersection`
+- Dead-end node (appears in only 1 `way`, is the terminal node) → spawn/despawn candidate
+- `highway=primary` with no `lanes` tag → default 2 lanes; `highway=residential` → 1 lane; explicit `lanes=N` overrides
+- `oneway=yes` → single-direction road (do not generate reverse lane)
 
 ---
 
 ## Sources
 
-- **SUMO (Simulation of Urban MObility)** — Eclipse project, leading open-source microsimulator. Feature set documented at sumo.dlr.de. Reference for: vehicle types, traffic lights, lane-changing (MOBIL), junction types.
-- **Intelligent Driver Model (IDM)** — Treiber, Hennecke, Helbing (2000). "Congested Traffic States in Empirical Observations and Microscopic Simulations." Primary car-following model for this project.
-- **Nagel-Schreckenberg cellular automaton** — Discrete-time traffic model. Origin of phantom jam research in computational form.
-- **NetLogo Traffic models** — Educational CA-based traffic models (Traffic Basic, Traffic 2 Lanes). Reference for educational feature set and UI conventions.
-- **VISSIM (PTV Group)** — Commercial microsimulator. Reference for professional feature completeness and statistics output.
-- **Phantom traffic jam research** — Sugiyama et al. (2008), circular road experiment. Validates IDM parameter ranges that produce spontaneous jams.
-- **PROJECT.md** — /home/sebastian/traffic-simulator/.planning/PROJECT.md. Primary requirements source; features above are cross-referenced against stated Active requirements and Out of Scope items.
+**v1.0 sources:**
+- SUMO (Simulation of Urban MObility) — sumo.dlr.de. Reference for vehicle types, traffic lights, lane-changing (MOBIL), junction types.
+- Intelligent Driver Model (IDM) — Treiber, Hennecke, Helbing (2000).
+- Nagel-Schreckenberg cellular automaton — discrete-time traffic model.
+- NetLogo Traffic models — educational CA-based traffic models.
+- VISSIM (PTV Group) — commercial microsimulator reference.
+- Sugiyama et al. (2008) — circular road phantom traffic jam experiment.
+
+**v2.0 sources:**
+- Overpass API documentation — https://wiki.openstreetmap.org/wiki/Overpass_API
+- OSMnx 2.1.0 release (Feb 2026) — https://osmnx.readthedocs.io/
+- ChatSUMO paper (2024) — "Large Language Model for Automating Traffic Scenario Generation in Simulation of Urban MObility" — https://arxiv.org/html/2409.09040v1
+- SAFE framework accuracy (2025) — https://arxiv.org/html/2502.02025v2
+- html2canvas CORS issues (persistent, multiple GitHub issues) — https://github.com/niklasvh/html2canvas/issues/277
+- Google Maps Geo Guidelines / Terms of Service — https://about.google/brand-resource-center/products-and-services/geo-guidelines/
+- Google Maps Static API overview — https://developers.google.com/maps/documentation/maps-static/overview
+- Minimalist traffic simulation using OSMnx reference — https://github.com/donjpierce/traffic
+- GPT-4o vision limitations (bounding box regression weakness) — https://blog.roboflow.com/gpt-4o-vision-use-cases/
+- PROJECT.md — /home/sebastian/traffic-simulator/.planning/PROJECT.md
