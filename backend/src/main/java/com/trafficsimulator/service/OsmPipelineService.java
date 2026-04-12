@@ -69,6 +69,17 @@ public class OsmPipelineService {
     /** Intermediate result of road generation. */
     record RoadResult(List<MapConfig.RoadConfig> roads, Set<Long> usedEndpointNodeIds) {}
 
+    /** Grouped parameters for creating road configs from a single OSM way. */
+    record WayRoadParams(
+            long wayId,
+            long firstId,
+            long lastId,
+            double length,
+            double speedLimit,
+            int laneCount,
+            boolean isOnewayForward,
+            boolean isOnewayReverse) {}
+
     // -------------------------------------------------------------------------
     // Public API
     // -------------------------------------------------------------------------
@@ -112,15 +123,10 @@ public class OsmPipelineService {
         Map<Long, Integer> nodeRefCount = countNodeReferences(parsed.ways());
         IntersectionData ixData =
                 detectIntersections(parsed.ways(), parsed.nodeMap(), nodeRefCount);
-        RoadResult roadResult = parseRoads(parsed.ways(), parsed.nodeMap(), nodeRefCount);
+        RoadResult roadResult = parseRoads(parsed.ways(), parsed.nodeMap());
 
         if (roadResult.roads().isEmpty()) {
             throw new IllegalStateException("No roads found in selected area");
-        }
-
-        Set<String> roadIds = new HashSet<>();
-        for (MapConfig.RoadConfig r : roadResult.roads()) {
-            roadIds.add(r.getId());
         }
 
         List<MapConfig.NodeConfig> nodes =
@@ -138,8 +144,7 @@ public class OsmPipelineService {
                         roadResult.usedEndpointNodeIds(),
                         parsed.nodeMap(),
                         ixData.roundaboutNodeIds(),
-                        roadResult.roads(),
-                        roadIds);
+                        roadResult.roads());
 
         EndpointResult endpoints = generateEndpoints(ixData.terminalNodeIds(), roadResult.roads());
 
@@ -204,11 +209,9 @@ public class OsmPipelineService {
     private IntersectionData detectIntersections(
             List<OsmWay> ways, Map<Long, OsmNode> nodeMap, Map<Long, Integer> nodeRefCount) {
 
-        Set<Long> roundaboutWayIds = new HashSet<>();
         Set<Long> roundaboutNodeIds = new HashSet<>();
         for (OsmWay way : ways) {
             if ("roundabout".equals(way.tags().get("junction"))) {
-                roundaboutWayIds.add(way.id());
                 roundaboutNodeIds.addAll(way.nodeIds());
             }
         }
@@ -243,100 +246,102 @@ public class OsmPipelineService {
         return new IntersectionData(intersectionNodeIds, terminalNodeIds, roundaboutNodeIds);
     }
 
-    private RoadResult parseRoads(
-            List<OsmWay> ways, Map<Long, OsmNode> nodeMap, Map<Long, Integer> nodeRefCount) {
+    private RoadResult parseRoads(List<OsmWay> ways, Map<Long, OsmNode> nodeMap) {
 
         List<MapConfig.RoadConfig> roads = new ArrayList<>();
         Set<Long> usedEndpointNodeIds = new HashSet<>();
 
         for (OsmWay way : ways) {
-            List<Long> nodeIds = way.nodeIds();
-
-            long resolvableCount = nodeIds.stream().filter(nodeMap::containsKey).count();
-            if (resolvableCount < 2) {
+            if (isWayTooShortOrUnresolvable(way, nodeMap)) {
                 continue;
             }
-
-            double length = computeWayLength(nodeIds, nodeMap);
-            if (length < MIN_ROAD_LENGTH_M) {
-                continue;
-            }
-
-            long firstId = nodeIds.get(0);
-            long lastId = nodeIds.get(nodeIds.size() - 1);
-
-            boolean isRoundabout = "roundabout".equals(way.tags().get("junction"));
-            String oneway = way.tags().get("oneway");
-            boolean isOnewayForward = "yes".equals(oneway) || "true".equals(oneway) || isRoundabout;
-            boolean isOnewayReverse = "-1".equals(oneway);
-
-            String highway = way.tags().getOrDefault(HIGHWAY_TAG, "residential");
-            double speedLimit = speedLimitForHighway(highway);
-            int laneCount = laneCountForWay(way.tags(), highway);
-
-            addRoadsForWay(
-                    roads,
-                    way.id(),
-                    firstId,
-                    lastId,
-                    length,
-                    speedLimit,
-                    laneCount,
-                    isOnewayForward,
-                    isOnewayReverse);
-            usedEndpointNodeIds.add(firstId);
-            usedEndpointNodeIds.add(lastId);
+            processWay(way, nodeMap, roads, usedEndpointNodeIds);
         }
 
         return new RoadResult(roads, usedEndpointNodeIds);
     }
 
-    private void addRoadsForWay(
-            List<MapConfig.RoadConfig> roads,
-            long wayId,
-            long firstId,
-            long lastId,
-            double length,
-            double speedLimit,
-            int laneCount,
-            boolean isOnewayForward,
-            boolean isOnewayReverse) {
+    private boolean isWayTooShortOrUnresolvable(OsmWay way, Map<Long, OsmNode> nodeMap) {
+        List<Long> nodeIds = way.nodeIds();
+        long resolvableCount = nodeIds.stream().filter(nodeMap::containsKey).count();
+        if (resolvableCount < 2) {
+            return true;
+        }
+        double length = computeWayLength(nodeIds, nodeMap);
+        return length < MIN_ROAD_LENGTH_M;
+    }
 
-        if (isOnewayReverse) {
+    private void processWay(
+            OsmWay way,
+            Map<Long, OsmNode> nodeMap,
+            List<MapConfig.RoadConfig> roads,
+            Set<Long> usedEndpointNodeIds) {
+
+        List<Long> nodeIds = way.nodeIds();
+        long firstId = nodeIds.get(0);
+        long lastId = nodeIds.get(nodeIds.size() - 1);
+
+        boolean isRoundabout = "roundabout".equals(way.tags().get("junction"));
+        String oneway = way.tags().get("oneway");
+        boolean isOnewayForward = "yes".equals(oneway) || "true".equals(oneway) || isRoundabout;
+        boolean isOnewayReverse = "-1".equals(oneway);
+
+        String highway = way.tags().getOrDefault(HIGHWAY_TAG, "residential");
+        double speedLimit = speedLimitForHighway(highway);
+        int laneCount = laneCountForWay(way.tags(), highway);
+        double length = computeWayLength(nodeIds, nodeMap);
+
+        WayRoadParams params =
+                new WayRoadParams(
+                        way.id(),
+                        firstId,
+                        lastId,
+                        length,
+                        speedLimit,
+                        laneCount,
+                        isOnewayForward,
+                        isOnewayReverse);
+        addRoadsForWay(roads, params);
+        usedEndpointNodeIds.add(firstId);
+        usedEndpointNodeIds.add(lastId);
+    }
+
+    private void addRoadsForWay(List<MapConfig.RoadConfig> roads, WayRoadParams p) {
+        if (p.isOnewayReverse()) {
             roads.add(
                     buildRoadConfig(
-                            "osm-" + wayId + "-fwd",
-                            lastId,
-                            firstId,
-                            length,
-                            speedLimit,
-                            laneCount));
-        } else if (isOnewayForward) {
+                            "osm-" + p.wayId() + "-fwd",
+                            p.lastId(),
+                            p.firstId(),
+                            p.length(),
+                            p.speedLimit(),
+                            p.laneCount()));
+        } else if (p.isOnewayForward()) {
             roads.add(
                     buildRoadConfig(
-                            "osm-" + wayId + "-fwd",
-                            firstId,
-                            lastId,
-                            length,
-                            speedLimit,
-                            laneCount));
+                            "osm-" + p.wayId() + "-fwd",
+                            p.firstId(),
+                            p.lastId(),
+                            p.length(),
+                            p.speedLimit(),
+                            p.laneCount()));
         } else {
             roads.add(
                     buildRoadConfig(
-                            "osm-" + wayId + "-fwd",
-                            firstId,
-                            lastId,
-                            length,
-                            speedLimit,
-                            laneCount));
+                            "osm-" + p.wayId() + "-fwd",
+                            p.firstId(),
+                            p.lastId(),
+                            p.length(),
+                            p.speedLimit(),
+                            p.laneCount()));
             roads.add(
                     buildRoadConfig(
-                            "osm-" + wayId + "-rev",
-                            lastId,
-                            firstId,
-                            length,
-                            speedLimit,
-                            laneCount));
+                            "osm-" + p.wayId() + "-rev",
+                            p.lastId(),
+                            p.firstId(),
+                            p.length(),
+                            p.speedLimit(),
+                            p.laneCount()));
         }
     }
 
@@ -389,8 +394,7 @@ public class OsmPipelineService {
             Set<Long> usedEndpointNodeIds,
             Map<Long, OsmNode> nodeMap,
             Set<Long> roundaboutNodeIds,
-            List<MapConfig.RoadConfig> roads,
-            Set<String> roadIds) {
+            List<MapConfig.RoadConfig> roads) {
 
         List<MapConfig.IntersectionConfig> intersections = new ArrayList<>();
         for (long nid : intersectionNodeIds) {
@@ -429,29 +433,45 @@ public class OsmPipelineService {
 
         for (long nid : terminalNodeIds) {
             String nodeId = "osm-" + nid;
-            for (MapConfig.RoadConfig road : roads) {
-                if (road.getFromNodeId().equals(nodeId)) {
-                    for (int lane = 0; lane < road.getLaneCount(); lane++) {
-                        MapConfig.SpawnPointConfig sp = new MapConfig.SpawnPointConfig();
-                        sp.setRoadId(road.getId());
-                        sp.setLaneIndex(lane);
-                        sp.setPosition(0.0);
-                        spawnPoints.add(sp);
-                    }
-                }
-                if (road.getToNodeId().equals(nodeId)) {
-                    for (int lane = 0; lane < road.getLaneCount(); lane++) {
-                        MapConfig.DespawnPointConfig dp = new MapConfig.DespawnPointConfig();
-                        dp.setRoadId(road.getId());
-                        dp.setLaneIndex(lane);
-                        dp.setPosition(road.getLength());
-                        despawnPoints.add(dp);
-                    }
-                }
-            }
+            collectSpawnPoints(nodeId, roads, spawnPoints);
+            collectDespawnPoints(nodeId, roads, despawnPoints);
         }
 
         return new EndpointResult(spawnPoints, despawnPoints);
+    }
+
+    private void collectSpawnPoints(
+            String nodeId,
+            List<MapConfig.RoadConfig> roads,
+            List<MapConfig.SpawnPointConfig> spawnPoints) {
+        for (MapConfig.RoadConfig road : roads) {
+            if (road.getFromNodeId().equals(nodeId)) {
+                for (int lane = 0; lane < road.getLaneCount(); lane++) {
+                    MapConfig.SpawnPointConfig sp = new MapConfig.SpawnPointConfig();
+                    sp.setRoadId(road.getId());
+                    sp.setLaneIndex(lane);
+                    sp.setPosition(0.0);
+                    spawnPoints.add(sp);
+                }
+            }
+        }
+    }
+
+    private void collectDespawnPoints(
+            String nodeId,
+            List<MapConfig.RoadConfig> roads,
+            List<MapConfig.DespawnPointConfig> despawnPoints) {
+        for (MapConfig.RoadConfig road : roads) {
+            if (road.getToNodeId().equals(nodeId)) {
+                for (int lane = 0; lane < road.getLaneCount(); lane++) {
+                    MapConfig.DespawnPointConfig dp = new MapConfig.DespawnPointConfig();
+                    dp.setRoadId(road.getId());
+                    dp.setLaneIndex(lane);
+                    dp.setPosition(road.getLength());
+                    despawnPoints.add(dp);
+                }
+            }
+        }
     }
 
     private MapConfig assembleMapConfig(
