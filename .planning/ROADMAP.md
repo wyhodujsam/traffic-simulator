@@ -384,11 +384,11 @@ Plans:
 **Goal:** User can upload a photo or screenshot of a road and the backend calls Claude CLI to analyse the image and generate a MapConfig that can be loaded into the simulator.
 **Depends on:** Phase 19
 **Requirements:** AVI-01, AVI-02
-**Plans:** 2 plans
+**Plans:** 2 plans (2 waves)
 
 Plans:
-- [ ] 20-01-PLAN.md — TBD (run /gsd:plan-phase 20 to break down)
-- [ ] 20-02-PLAN.md — TBD
+- [ ] 20-01-PLAN.md — ClaudeVisionService + VisionController (Claude CLI via ProcessBuilder, multipart upload endpoint) (AVI-02)
+- [ ] 20-02-PLAN.md — Frontend Upload Image wiring in MapSidebar + MapPage (AVI-01)
 **UI hint**: yes
 
 **Success Criteria (what must be TRUE):**
