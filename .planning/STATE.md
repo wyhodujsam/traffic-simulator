@@ -2,15 +2,15 @@
 gsd_state_version: 1.0
 milestone: v2.0
 milestone_name: — Map Screenshot to Simulation
-current_phase: 19 — Simulation Integration & Export (Plan 02 complete)
-current_plan: 19-03 (next, if any — or Phase 20 start)
-status: Phase 19 Plan 02 complete — Run Simulation wired end-to-end (load-config endpoint + frontend navigation)
-last_updated: "2026-04-12T20:35:00Z"
+current_phase: 20 — AI Vision (Claude CLI) (Plan 01 complete)
+current_plan: 20-02 (next, if any)
+status: Phase 20 Plan 01 complete — ClaudeVisionService + VisionController POST /api/vision/analyze
+last_updated: "2026-04-12T22:30:00Z"
 progress:
   total_phases: 20
-  completed_phases: 17
-  total_plans: 68
-  completed_plans: 70
+  completed_phases: 18
+  total_plans: 71
+  completed_plans: 71
 ---
 
 # Project State
@@ -108,3 +108,4 @@ See: .planning/PROJECT.md (updated 2026-04-12)
 - 2026-04-12: Phase 18 Plan 02 complete — OsmController POST /api/osm/fetch-roads (422/503 error handling), OsmControllerTest (3 WebMvcTest tests), MapPage wired to backend fetch, MapSidebar loading/error/result states with road+intersection counts; 219 total tests pass; Phase 18 fully complete
 - 2026-04-12: Phase 19 Plan 01 complete — RoadGraphPreview (CircleMarker nodes + Polyline edges on Leaflet), BoundingBoxMap children prop, Export JSON Blob download; tsc --noEmit clean
 - 2026-04-12: Phase 19 Plan 02 complete — POST /api/command/load-config endpoint in SimulationController, Run Simulation button wired in MapSidebar/MapPage, useNavigate redirect to /, STOMP START after load; both backend and frontend compile clean
+- 2026-04-12: Phase 20 Plan 01 complete — ClaudeVisionService (ProcessBuilder Claude CLI, JSON extraction, MapValidator), VisionController POST /api/vision/analyze (JPEG/PNG, 10MB limit, 400/422/503/504), ClaudeCliConfig @ConfigurationProperties; 238 tests pass (19 new)

@@ -318,7 +318,7 @@ Plans:
 | 17 | Routing & Map Embed | 2/2 | Complete   | 2026-04-12 |
 | 18 | OSM Data Pipeline | 2/2 | Complete   | 2026-04-12 |
 | 19 | Simulation Integration & Export | 1/2 | In Progress|  |
-| 20 | AI Vision (Claude CLI) | User uploads image; backend generates MapConfig via AI | AVI-01, AVI-02 | 3 |
+| 20 | AI Vision (Claude CLI) | 1/2 | In Progress|  |
 
 ### Phase 17: Routing & Map Embed
 
@@ -384,10 +384,10 @@ Plans:
 **Goal:** User can upload a photo or screenshot of a road and the backend calls Claude CLI to analyse the image and generate a MapConfig that can be loaded into the simulator.
 **Depends on:** Phase 19
 **Requirements:** AVI-01, AVI-02
-**Plans:** 2 plans (2 waves)
+**Plans:** 1/2 plans executed
 
 Plans:
-- [ ] 20-01-PLAN.md — ClaudeVisionService + VisionController (Claude CLI via ProcessBuilder, multipart upload endpoint) (AVI-02)
+- [x] 20-01-PLAN.md — ClaudeVisionService + VisionController (Claude CLI via ProcessBuilder, multipart upload endpoint) (AVI-02)
 - [ ] 20-02-PLAN.md — Frontend Upload Image wiring in MapSidebar + MapPage (AVI-01)
 **UI hint**: yes
 

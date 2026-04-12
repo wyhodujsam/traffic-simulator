@@ -126,7 +126,7 @@ Requirements for milestone v2.0. Adds real-world map import via OSM + optional A
 ### AI Vision (Claude CLI)
 
 - [ ] **AVI-01**: Użytkownik może wgrać zdjęcie/screenshot drogi
-- [ ] **AVI-02**: Backend wywołuje Claude CLI do analizy obrazu i generowania MapConfig
+- [x] **AVI-02**: Backend wywołuje Claude CLI do analizy obrazu i generowania MapConfig
 
 ## Future Requirements
 
