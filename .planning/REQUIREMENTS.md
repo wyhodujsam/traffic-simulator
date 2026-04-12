@@ -120,8 +120,8 @@ Requirements for milestone v2.0. Adds real-world map import via OSM + optional A
 ### Simulation Integration
 
 - [ ] **SINT-01**: Użytkownik może załadować wygenerowany MapConfig do silnika i uruchomić symulację
-- [ ] **SINT-02**: Użytkownik widzi podgląd wygenerowanego grafu dróg przed uruchomieniem
-- [ ] **SINT-03**: Użytkownik może wyeksportować wygenerowany MapConfig jako plik JSON
+- [x] **SINT-02**: Użytkownik widzi podgląd wygenerowanego grafu dróg przed uruchomieniem
+- [x] **SINT-03**: Użytkownik może wyeksportować wygenerowany MapConfig jako plik JSON
 
 ### AI Vision (Claude CLI)
 

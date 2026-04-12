@@ -317,7 +317,7 @@ Plans:
 |---|-------|------|--------------|------------------|
 | 17 | Routing & Map Embed | 2/2 | Complete   | 2026-04-12 |
 | 18 | OSM Data Pipeline | 2/2 | Complete   | 2026-04-12 |
-| 19 | Simulation Integration & Export | User loads OSM-derived map into simulator and runs it | SINT-01, SINT-02, SINT-03 | 3 |
+| 19 | Simulation Integration & Export | 1/2 | In Progress|  |
 | 20 | AI Vision (Claude CLI) | User uploads image; backend generates MapConfig via AI | AVI-01, AVI-02 | 3 |
 
 ### Phase 17: Routing & Map Embed
@@ -365,10 +365,10 @@ Plans:
 **Goal:** User can preview the road graph generated from OSM data, load it into the simulation engine, and export the MapConfig as JSON.
 **Depends on:** Phase 18
 **Requirements:** SINT-01, SINT-02, SINT-03
-**Plans:** 2 plans
+**Plans:** 1/2 plans executed
 
 Plans:
-- [ ] 19-01-PLAN.md — Road graph preview overlay + Export JSON download (SINT-02, SINT-03)
+- [x] 19-01-PLAN.md — Road graph preview overlay + Export JSON download (SINT-02, SINT-03)
 - [ ] 19-02-PLAN.md — Run Simulation backend endpoint + frontend wiring with navigation (SINT-01)
 **UI hint**: yes
 

@@ -2,15 +2,15 @@
 gsd_state_version: 1.0
 milestone: v2.0
 milestone_name: — Map Screenshot to Simulation
-current_phase: 18 — OSM Data Pipeline (Plan 02 complete)
-current_plan: 19-01 (next)
-status: Phase 18 complete — REST endpoint + frontend wiring done; full OSM fetch flow live
-last_updated: "2026-04-12T18:43:00Z"
+current_phase: 19 — Simulation Integration & Export (Plan 01 complete)
+current_plan: 19-02 (next)
+status: Phase 19 Plan 01 complete — road graph preview overlay + Export JSON download
+last_updated: "2026-04-12T20:10:00Z"
 progress:
   total_phases: 20
   completed_phases: 16
-  total_plans: 66
-  completed_plans: 68
+  total_plans: 68
+  completed_plans: 69
 ---
 
 # Project State
@@ -56,15 +56,15 @@ See: .planning/PROJECT.md (updated 2026-04-12)
 |-------|------|--------|
 | 17 | Routing & Map Embed | ✓ Complete (2/2 plans done) |
 | 18 | OSM Data Pipeline | ✓ Complete (1/1 plans done) |
-| 19 | Simulation Integration & Export | ○ Not started |
+| 19 | Simulation Integration & Export | ◑ In progress (1/? plans done) |
 | 20 | AI Vision (Claude CLI) | ○ Not started |
 
 ## Current Position
 
 **Active phase:** 19 — Simulation Integration & Export
-**Current plan:** 19-01 (next)
-**Completed:** Phase 18 Plan 01 done — OsmPipelineService (Overpass client + OSM converter), BboxRequest DTO, OsmClientConfig, LoadConfig command in sealed interface, MapLoader.loadFromConfig(), CommandDispatcher.handleLoadConfig()
-**Integration point:** Phase 19 wires OSM pipeline to frontend — OsmController POST endpoint + LoadConfig dispatch
+**Current plan:** 19-02 (next)
+**Completed:** Phase 19 Plan 01 done — RoadGraphPreview overlay (CircleMarker/Polyline on Leaflet), BoundingBoxMap children prop, Export JSON Blob download wired in MapPage/MapSidebar
+**Integration point:** Phase 19 Plan 02 (if planned) will wire Run Simulation button to LoadConfig dispatch
 
 ## Key Decisions (v2.0)
 
@@ -104,3 +104,4 @@ See: .planning/PROJECT.md (updated 2026-04-12)
 - 2026-04-12: Phase 17 Plan 02 complete — MapPage with Leaflet/OSM map, BoundingBoxMap (L.rectangle 20% inset, moveend/zoomend updates), MapSidebar (idle/loading/result states, bbox dimensions in meters), responsive layout; tsc --noEmit clean; Phase 17 complete
 - 2026-04-12: Phase 18 Plan 01 complete — OsmPipelineService (Overpass client + OSM converter), BboxRequest DTO, OsmClientConfig, LoadConfig command in sealed interface, MapLoader.loadFromConfig(), CommandDispatcher.handleLoadConfig(); 216 total tests pass; Phase 18 complete
 - 2026-04-12: Phase 18 Plan 02 complete — OsmController POST /api/osm/fetch-roads (422/503 error handling), OsmControllerTest (3 WebMvcTest tests), MapPage wired to backend fetch, MapSidebar loading/error/result states with road+intersection counts; 219 total tests pass; Phase 18 fully complete
+- 2026-04-12: Phase 19 Plan 01 complete — RoadGraphPreview (CircleMarker nodes + Polyline edges on Leaflet), BoundingBoxMap children prop, Export JSON Blob download; tsc --noEmit clean
