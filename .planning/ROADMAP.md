@@ -300,3 +300,97 @@ Plans:
 ---
 *Roadmap created: 2026-03-27*
 *All 33 v1 requirements mapped across 10 phases*
+
+---
+
+## Milestone v2.0 — Map Screenshot to Simulation
+
+**Milestone goal:** User can select a real-world area, fetch road data from OpenStreetMap, convert it to a simulation-ready MapConfig, and run it — with an optional AI vision path for user-uploaded images.
+
+**Phase numbering:** Continues from v1.0 (last phase: 16). Starts at 17.
+
+**v2.0 Requirements:** 13 total (MAP-01–04, OSM-01–04, SINT-01–03, AVI-01–02)
+
+### v2.0 Phase Overview
+
+| # | Phase | Goal | Requirements | Success Criteria |
+|---|-------|------|--------------|------------------|
+| 17 | Routing & Map Embed | User can navigate to /map and interact with an OSM map | MAP-01, MAP-02, MAP-03, MAP-04 | 4 |
+| 18 | OSM Data Pipeline | Backend fetches and converts OSM road data to MapConfig | OSM-01, OSM-02, OSM-03, OSM-04 | 4 |
+| 19 | Simulation Integration & Export | User loads OSM-derived map into simulator and runs it | SINT-01, SINT-02, SINT-03 | 3 |
+| 20 | AI Vision (Claude CLI) | User uploads image; backend generates MapConfig via AI | AVI-01, AVI-02 | 3 |
+
+### Phase 17: Routing & Map Embed
+
+**Goal:** User can navigate between the simulation page and a new /map page that shows an interactive OSM map with a bounding box selector.
+**Depends on:** Phase 16
+**Requirements:** MAP-01, MAP-02, MAP-03, MAP-04
+**Plans:** TBD
+**UI hint**: yes
+
+**Success Criteria (what must be TRUE):**
+1. User can click a "Map" link/button on the simulation page and be taken to /map without a full page reload (react-router-dom).
+2. The /map page shows a Leaflet map centered on a default location; user can pan and zoom to any area.
+3. A bounding box rectangle is visible on the map and updates as the user moves or resizes it, showing the area that will be fetched.
+4. User can navigate back to / (simulation page) from the map page without losing simulation state.
+
+---
+
+### Phase 18: OSM Data Pipeline
+
+**Goal:** Backend can fetch road data for a selected bounding box from Overpass API and convert OSM way/node data into a valid MapConfig (Road, Lane, Intersection).
+**Depends on:** Phase 17
+**Requirements:** OSM-01, OSM-02, OSM-03, OSM-04
+**Plans:** TBD
+**UI hint**: no
+
+**Success Criteria (what must be TRUE):**
+1. User clicks "Fetch Roads" on the /map page; backend calls Overpass API for the visible bbox and returns a result within 10 seconds.
+2. The returned MapConfig contains Road objects with lane counts matching the OSM `lanes=X` tag for roads that have it.
+3. OSM nodes tagged `traffic_signals` produce SIGNAL intersections; OSM ways tagged `junction=roundabout` produce ROUNDABOUT intersections in the MapConfig.
+4. An invalid or empty bbox (ocean, unpopulated area) returns a descriptive error message displayed on the /map page rather than crashing.
+
+---
+
+### Phase 19: Simulation Integration & Export
+
+**Goal:** User can preview the road graph generated from OSM data, load it into the simulation engine, and export the MapConfig as JSON.
+**Depends on:** Phase 18
+**Requirements:** SINT-01, SINT-02, SINT-03
+**Plans:** TBD
+**UI hint**: yes
+
+**Success Criteria (what must be TRUE):**
+1. After fetching OSM data, the /map page shows a schematic preview of the generated road graph (nodes and edges) before the user commits to loading it.
+2. User clicks "Run Simulation" and is redirected to the simulation page (/) with the OSM-derived map loaded; vehicles spawn and move on the generated roads.
+3. User can click "Export JSON" to download the generated MapConfig as a .json file that can be re-loaded as a predefined scenario.
+
+---
+
+### Phase 20: AI Vision (Claude CLI)
+
+**Goal:** User can upload a photo or screenshot of a road and the backend calls Claude CLI to analyse the image and generate a MapConfig that can be loaded into the simulator.
+**Depends on:** Phase 19
+**Requirements:** AVI-01, AVI-02
+**Plans:** TBD
+**UI hint**: yes
+
+**Success Criteria (what must be TRUE):**
+1. The /map page has an "Upload Image" section; user selects a file (JPEG/PNG) and it is accepted without error.
+2. After upload, the backend calls Claude CLI with the image; within 30 seconds a MapConfig is returned and the road graph preview appears on the page.
+3. If Claude CLI is unavailable or returns an unrecognisable response, the user sees a clear error message and can fall back to the OSM fetch path.
+
+---
+
+### v2.0 Progress Table
+
+| Phase | Plans Complete | Status | Completed |
+|-------|----------------|--------|-----------|
+| 17. Routing & Map Embed | 0/? | Not started | - |
+| 18. OSM Data Pipeline | 0/? | Not started | - |
+| 19. Simulation Integration & Export | 0/? | Not started | - |
+| 20. AI Vision (Claude CLI) | 0/? | Not started | - |
+
+---
+*v2.0 roadmap appended: 2026-04-10*
+*All 13 v2.0 requirements mapped across 4 phases (17–20)*

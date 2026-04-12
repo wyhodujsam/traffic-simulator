@@ -3,10 +3,10 @@ gsd_state_version: 1.0
 milestone: v2.0
 milestone_name: Map Screenshot to Simulation
 current_phase: 17
-status: Defining requirements
-last_updated: "2026-04-12T00:00:00.000Z"
+status: Roadmap created — ready for phase planning
+last_updated: "2026-04-10T00:00:00.000Z"
 progress:
-  total_phases: 0
+  total_phases: 4
   completed_phases: 0
   total_plans: 0
   completed_plans: 0
@@ -16,17 +16,19 @@ progress:
 
 **Project:** Traffic Simulator
 **Milestone:** v2.0 — Map Screenshot to Simulation
-**Current Phase:** Not started (defining requirements)
-**Last Updated:** 2026-04-12
+**Current Phase:** 17 — Routing & Map Embed (not started)
+**Last Updated:** 2026-04-10
 
 ## Project Reference
 
 See: .planning/PROJECT.md (updated 2026-04-12)
 
 **Core value:** Wierna symulacja fizyki ruchu drogowego
-**Current focus:** Milestone v2.0 — defining requirements
+**Current focus:** Milestone v2.0 — roadmap created, starting Phase 17
 
 ## Phase Status
+
+### v1.0 Phases (all complete)
 
 | Phase | Name | Status |
 |-------|------|--------|
@@ -46,6 +48,30 @@ See: .planning/PROJECT.md (updated 2026-04-12)
 | 14 | Overlap Fix & Responsive Layout | ✓ Complete |
 | 15 | SonarQube Code Quality Fixes | ✓ Complete |
 | 16 | Combined Scenario — Roundabout + Signal + Merge + Loop | ✓ Complete (1/1 plans done) |
+
+### v2.0 Phases
+
+| Phase | Name | Status |
+|-------|------|--------|
+| 17 | Routing & Map Embed | ○ Not started |
+| 18 | OSM Data Pipeline | ○ Not started |
+| 19 | Simulation Integration & Export | ○ Not started |
+| 20 | AI Vision (Claude CLI) | ○ Not started |
+
+## Current Position
+
+**Active phase:** 17 — Routing & Map Embed
+**Dependencies to add:** react-router-dom (frontend), Leaflet + react-leaflet (frontend)
+**Integration point:** Existing MapConfig/MapLoader is the target for OSM-derived data
+
+## Key Decisions (v2.0)
+
+| Decision | Rationale |
+|----------|-----------|
+| Leaflet + OSM instead of Google Maps | Google Maps ToS prohibits AI analysis of map content; Leaflet is open and free |
+| Overpass API for road data (primary) | Structured, queryable OSM data — more reliable than screenshot + AI as primary path |
+| AI Vision (Claude CLI) as separate phase | Optional path; should not block OSM pipeline delivery |
+| react-router-dom for routing | Standard React routing; enables /map page without full reload |
 
 ## Session Log
 
@@ -68,3 +94,4 @@ See: .planning/PROJECT.md (updated 2026-04-12)
 - 2026-04-02: Phase 14 Plan 14-01 complete — BUG-1 fix: shared lastPlacedPosition map prevents same-tick vehicle overlap at merge intersections; effectivePosition = max(outBuffer, lastPlaced + MIN_ENTRY_GAP); all 140 tests pass
 - 2026-04-02: Phase 14 Plan 14-02 complete — Responsive flex layout (useIsMobile hook, 768px breakpoint), flexShrink:0 on sidebar (BUG-3 fix), CSS transform:scale canvas fill with ResizeObserver (BUG-4 fix), mobile stacked layout with 50vh canvas cap (BUG-2 fix); tsc --noEmit passes
 - 2026-04-08: Phase 16 Plan 16-01 complete — combined-loop.json capstone scenario: 14 nodes, 15 roads, 8 intersections (4 ROUNDABOUT + 1 SIGNAL + 3 PRIORITY); 6-phase traffic light; loop topology; MapLoaderScenarioTest.loadsCombinedLoop() passes; 7/7 scenario tests pass
+- 2026-04-10: Milestone v2.0 roadmap created — 4 phases (17–20), 13 requirements mapped, starting Phase 17

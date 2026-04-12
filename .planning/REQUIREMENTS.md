@@ -204,12 +204,25 @@ Which phases cover which requirements. Updated during roadmap creation.
 | IXTN-05 | Phase 10 — Roundabouts, Priority Intersections & Polish | ○ Pending |
 | IXTN-06 | Phase 10 — Roundabouts, Priority Intersections & Polish | ○ Pending |
 | VIS-06 | Phase 10 — Roundabouts, Priority Intersections & Polish | ○ Pending |
+| MAP-01 | Phase 17 — Routing & Map Embed | ○ Pending |
+| MAP-02 | Phase 17 — Routing & Map Embed | ○ Pending |
+| MAP-03 | Phase 17 — Routing & Map Embed | ○ Pending |
+| MAP-04 | Phase 17 — Routing & Map Embed | ○ Pending |
+| OSM-01 | Phase 18 — OSM Data Pipeline | ○ Pending |
+| OSM-02 | Phase 18 — OSM Data Pipeline | ○ Pending |
+| OSM-03 | Phase 18 — OSM Data Pipeline | ○ Pending |
+| OSM-04 | Phase 18 — OSM Data Pipeline | ○ Pending |
+| SINT-01 | Phase 19 — Simulation Integration & Export | ○ Pending |
+| SINT-02 | Phase 19 — Simulation Integration & Export | ○ Pending |
+| SINT-03 | Phase 19 — Simulation Integration & Export | ○ Pending |
+| AVI-01 | Phase 20 — AI Vision (Claude CLI) | ○ Pending |
+| AVI-02 | Phase 20 — AI Vision (Claude CLI) | ○ Pending |
 
 **Coverage:**
-- v1 requirements: 33 total
-- Mapped to phases: 33
+- v1 requirements: 33 total — mapped: 33 ✓
+- v2.0 requirements: 13 total — mapped: 13 ✓
 - Unmapped: 0 ✓
 
 ---
 *Requirements defined: 2026-03-27*
-*Last updated: 2026-04-12 — v2.0 requirements added (Map Screenshot to Simulation)*
+*Last updated: 2026-04-10 — v2.0 traceability added (phases 17–20)*
