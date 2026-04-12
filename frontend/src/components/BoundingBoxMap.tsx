@@ -1,7 +1,7 @@
 import 'leaflet/dist/leaflet.css';
 import { MapContainer, TileLayer, useMap } from 'react-leaflet';
 import L from 'leaflet';
-import { useEffect, useRef, useCallback } from 'react';
+import React, { useEffect, useRef, useCallback } from 'react';
 
 export interface BboxInfo {
   readonly south: number;
@@ -17,6 +17,7 @@ interface BoundingBoxMapProps {
   readonly center?: [number, number];
   readonly zoom?: number;
   readonly onViewChange?: (center: [number, number], zoom: number) => void;
+  readonly children?: React.ReactNode;
 }
 
 interface BoundingBoxLayerProps {
@@ -84,7 +85,7 @@ function BoundingBoxLayer({ onBoundsChange, onViewChange }: BoundingBoxLayerProp
   return null;
 }
 
-export function BoundingBoxMap({ onBoundsChange, center, zoom, onViewChange }: BoundingBoxMapProps) {
+export function BoundingBoxMap({ onBoundsChange, center, zoom, onViewChange, children }: BoundingBoxMapProps) {
   const defaultCenter: [number, number] = [52.2297, 21.0122];
   const defaultZoom = 14;
 
@@ -99,6 +100,7 @@ export function BoundingBoxMap({ onBoundsChange, center, zoom, onViewChange }: B
         url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png"
       />
       <BoundingBoxLayer onBoundsChange={onBoundsChange} onViewChange={onViewChange} />
+      {children}
     </MapContainer>
   );
 }

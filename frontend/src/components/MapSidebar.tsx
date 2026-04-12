@@ -7,6 +7,7 @@ interface MapSidebarProps {
   readonly result?: { roadCount: number; intersectionCount: number } | null;
   readonly error?: string | null;
   readonly onReset?: () => void;
+  readonly onExportJson?: () => void;
 }
 
 const buttonBase: React.CSSProperties = {
@@ -114,9 +115,10 @@ function ErrorContent({ error, onReset }: { readonly error?: string | null; read
   );
 }
 
-function ResultContent({ result, onReset }: {
+function ResultContent({ result, onReset, onExportJson }: {
   readonly result?: { roadCount: number; intersectionCount: number } | null;
   readonly onReset?: () => void;
+  readonly onExportJson?: () => void;
 }) {
   return (
     <>
@@ -124,10 +126,10 @@ function ResultContent({ result, onReset }: {
       <p style={{ margin: '0 0 12px', fontSize: '13px', color: '#aaa' }}>
         {result?.roadCount ?? 0} roads, {result?.intersectionCount ?? 0} intersections
       </p>
-      <button style={buttonBase} title="Coming in Phase 19" disabled>
+      <button style={{ ...buttonBase, opacity: 0.5 }} title="Coming in Phase 19" disabled>
         Run Simulation
       </button>
-      <button style={buttonBase} title="Coming in Phase 19" disabled>
+      <button style={buttonBase} onClick={onExportJson}>
         Export JSON
       </button>
       <button style={{ ...buttonBase, marginBottom: 0 }} onClick={onReset}>
@@ -137,7 +139,7 @@ function ResultContent({ result, onReset }: {
   );
 }
 
-export function MapSidebar({ bbox, state, onFetchRoads, result, error, onReset }: MapSidebarProps) {
+export function MapSidebar({ bbox, state, onFetchRoads, result, error, onReset, onExportJson }: MapSidebarProps) {
   return (
     <aside style={{
       width: '260px',
@@ -164,7 +166,7 @@ export function MapSidebar({ bbox, state, onFetchRoads, result, error, onReset }
       )}
       {state === 'loading' && <LoadingContent />}
       {state === 'error' && <ErrorContent error={error} onReset={onReset} />}
-      {state === 'result' && <ResultContent result={result} onReset={onReset} />}
+      {state === 'result' && <ResultContent result={result} onReset={onReset} onExportJson={onExportJson} />}
     </aside>
   );
 }

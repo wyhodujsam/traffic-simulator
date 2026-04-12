@@ -1,7 +1,14 @@
 import { useState, useRef, useCallback } from 'react';
 import { BoundingBoxMap, BboxInfo } from '../components/BoundingBoxMap';
 import { MapSidebar } from '../components/MapSidebar';
+import { RoadGraphPreview } from '../components/RoadGraphPreview';
 import { useIsMobile } from '../hooks/useIsMobile';
+
+interface MapConfigData {
+  nodes: Array<{ id: string; x: number; y: number }>;
+  roads: Array<{ id: string; fromNodeId: string; toNodeId: string; laneCount: number }>;
+  intersections?: unknown[];
+}
 
 export function MapPage() {
   const isMobile = useIsMobile();
@@ -9,7 +16,7 @@ export function MapPage() {
   const [sidebarState, setSidebarState] = useState<'idle' | 'loading' | 'result' | 'error'>('idle');
   const [fetchResult, setFetchResult] = useState<{ roadCount: number; intersectionCount: number } | null>(null);
   const [fetchError, setFetchError] = useState<string | null>(null);
-  const [mapConfig, setMapConfig] = useState<unknown>(null);
+  const [mapConfig, setMapConfig] = useState<MapConfigData | null>(null);
 
   const mapViewRef = useRef<{ center: [number, number]; zoom: number }>({
     center: [52.2297, 21.0122],
@@ -40,7 +47,7 @@ export function MapPage() {
         const err = await response.json().catch(() => ({ error: 'Unknown error' }));
         throw new Error((err as { error?: string }).error ?? `HTTP ${response.status}`);
       }
-      const config = await response.json() as { roads?: unknown[]; intersections?: unknown[] };
+      const config = await response.json() as MapConfigData;
       setMapConfig(config);
       setFetchResult({
         roadCount: config.roads?.length ?? 0,
@@ -61,6 +68,18 @@ export function MapPage() {
     setMapConfig(null);
   }, []);
 
+  const handleExportJson = useCallback(() => {
+    if (!mapConfig) return;
+    const json = JSON.stringify(mapConfig, null, 2);
+    const blob = new Blob([json], { type: 'application/json' });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = 'map-config.json';
+    a.click();
+    URL.revokeObjectURL(url);
+  }, [mapConfig]);
+
   const sidebarStyle: React.CSSProperties = isMobile
     ? {
         width: '100%',
@@ -77,9 +96,6 @@ export function MapPage() {
         overflow: 'auto',
       };
 
-  // mapConfig stored for Phase 19 wiring
-  void mapConfig;
-
   return (
     <div style={{
       flex: 1,
@@ -94,12 +110,16 @@ export function MapPage() {
         position: 'relative',
       }}>
         <div style={{ position: 'absolute', inset: 0 }}>
-        <BoundingBoxMap
-          center={mapViewRef.current.center}
-          zoom={mapViewRef.current.zoom}
-          onBoundsChange={setBbox}
-          onViewChange={handleViewChange}
-        />
+          <BoundingBoxMap
+            center={mapViewRef.current.center}
+            zoom={mapViewRef.current.zoom}
+            onBoundsChange={setBbox}
+            onViewChange={handleViewChange}
+          >
+            {sidebarState === 'result' && mapConfig && bbox && (
+              <RoadGraphPreview mapConfig={mapConfig} bbox={bbox} />
+            )}
+          </BoundingBoxMap>
         </div>
       </div>
 
@@ -111,6 +131,7 @@ export function MapPage() {
           result={fetchResult}
           error={fetchError}
           onReset={handleReset}
+          onExportJson={handleExportJson}
         />
       </div>
     </div>
