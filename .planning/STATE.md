@@ -2,15 +2,15 @@
 gsd_state_version: 1.0
 milestone: v2.0
 milestone_name: — Map Screenshot to Simulation
-current_phase: 18 — OSM Data Pipeline (Plan 01 complete)
-current_plan: 19-01 (next phase)
-status: Phase 18 Plan 01 complete — OSM pipeline backend done
-last_updated: "2026-04-12T16:37:00Z"
+current_phase: 18 — OSM Data Pipeline (Plan 02 complete)
+current_plan: 19-01 (next)
+status: Phase 18 complete — REST endpoint + frontend wiring done; full OSM fetch flow live
+last_updated: "2026-04-12T18:43:00Z"
 progress:
   total_phases: 20
-  completed_phases: 15
+  completed_phases: 16
   total_plans: 66
-  completed_plans: 67
+  completed_plans: 68
 ---
 
 # Project State
@@ -103,3 +103,4 @@ See: .planning/PROJECT.md (updated 2026-04-12)
 - 2026-04-12: Phase 17 Plan 01 complete — react-router-dom v6, BrowserRouter + Routes, SimulationPage extracted from App, NavHeader with useLocation active-link highlighting, useIsMobile hook extracted, leaflet + react-leaflet installed; tsc --noEmit clean
 - 2026-04-12: Phase 17 Plan 02 complete — MapPage with Leaflet/OSM map, BoundingBoxMap (L.rectangle 20% inset, moveend/zoomend updates), MapSidebar (idle/loading/result states, bbox dimensions in meters), responsive layout; tsc --noEmit clean; Phase 17 complete
 - 2026-04-12: Phase 18 Plan 01 complete — OsmPipelineService (Overpass client + OSM converter), BboxRequest DTO, OsmClientConfig, LoadConfig command in sealed interface, MapLoader.loadFromConfig(), CommandDispatcher.handleLoadConfig(); 216 total tests pass; Phase 18 complete
+- 2026-04-12: Phase 18 Plan 02 complete — OsmController POST /api/osm/fetch-roads (422/503 error handling), OsmControllerTest (3 WebMvcTest tests), MapPage wired to backend fetch, MapSidebar loading/error/result states with road+intersection counts; 219 total tests pass; Phase 18 fully complete
