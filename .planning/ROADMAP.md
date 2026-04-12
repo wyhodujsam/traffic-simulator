@@ -348,9 +348,9 @@ Plans:
 **Plans:** 2 plans
 
 Plans:
-- [x] 17-01-PLAN.md — Install deps, BrowserRouter routing, extract SimulationPage, nav header (MAP-04)
-- [ ] 17-02-PLAN.md — MapPage with Leaflet map, bounding box overlay, sidebar panel (MAP-01, MAP-02, MAP-03)
-**UI hint**: no
+- [ ] 18-01-PLAN.md — LoadConfig command chain + OsmPipelineService (Overpass client + OSM-to-MapConfig converter) (OSM-01, OSM-02, OSM-03, OSM-04)
+- [ ] 18-02-PLAN.md — OsmController REST endpoint + frontend MapPage wiring (OSM-01, OSM-02, OSM-03, OSM-04)
+**UI hint**: no (backend-focused; frontend wiring of existing "Fetch Roads" button)
 
 **Success Criteria (what must be TRUE):**
 1. User clicks "Fetch Roads" on the /map page; backend calls Overpass API for the visible bbox and returns a result within 10 seconds.
@@ -368,8 +368,8 @@ Plans:
 **Plans:** 2 plans
 
 Plans:
-- [ ] 17-01-PLAN.md — Install deps, BrowserRouter routing, extract SimulationPage, nav header (MAP-04)
-- [ ] 17-02-PLAN.md — MapPage with Leaflet map, bounding box overlay, sidebar panel (MAP-01, MAP-02, MAP-03)
+- [ ] 19-01-PLAN.md — TBD (run /gsd:plan-phase 19 to break down)
+- [ ] 19-02-PLAN.md — TBD
 **UI hint**: yes
 
 **Success Criteria (what must be TRUE):**
@@ -387,8 +387,8 @@ Plans:
 **Plans:** 2 plans
 
 Plans:
-- [ ] 17-01-PLAN.md — Install deps, BrowserRouter routing, extract SimulationPage, nav header (MAP-04)
-- [ ] 17-02-PLAN.md — MapPage with Leaflet map, bounding box overlay, sidebar panel (MAP-01, MAP-02, MAP-03)
+- [ ] 20-01-PLAN.md — TBD (run /gsd:plan-phase 20 to break down)
+- [ ] 20-02-PLAN.md — TBD
 **UI hint**: yes
 
 **Success Criteria (what must be TRUE):**
@@ -402,8 +402,8 @@ Plans:
 
 | Phase | Plans Complete | Status | Completed |
 |-------|----------------|--------|-----------|
-| 17. Routing & Map Embed | 0/2 | Planned | - |
-| 18. OSM Data Pipeline | 0/? | Not started | - |
+| 17. Routing & Map Embed | 2/2 | Complete | 2026-04-12 |
+| 18. OSM Data Pipeline | 0/2 | Planned | - |
 | 19. Simulation Integration & Export | 0/? | Not started | - |
 | 20. AI Vision (Claude CLI) | 0/? | Not started | - |
 
