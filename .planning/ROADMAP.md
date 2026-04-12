@@ -368,8 +368,8 @@ Plans:
 **Plans:** 2 plans
 
 Plans:
-- [ ] 19-01-PLAN.md — TBD (run /gsd:plan-phase 19 to break down)
-- [ ] 19-02-PLAN.md — TBD
+- [ ] 19-01-PLAN.md — Road graph preview overlay + Export JSON download (SINT-02, SINT-03)
+- [ ] 19-02-PLAN.md — Run Simulation backend endpoint + frontend wiring with navigation (SINT-01)
 **UI hint**: yes
 
 **Success Criteria (what must be TRUE):**
@@ -403,8 +403,8 @@ Plans:
 | Phase | Plans Complete | Status | Completed |
 |-------|----------------|--------|-----------|
 | 17. Routing & Map Embed | 2/2 | Complete | 2026-04-12 |
-| 18. OSM Data Pipeline | 0/2 | Planned | - |
-| 19. Simulation Integration & Export | 0/? | Not started | - |
+| 18. OSM Data Pipeline | 2/2 | Complete | 2026-04-12 |
+| 19. Simulation Integration & Export | 0/2 | Planned | - |
 | 20. AI Vision (Claude CLI) | 0/? | Not started | - |
 
 ---
