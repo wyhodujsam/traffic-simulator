@@ -1,4 +1,4 @@
-import { useState, useRef } from 'react';
+import { useState, useRef, useCallback } from 'react';
 import { BoundingBoxMap, BboxInfo } from '../components/BoundingBoxMap';
 import { MapSidebar } from '../components/MapSidebar';
 import { useIsMobile } from '../hooks/useIsMobile';
@@ -15,6 +15,13 @@ export function MapPage() {
   const handleViewChange = (center: [number, number], zoom: number) => {
     mapViewRef.current = { center, zoom };
   };
+
+  const handleFetchRoads = useCallback(() => {
+    if (!bbox) return;
+    // Phase 18 will replace this with actual Overpass API call
+    console.log('Fetch roads for bbox:', bbox);
+    alert(`Fetch Roads: ${Math.round(bbox.widthMeters)}m x ${Math.round(bbox.heightMeters)}m\n(Backend endpoint not yet implemented — Phase 18)`);
+  }, [bbox]);
 
   const sidebarStyle: React.CSSProperties = isMobile
     ? {
@@ -56,7 +63,7 @@ export function MapPage() {
       </div>
 
       <div style={sidebarStyle}>
-        <MapSidebar bbox={bbox} state="idle" />
+        <MapSidebar bbox={bbox} state="idle" onFetchRoads={handleFetchRoads} />
       </div>
     </div>
   );

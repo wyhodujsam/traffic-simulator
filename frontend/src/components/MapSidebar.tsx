@@ -3,6 +3,7 @@ import { BboxInfo } from './BoundingBoxMap';
 interface MapSidebarProps {
   readonly bbox: BboxInfo | null;
   readonly state: 'idle' | 'loading' | 'result';
+  readonly onFetchRoads?: () => void;
 }
 
 const buttonBase: React.CSSProperties = {
@@ -59,10 +60,10 @@ function IdleContent({ bbox }: { readonly bbox: BboxInfo | null }) {
   );
 }
 
-function IdleActions() {
+function IdleActions({ onFetchRoads }: { readonly onFetchRoads?: () => void }) {
   return (
     <>
-      <button style={buttonBase}>
+      <button style={buttonBase} onClick={onFetchRoads}>
         Fetch Roads
       </button>
       <button
@@ -107,7 +108,7 @@ function ResultContent() {
   );
 }
 
-export function MapSidebar({ bbox, state }: MapSidebarProps) {
+export function MapSidebar({ bbox, state, onFetchRoads }: MapSidebarProps) {
   return (
     <aside style={{
       width: '260px',
@@ -129,7 +130,7 @@ export function MapSidebar({ bbox, state }: MapSidebarProps) {
       {state === 'idle' && (
         <>
           <IdleContent bbox={bbox} />
-          <IdleActions />
+          <IdleActions onFetchRoads={onFetchRoads} />
         </>
       )}
       {state === 'loading' && <LoadingContent />}
