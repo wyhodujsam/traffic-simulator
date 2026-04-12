@@ -1,5 +1,7 @@
 package com.trafficsimulator.engine.command;
 
+import com.trafficsimulator.config.MapConfig;
+
 public sealed interface SimulationCommand
         permits SimulationCommand.Start,
                 SimulationCommand.Stop,
@@ -8,6 +10,7 @@ public sealed interface SimulationCommand
                 SimulationCommand.SetSpawnRate,
                 SimulationCommand.SetSpeedMultiplier,
                 SimulationCommand.LoadMap,
+                SimulationCommand.LoadConfig,
                 SimulationCommand.SetMaxSpeed,
                 SimulationCommand.AddObstacle,
                 SimulationCommand.RemoveObstacle,
@@ -27,6 +30,8 @@ public sealed interface SimulationCommand
     record SetSpeedMultiplier(double multiplier) implements SimulationCommand {}
 
     record LoadMap(String mapId) implements SimulationCommand {}
+
+    record LoadConfig(MapConfig config) implements SimulationCommand {}
 
     record SetMaxSpeed(double maxSpeedMs) implements SimulationCommand {}
 

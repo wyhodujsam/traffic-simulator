@@ -83,6 +83,9 @@ public class CommandDispatcher {
         handlers.put(
                 SimulationCommand.LoadMap.class,
                 cmd -> handleLoadMap((SimulationCommand.LoadMap) cmd));
+        handlers.put(
+                SimulationCommand.LoadConfig.class,
+                cmd -> handleLoadConfig((SimulationCommand.LoadConfig) cmd));
     }
 
     @SuppressWarnings("unchecked")
@@ -314,6 +317,42 @@ public class CommandDispatcher {
         } catch (IOException | IllegalArgumentException e) {
             log.error("Failed to load map {}: {}", cmd.mapId(), e.getMessage());
             engine.setLastError("Failed to load map '" + cmd.mapId() + "': " + e.getMessage());
+        }
+    }
+
+    private void handleLoadConfig(SimulationCommand.LoadConfig cmd) {
+        if (mapLoader == null) {
+            log.warn("MapLoader not available — ignoring LoadConfig command");
+            return;
+        }
+        // Stop and clear
+        engine.setStatus(SimulationStatus.STOPPED);
+        engine.getTickCounter().set(0);
+        engine.clearAllVehicles();
+        RoadNetwork oldNetwork = engine.getRoadNetwork();
+        if (obstacleManager != null && oldNetwork != null) {
+            obstacleManager.clearAll(oldNetwork);
+        }
+        if (vehicleSpawner != null) {
+            vehicleSpawner.reset();
+        }
+
+        try {
+            MapLoader.LoadedMap loaded = mapLoader.loadFromConfig(cmd.config());
+            engine.setRoadNetwork(loaded.network());
+            engine.setSpawnRate(loaded.defaultSpawnRate());
+            if (vehicleSpawner != null) {
+                vehicleSpawner.setVehiclesPerSecond(loaded.defaultSpawnRate());
+            }
+            engine.setLastError(null);
+            log.info(
+                    "Map loaded from config: {} (spawn rate: {} veh/s)",
+                    cmd.config().getId(),
+                    loaded.defaultSpawnRate());
+        } catch (IllegalArgumentException e) {
+            log.error("Failed to load config {}: {}", cmd.config().getId(), e.getMessage());
+            engine.setLastError(
+                    "Failed to load config '" + cmd.config().getId() + "': " + e.getMessage());
         }
     }
 }

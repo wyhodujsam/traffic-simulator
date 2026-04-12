@@ -37,6 +37,15 @@ public class MapLoader {
 
     public record LoadedMap(RoadNetwork network, double defaultSpawnRate) {}
 
+    public LoadedMap loadFromConfig(MapConfig config) {
+        List<String> errors = mapValidator.validate(config);
+        if (!errors.isEmpty()) {
+            throw new IllegalArgumentException("Map config validation failed: " + errors);
+        }
+        RoadNetwork network = buildRoadNetwork(config);
+        return new LoadedMap(network, config.getDefaultSpawnRate());
+    }
+
     public LoadedMap loadFromClasspath(String resourcePath) throws IOException {
         InputStream is = getClass().getClassLoader().getResourceAsStream(resourcePath);
         if (is == null) {
