@@ -122,12 +122,15 @@ public class ClaudeVisionService {
     public MapConfig analyzeImage(MultipartFile file) throws IOException {
         Path tempFile = createTempFile(file);
         try {
+            String promptWithFile = ANALYSIS_PROMPT
+                    + "\n\nAnalyze the road image at: " + tempFile.toAbsolutePath()
+                    + "\nOutput ONLY valid JSON, no markdown fences.";
             String output = executeCliCommand(
                     config.getPath(),
                     "-p",
-                    ANALYSIS_PROMPT,
-                    "--image",
-                    tempFile.toAbsolutePath().toString());
+                    promptWithFile,
+                    "--output-format",
+                    "text");
 
             String json = extractJson(output);
             MapConfig mapConfig = parseJson(json);
