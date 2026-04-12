@@ -24,7 +24,13 @@ export function MapPage() {
         borderTop: '1px solid #333',
         flexShrink: 0,
       }
-    : {};
+    : {
+        width: '280px',
+        minWidth: '280px',
+        flexShrink: 0,
+        borderLeft: '1px solid #333',
+        overflow: 'auto',
+      };
 
   return (
     <div style={{
@@ -39,12 +45,14 @@ export function MapPage() {
         minWidth: 0,
         position: 'relative',
       }}>
+        <div style={{ position: 'absolute', inset: 0 }}>
         <BoundingBoxMap
           center={mapViewRef.current.center}
           zoom={mapViewRef.current.zoom}
           onBoundsChange={setBbox}
           onViewChange={handleViewChange}
         />
+        </div>
       </div>
 
       <div style={sidebarStyle}>

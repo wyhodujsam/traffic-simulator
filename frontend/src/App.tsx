@@ -46,10 +46,12 @@ function App() {
         fontFamily: 'monospace',
       }}>
         <NavHeader />
-        <Routes>
-          <Route path="/" element={<SimulationPage />} />
-          <Route path="/map" element={<MapPage />} />
-        </Routes>
+        <div style={{ flex: 1, display: 'flex', flexDirection: 'column', minHeight: 0 }}>
+          <Routes>
+            <Route path="/" element={<SimulationPage />} />
+            <Route path="/map" element={<MapPage />} />
+          </Routes>
+        </div>
       </div>
     </BrowserRouter>
   );
