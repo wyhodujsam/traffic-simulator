@@ -1,8 +1,10 @@
 import { useState, useRef, useCallback } from 'react';
+import { useNavigate } from 'react-router-dom';
 import { BoundingBoxMap, BboxInfo } from '../components/BoundingBoxMap';
 import { MapSidebar } from '../components/MapSidebar';
 import { RoadGraphPreview } from '../components/RoadGraphPreview';
 import { useIsMobile } from '../hooks/useIsMobile';
+import { useSimulationStore } from '../store/useSimulationStore';
 
 interface MapConfigData {
   nodes: Array<{ id: string; x: number; y: number }>;
@@ -12,11 +14,13 @@ interface MapConfigData {
 
 export function MapPage() {
   const isMobile = useIsMobile();
+  const navigate = useNavigate();
   const [bbox, setBbox] = useState<BboxInfo | null>(null);
   const [sidebarState, setSidebarState] = useState<'idle' | 'loading' | 'result' | 'error'>('idle');
   const [fetchResult, setFetchResult] = useState<{ roadCount: number; intersectionCount: number } | null>(null);
   const [fetchError, setFetchError] = useState<string | null>(null);
   const [mapConfig, setMapConfig] = useState<MapConfigData | null>(null);
+  const [simulationLoading, setSimulationLoading] = useState(false);
 
   const mapViewRef = useRef<{ center: [number, number]; zoom: number }>({
     center: [52.2297, 21.0122],
@@ -80,6 +84,35 @@ export function MapPage() {
     URL.revokeObjectURL(url);
   }, [mapConfig]);
 
+  const handleRunSimulation = useCallback(async () => {
+    if (!mapConfig) return;
+    setSimulationLoading(true);
+    try {
+      const response = await fetch('/api/command/load-config', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(mapConfig),
+      });
+      if (!response.ok) {
+        const err = await response.json().catch(() => ({ error: 'Unknown error' }));
+        throw new Error((err as { error?: string }).error ?? `HTTP ${response.status}`);
+      }
+      // Send START command via STOMP to begin simulation
+      const sendCommand = useSimulationStore.getState().sendCommand;
+      if (sendCommand) {
+        sendCommand({ type: 'START' });
+      }
+      // Navigate to simulation page
+      navigate('/');
+    } catch (e: unknown) {
+      const message = e instanceof Error ? e.message : 'Failed to load config';
+      setFetchError(message);
+      setSidebarState('error');
+    } finally {
+      setSimulationLoading(false);
+    }
+  }, [mapConfig, navigate]);
+
   const sidebarStyle: React.CSSProperties = isMobile
     ? {
         width: '100%',
@@ -132,6 +165,8 @@ export function MapPage() {
           error={fetchError}
           onReset={handleReset}
           onExportJson={handleExportJson}
+          onRunSimulation={handleRunSimulation}
+          simulationLoading={simulationLoading}
         />
       </div>
     </div>

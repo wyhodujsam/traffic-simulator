@@ -8,6 +8,8 @@ interface MapSidebarProps {
   readonly error?: string | null;
   readonly onReset?: () => void;
   readonly onExportJson?: () => void;
+  readonly onRunSimulation?: () => void;
+  readonly simulationLoading?: boolean;
 }
 
 const buttonBase: React.CSSProperties = {
@@ -115,10 +117,12 @@ function ErrorContent({ error, onReset }: { readonly error?: string | null; read
   );
 }
 
-function ResultContent({ result, onReset, onExportJson }: {
+function ResultContent({ result, onReset, onExportJson, onRunSimulation, simulationLoading }: {
   readonly result?: { roadCount: number; intersectionCount: number } | null;
   readonly onReset?: () => void;
   readonly onExportJson?: () => void;
+  readonly onRunSimulation?: () => void;
+  readonly simulationLoading?: boolean;
 }) {
   return (
     <>
@@ -126,8 +130,12 @@ function ResultContent({ result, onReset, onExportJson }: {
       <p style={{ margin: '0 0 12px', fontSize: '13px', color: '#aaa' }}>
         {result?.roadCount ?? 0} roads, {result?.intersectionCount ?? 0} intersections
       </p>
-      <button style={{ ...buttonBase, opacity: 0.5 }} title="Coming in Phase 19" disabled>
-        Run Simulation
+      <button
+        style={{ ...buttonBase, opacity: simulationLoading ? 0.5 : 1 }}
+        onClick={onRunSimulation}
+        disabled={simulationLoading}
+      >
+        {simulationLoading ? 'Loading...' : 'Run Simulation'}
       </button>
       <button style={buttonBase} onClick={onExportJson}>
         Export JSON
@@ -139,7 +147,7 @@ function ResultContent({ result, onReset, onExportJson }: {
   );
 }
 
-export function MapSidebar({ bbox, state, onFetchRoads, result, error, onReset, onExportJson }: MapSidebarProps) {
+export function MapSidebar({ bbox, state, onFetchRoads, result, error, onReset, onExportJson, onRunSimulation, simulationLoading }: MapSidebarProps) {
   return (
     <aside style={{
       width: '260px',
@@ -166,7 +174,15 @@ export function MapSidebar({ bbox, state, onFetchRoads, result, error, onReset, 
       )}
       {state === 'loading' && <LoadingContent />}
       {state === 'error' && <ErrorContent error={error} onReset={onReset} />}
-      {state === 'result' && <ResultContent result={result} onReset={onReset} onExportJson={onExportJson} />}
+      {state === 'result' && (
+        <ResultContent
+          result={result}
+          onReset={onReset}
+          onExportJson={onExportJson}
+          onRunSimulation={onRunSimulation}
+          simulationLoading={simulationLoading}
+        />
+      )}
     </aside>
   );
 }
