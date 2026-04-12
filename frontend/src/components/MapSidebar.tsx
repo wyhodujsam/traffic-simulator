@@ -1,15 +1,18 @@
+import { useRef } from 'react';
 import { BboxInfo } from './BoundingBoxMap';
 
 interface MapSidebarProps {
   readonly bbox: BboxInfo | null;
   readonly state: 'idle' | 'loading' | 'result' | 'error';
   readonly onFetchRoads?: () => void;
+  readonly onUploadImage?: (file: File) => void;
   readonly result?: { roadCount: number; intersectionCount: number } | null;
   readonly error?: string | null;
   readonly onReset?: () => void;
   readonly onExportJson?: () => void;
   readonly onRunSimulation?: () => void;
   readonly simulationLoading?: boolean;
+  readonly loadingMessage?: string;
 }
 
 const buttonBase: React.CSSProperties = {
@@ -66,16 +69,41 @@ function IdleContent({ bbox }: { readonly bbox: BboxInfo | null }) {
   );
 }
 
-function IdleActions({ onFetchRoads }: { readonly onFetchRoads?: () => void }) {
+function IdleActions({
+  onFetchRoads,
+  onUploadImage,
+}: {
+  readonly onFetchRoads?: () => void;
+  readonly onUploadImage?: (file: File) => void;
+}) {
+  const fileInputRef = useRef<HTMLInputElement>(null);
+
+  const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (file && onUploadImage) {
+      onUploadImage(file);
+    }
+    // Reset so same file can be re-selected if needed
+    if (fileInputRef.current) {
+      fileInputRef.current.value = '';
+    }
+  };
+
   return (
     <>
       <button style={buttonBase} onClick={onFetchRoads}>
         Fetch Roads
       </button>
+      <input
+        type="file"
+        ref={fileInputRef}
+        accept="image/jpeg,image/png"
+        style={{ display: 'none' }}
+        onChange={handleFileChange}
+      />
       <button
-        style={{ ...buttonBase, opacity: 0.5, marginBottom: 0 }}
-        title="Coming in Phase 20"
-        disabled
+        style={{ ...buttonBase, marginBottom: 0 }}
+        onClick={() => fileInputRef.current?.click()}
       >
         Upload Image
       </button>
@@ -83,10 +111,10 @@ function IdleActions({ onFetchRoads }: { readonly onFetchRoads?: () => void }) {
   );
 }
 
-function LoadingContent() {
+function LoadingContent({ message }: { readonly message: string }) {
   return (
     <div style={{ fontSize: '13px', color: '#aaa' }}>
-      <p style={{ margin: '0 0 8px' }}>Fetching road data...</p>
+      <p style={{ margin: '0 0 8px' }}>{message}</p>
       <div style={{
         height: '6px',
         background: '#333',
@@ -147,7 +175,19 @@ function ResultContent({ result, onReset, onExportJson, onRunSimulation, simulat
   );
 }
 
-export function MapSidebar({ bbox, state, onFetchRoads, result, error, onReset, onExportJson, onRunSimulation, simulationLoading }: MapSidebarProps) {
+export function MapSidebar({
+  bbox,
+  state,
+  onFetchRoads,
+  onUploadImage,
+  result,
+  error,
+  onReset,
+  onExportJson,
+  onRunSimulation,
+  simulationLoading,
+  loadingMessage = 'Fetching road data...',
+}: MapSidebarProps) {
   return (
     <aside style={{
       width: '260px',
@@ -169,10 +209,10 @@ export function MapSidebar({ bbox, state, onFetchRoads, result, error, onReset, 
       {state === 'idle' && (
         <>
           <IdleContent bbox={bbox} />
-          <IdleActions onFetchRoads={onFetchRoads} />
+          <IdleActions onFetchRoads={onFetchRoads} onUploadImage={onUploadImage} />
         </>
       )}
-      {state === 'loading' && <LoadingContent />}
+      {state === 'loading' && <LoadingContent message={loadingMessage} />}
       {state === 'error' && <ErrorContent error={error} onReset={onReset} />}
       {state === 'result' && (
         <ResultContent

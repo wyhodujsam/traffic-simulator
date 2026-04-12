@@ -21,6 +21,7 @@ export function MapPage() {
   const [fetchError, setFetchError] = useState<string | null>(null);
   const [mapConfig, setMapConfig] = useState<MapConfigData | null>(null);
   const [simulationLoading, setSimulationLoading] = useState(false);
+  const [uploadMode, setUploadMode] = useState(false);
 
   const mapViewRef = useRef<{ center: [number, number]; zoom: number }>({
     center: [52.2297, 21.0122],
@@ -33,6 +34,7 @@ export function MapPage() {
 
   const handleFetchRoads = useCallback(async () => {
     if (!bbox) return;
+    setUploadMode(false);
     setSidebarState('loading');
     setFetchError(null);
     setFetchResult(null);
@@ -65,11 +67,42 @@ export function MapPage() {
     }
   }, [bbox]);
 
+  const handleUploadImage = useCallback(async (file: File) => {
+    setUploadMode(true);
+    setSidebarState('loading');
+    setFetchError(null);
+    setFetchResult(null);
+    try {
+      const formData = new FormData();
+      formData.append('image', file);
+      const response = await fetch('/api/vision/analyze', {
+        method: 'POST',
+        body: formData,
+      });
+      if (!response.ok) {
+        const err = await response.json().catch(() => ({ error: 'Unknown error' }));
+        throw new Error((err as { error?: string }).error ?? `HTTP ${response.status}`);
+      }
+      const config = await response.json() as MapConfigData;
+      setMapConfig(config);
+      setFetchResult({
+        roadCount: config.roads?.length ?? 0,
+        intersectionCount: config.intersections?.length ?? 0,
+      });
+      setSidebarState('result');
+    } catch (e: unknown) {
+      const message = e instanceof Error ? e.message : 'Failed to analyze image';
+      setFetchError(message);
+      setSidebarState('error');
+    }
+  }, []);
+
   const handleReset = useCallback(() => {
     setSidebarState('idle');
     setFetchError(null);
     setFetchResult(null);
     setMapConfig(null);
+    setUploadMode(false);
   }, []);
 
   const handleExportJson = useCallback(() => {
@@ -161,12 +194,14 @@ export function MapPage() {
           bbox={bbox}
           state={sidebarState}
           onFetchRoads={handleFetchRoads}
+          onUploadImage={handleUploadImage}
           result={fetchResult}
           error={fetchError}
           onReset={handleReset}
           onExportJson={handleExportJson}
           onRunSimulation={handleRunSimulation}
           simulationLoading={simulationLoading}
+          loadingMessage={uploadMode ? 'Analyzing road image...' : 'Fetching road data...'}
         />
       </div>
     </div>
