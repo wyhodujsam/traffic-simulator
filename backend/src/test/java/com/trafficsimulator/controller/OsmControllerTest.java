@@ -24,13 +24,12 @@ import com.trafficsimulator.service.OsmPipelineService;
 @WebMvcTest(OsmController.class)
 class OsmControllerTest {
 
-    @Autowired
-    private MockMvc mockMvc;
+    @Autowired private MockMvc mockMvc;
 
-    @MockBean
-    private OsmPipelineService osmPipelineService;
+    @MockBean private OsmPipelineService osmPipelineService;
 
-    private static final String VALID_BBOX_JSON = """
+    private static final String VALID_BBOX_JSON =
+            """
             {
               "south": 52.2197,
               "west": 21.0022,
@@ -52,9 +51,10 @@ class OsmControllerTest {
         config.setNodes(List.of());
         when(osmPipelineService.fetchAndConvert(any(BboxRequest.class))).thenReturn(config);
 
-        mockMvc.perform(post("/api/osm/fetch-roads")
-                        .contentType(MediaType.APPLICATION_JSON)
-                        .content(VALID_BBOX_JSON))
+        mockMvc.perform(
+                        post("/api/osm/fetch-roads")
+                                .contentType(MediaType.APPLICATION_JSON)
+                                .content(VALID_BBOX_JSON))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.id").exists());
     }
@@ -68,9 +68,10 @@ class OsmControllerTest {
         when(osmPipelineService.fetchAndConvert(any(BboxRequest.class)))
                 .thenThrow(new IllegalStateException("No roads found in selected area"));
 
-        mockMvc.perform(post("/api/osm/fetch-roads")
-                        .contentType(MediaType.APPLICATION_JSON)
-                        .content(VALID_BBOX_JSON))
+        mockMvc.perform(
+                        post("/api/osm/fetch-roads")
+                                .contentType(MediaType.APPLICATION_JSON)
+                                .content(VALID_BBOX_JSON))
                 .andExpect(status().isUnprocessableEntity())
                 .andExpect(jsonPath("$.error").value(containsString("No roads")));
     }
@@ -84,9 +85,10 @@ class OsmControllerTest {
         when(osmPipelineService.fetchAndConvert(any(BboxRequest.class)))
                 .thenThrow(new RestClientException("Connection refused"));
 
-        mockMvc.perform(post("/api/osm/fetch-roads")
-                        .contentType(MediaType.APPLICATION_JSON)
-                        .content(VALID_BBOX_JSON))
+        mockMvc.perform(
+                        post("/api/osm/fetch-roads")
+                                .contentType(MediaType.APPLICATION_JSON)
+                                .content(VALID_BBOX_JSON))
                 .andExpect(status().isServiceUnavailable())
                 .andExpect(jsonPath("$.error").value(containsString("unavailable")));
     }

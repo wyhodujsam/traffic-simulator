@@ -21,8 +21,8 @@ import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 
 /**
- * Fetches road data from the Overpass API and converts it into a {@link MapConfig} object
- * suitable for loading into the simulation engine.
+ * Fetches road data from the Overpass API and converts it into a {@link MapConfig} object suitable
+ * for loading into the simulation engine.
  */
 @Service
 @RequiredArgsConstructor
@@ -44,6 +44,8 @@ public class OsmPipelineService {
     // Default signal phase duration (ms)
     private static final long DEFAULT_SIGNAL_PHASE_MS = 30_000L;
 
+    private static final String HIGHWAY_TAG = "highway";
+
     private final RestClient overpassRestClient;
     private final ObjectMapper objectMapper;
 
@@ -54,6 +56,18 @@ public class OsmPipelineService {
     record OsmNode(long id, double lat, double lon, Map<String, String> tags) {}
 
     record OsmWay(long id, List<Long> nodeIds, Map<String, String> tags) {}
+
+    /** Intermediate result of parsing raw OSM elements. */
+    record ParsedOsmData(Map<Long, OsmNode> nodeMap, List<OsmWay> ways) {}
+
+    /** Intermediate result of intersection detection. */
+    record IntersectionData(
+            Set<Long> intersectionNodeIds,
+            Set<Long> terminalNodeIds,
+            Set<Long> roundaboutNodeIds) {}
+
+    /** Intermediate result of road generation. */
+    record RoadResult(List<MapConfig.RoadConfig> roads, Set<Long> usedEndpointNodeIds) {}
 
     // -------------------------------------------------------------------------
     // Public API
@@ -71,12 +85,14 @@ public class OsmPipelineService {
         String encoded = "data=" + URLEncoder.encode(query, StandardCharsets.UTF_8);
 
         log.info("Fetching OSM data for bbox: {}", bbox);
-        String json = overpassRestClient.post()
-                .uri("/api/interpreter")
-                .contentType(org.springframework.http.MediaType.APPLICATION_FORM_URLENCODED)
-                .body(encoded)
-                .retrieve()
-                .body(String.class);
+        String json =
+                overpassRestClient
+                        .post()
+                        .uri("/api/interpreter")
+                        .contentType(org.springframework.http.MediaType.APPLICATION_FORM_URLENCODED)
+                        .body(encoded)
+                        .retrieve()
+                        .body(String.class);
 
         return convertOsmToMapConfig(json, bbox);
     }
@@ -86,20 +102,71 @@ public class OsmPipelineService {
     // -------------------------------------------------------------------------
 
     /**
-     * Converts a raw Overpass API JSON response into a {@link MapConfig}.
-     * Package-private to allow direct testing without network calls.
+     * Converts a raw Overpass API JSON response into a {@link MapConfig}. Package-private to allow
+     * direct testing without network calls.
      */
     MapConfig convertOsmToMapConfig(String json, BboxRequest bbox) {
+        JsonNode elements = parseJsonElements(json);
+
+        ParsedOsmData parsed = parseOsmElements(elements);
+        Map<Long, Integer> nodeRefCount = countNodeReferences(parsed.ways());
+        IntersectionData ixData =
+                detectIntersections(parsed.ways(), parsed.nodeMap(), nodeRefCount);
+        RoadResult roadResult = parseRoads(parsed.ways(), parsed.nodeMap(), nodeRefCount);
+
+        if (roadResult.roads().isEmpty()) {
+            throw new IllegalStateException("No roads found in selected area");
+        }
+
+        Set<String> roadIds = new HashSet<>();
+        for (MapConfig.RoadConfig r : roadResult.roads()) {
+            roadIds.add(r.getId());
+        }
+
+        List<MapConfig.NodeConfig> nodes =
+                buildNodeConfigs(
+                        roadResult.usedEndpointNodeIds(),
+                        parsed.nodeMap(),
+                        ixData.intersectionNodeIds(),
+                        ixData.terminalNodeIds(),
+                        roadResult.roads(),
+                        bbox);
+
+        List<MapConfig.IntersectionConfig> intersections =
+                buildIntersectionConfigs(
+                        ixData.intersectionNodeIds(),
+                        roadResult.usedEndpointNodeIds(),
+                        parsed.nodeMap(),
+                        ixData.roundaboutNodeIds(),
+                        roadResult.roads(),
+                        roadIds);
+
+        EndpointResult endpoints = generateEndpoints(ixData.terminalNodeIds(), roadResult.roads());
+
+        return assembleMapConfig(
+                bbox,
+                nodes,
+                roadResult.roads(),
+                intersections,
+                endpoints.spawnPoints(),
+                endpoints.despawnPoints());
+    }
+
+    // -------------------------------------------------------------------------
+    // Decomposed conversion steps
+    // -------------------------------------------------------------------------
+
+    private JsonNode parseJsonElements(String json) {
         JsonNode root;
         try {
             root = objectMapper.readTree(json);
         } catch (Exception e) {
             throw new IllegalStateException("Failed to parse Overpass JSON: " + e.getMessage(), e);
         }
+        return root.path("elements");
+    }
 
-        JsonNode elements = root.path("elements");
-
-        // Pass 1: collect nodes and ways
+    private ParsedOsmData parseOsmElements(JsonNode elements) {
         Map<Long, OsmNode> nodeMap = new HashMap<>();
         List<OsmWay> ways = new ArrayList<>();
 
@@ -121,66 +188,79 @@ public class OsmPipelineService {
                 ways.add(new OsmWay(id, nodeIds, tags));
             }
         }
+        return new ParsedOsmData(nodeMap, ways);
+    }
 
-        // Pass 2: count node references across all ways
+    private Map<Long, Integer> countNodeReferences(List<OsmWay> ways) {
         Map<Long, Integer> nodeRefCount = new HashMap<>();
         for (OsmWay way : ways) {
             for (long nid : way.nodeIds()) {
                 nodeRefCount.merge(nid, 1, Integer::sum);
             }
         }
+        return nodeRefCount;
+    }
 
-        // Identify which way IDs are roundabouts
+    private IntersectionData detectIntersections(
+            List<OsmWay> ways, Map<Long, OsmNode> nodeMap, Map<Long, Integer> nodeRefCount) {
+
         Set<Long> roundaboutWayIds = new HashSet<>();
+        Set<Long> roundaboutNodeIds = new HashSet<>();
         for (OsmWay way : ways) {
             if ("roundabout".equals(way.tags().get("junction"))) {
                 roundaboutWayIds.add(way.id());
-            }
-        }
-
-        // Identify nodes that are part of roundabout ways
-        Set<Long> roundaboutNodeIds = new HashSet<>();
-        for (OsmWay way : ways) {
-            if (roundaboutWayIds.contains(way.id())) {
                 roundaboutNodeIds.addAll(way.nodeIds());
             }
         }
 
-        // Identify intersection nodes: referenced by 2+ ways OR tagged as traffic_signals
         Set<Long> intersectionNodeIds = new HashSet<>();
         for (Map.Entry<Long, Integer> entry : nodeRefCount.entrySet()) {
             long nid = entry.getKey();
             int count = entry.getValue();
             OsmNode node = nodeMap.get(nid);
-            if (count >= 2 || (node != null && "traffic_signals".equals(node.tags().get("highway")))) {
+            boolean isSignal =
+                    node != null && "traffic_signals".equals(node.tags().get(HIGHWAY_TAG));
+            if (count >= 2 || isSignal) {
                 intersectionNodeIds.add(nid);
             }
         }
 
-        // Identify terminal nodes: first or last node of a way with refCount == 1
         Set<Long> terminalNodeIds = new HashSet<>();
         for (OsmWay way : ways) {
-            if (way.nodeIds().size() < 2) continue;
+            if (way.nodeIds().size() < 2) {
+                continue;
+            }
             long first = way.nodeIds().get(0);
             long last = way.nodeIds().get(way.nodeIds().size() - 1);
-            if (nodeRefCount.getOrDefault(first, 0) == 1) terminalNodeIds.add(first);
-            if (nodeRefCount.getOrDefault(last, 0) == 1) terminalNodeIds.add(last);
+            if (nodeRefCount.getOrDefault(first, 0) == 1) {
+                terminalNodeIds.add(first);
+            }
+            if (nodeRefCount.getOrDefault(last, 0) == 1) {
+                terminalNodeIds.add(last);
+            }
         }
 
-        // Generate RoadConfigs
+        return new IntersectionData(intersectionNodeIds, terminalNodeIds, roundaboutNodeIds);
+    }
+
+    private RoadResult parseRoads(
+            List<OsmWay> ways, Map<Long, OsmNode> nodeMap, Map<Long, Integer> nodeRefCount) {
+
         List<MapConfig.RoadConfig> roads = new ArrayList<>();
         Set<Long> usedEndpointNodeIds = new HashSet<>();
 
         for (OsmWay way : ways) {
             List<Long> nodeIds = way.nodeIds();
 
-            // Filter out ways with fewer than 2 resolvable node coordinates
             long resolvableCount = nodeIds.stream().filter(nodeMap::containsKey).count();
-            if (resolvableCount < 2) continue;
+            if (resolvableCount < 2) {
+                continue;
+            }
 
-            // Compute total length via Haversine over consecutive nodes
             double length = computeWayLength(nodeIds, nodeMap);
-            if (length < MIN_ROAD_LENGTH_M) continue;
+            if (length < MIN_ROAD_LENGTH_M) {
+                continue;
+            }
 
             long firstId = nodeIds.get(0);
             long lastId = nodeIds.get(nodeIds.size() - 1);
@@ -190,64 +270,92 @@ public class OsmPipelineService {
             boolean isOnewayForward = "yes".equals(oneway) || "true".equals(oneway) || isRoundabout;
             boolean isOnewayReverse = "-1".equals(oneway);
 
-            String highway = way.tags().getOrDefault("highway", "residential");
+            String highway = way.tags().getOrDefault(HIGHWAY_TAG, "residential");
             double speedLimit = speedLimitForHighway(highway);
             int laneCount = laneCountForWay(way.tags(), highway);
 
-            if (isOnewayReverse) {
-                // oneway=-1: forward road but with reversed node order
-                MapConfig.RoadConfig road = buildRoadConfig(
-                        "osm-" + way.id() + "-fwd",
-                        lastId, firstId, length, speedLimit, laneCount);
-                roads.add(road);
-                usedEndpointNodeIds.add(firstId);
-                usedEndpointNodeIds.add(lastId);
-            } else if (isOnewayForward) {
-                MapConfig.RoadConfig road = buildRoadConfig(
-                        "osm-" + way.id() + "-fwd",
-                        firstId, lastId, length, speedLimit, laneCount);
-                roads.add(road);
-                usedEndpointNodeIds.add(firstId);
-                usedEndpointNodeIds.add(lastId);
-            } else {
-                // Bidirectional — generate fwd and rev
-                MapConfig.RoadConfig fwd = buildRoadConfig(
-                        "osm-" + way.id() + "-fwd",
-                        firstId, lastId, length, speedLimit, laneCount);
-                MapConfig.RoadConfig rev = buildRoadConfig(
-                        "osm-" + way.id() + "-rev",
-                        lastId, firstId, length, speedLimit, laneCount);
-                roads.add(fwd);
-                roads.add(rev);
-                usedEndpointNodeIds.add(firstId);
-                usedEndpointNodeIds.add(lastId);
-            }
+            addRoadsForWay(
+                    roads,
+                    way.id(),
+                    firstId,
+                    lastId,
+                    length,
+                    speedLimit,
+                    laneCount,
+                    isOnewayForward,
+                    isOnewayReverse);
+            usedEndpointNodeIds.add(firstId);
+            usedEndpointNodeIds.add(lastId);
         }
 
-        if (roads.isEmpty()) {
-            throw new IllegalStateException("No roads found in selected area");
+        return new RoadResult(roads, usedEndpointNodeIds);
+    }
+
+    private void addRoadsForWay(
+            List<MapConfig.RoadConfig> roads,
+            long wayId,
+            long firstId,
+            long lastId,
+            double length,
+            double speedLimit,
+            int laneCount,
+            boolean isOnewayForward,
+            boolean isOnewayReverse) {
+
+        if (isOnewayReverse) {
+            roads.add(
+                    buildRoadConfig(
+                            "osm-" + wayId + "-fwd",
+                            lastId,
+                            firstId,
+                            length,
+                            speedLimit,
+                            laneCount));
+        } else if (isOnewayForward) {
+            roads.add(
+                    buildRoadConfig(
+                            "osm-" + wayId + "-fwd",
+                            firstId,
+                            lastId,
+                            length,
+                            speedLimit,
+                            laneCount));
+        } else {
+            roads.add(
+                    buildRoadConfig(
+                            "osm-" + wayId + "-fwd",
+                            firstId,
+                            lastId,
+                            length,
+                            speedLimit,
+                            laneCount));
+            roads.add(
+                    buildRoadConfig(
+                            "osm-" + wayId + "-rev",
+                            lastId,
+                            firstId,
+                            length,
+                            speedLimit,
+                            laneCount));
         }
+    }
 
-        // Build road ID set for signal phase wiring
-        Set<String> roadIds = new HashSet<>();
-        for (MapConfig.RoadConfig r : roads) roadIds.add(r.getId());
+    private List<MapConfig.NodeConfig> buildNodeConfigs(
+            Set<Long> usedEndpointNodeIds,
+            Map<Long, OsmNode> nodeMap,
+            Set<Long> intersectionNodeIds,
+            Set<Long> terminalNodeIds,
+            List<MapConfig.RoadConfig> roads,
+            BboxRequest bbox) {
 
-        // Generate NodeConfigs
         List<MapConfig.NodeConfig> nodes = new ArrayList<>();
         for (long nid : usedEndpointNodeIds) {
             OsmNode osmNode = nodeMap.get(nid);
-            if (osmNode == null) continue;
-
-            String nodeType;
-            if (intersectionNodeIds.contains(nid)) {
-                nodeType = "INTERSECTION";
-            } else if (terminalNodeIds.contains(nid)) {
-                // Determine ENTRY vs EXIT based on road connectivity
-                boolean isFromNode = roads.stream().anyMatch(r -> r.getFromNodeId().equals("osm-" + nid));
-                nodeType = isFromNode ? "ENTRY" : "EXIT";
-            } else {
-                nodeType = "ENTRY"; // fallback
+            if (osmNode == null) {
+                continue;
             }
+
+            String nodeType = determineNodeType(nid, intersectionNodeIds, terminalNodeIds, roads);
 
             MapConfig.NodeConfig nodeConfig = new MapConfig.NodeConfig();
             nodeConfig.setId("osm-" + nid);
@@ -256,19 +364,47 @@ public class OsmPipelineService {
             nodeConfig.setY(latToY(osmNode.lat(), bbox.south(), bbox.north()));
             nodes.add(nodeConfig);
         }
+        return nodes;
+    }
 
-        // Generate IntersectionConfigs
+    private String determineNodeType(
+            long nid,
+            Set<Long> intersectionNodeIds,
+            Set<Long> terminalNodeIds,
+            List<MapConfig.RoadConfig> roads) {
+
+        if (intersectionNodeIds.contains(nid)) {
+            return "INTERSECTION";
+        }
+        if (terminalNodeIds.contains(nid)) {
+            boolean isFromNode =
+                    roads.stream().anyMatch(r -> r.getFromNodeId().equals("osm-" + nid));
+            return isFromNode ? "ENTRY" : "EXIT";
+        }
+        return "ENTRY"; // fallback
+    }
+
+    private List<MapConfig.IntersectionConfig> buildIntersectionConfigs(
+            Set<Long> intersectionNodeIds,
+            Set<Long> usedEndpointNodeIds,
+            Map<Long, OsmNode> nodeMap,
+            Set<Long> roundaboutNodeIds,
+            List<MapConfig.RoadConfig> roads,
+            Set<String> roadIds) {
+
         List<MapConfig.IntersectionConfig> intersections = new ArrayList<>();
         for (long nid : intersectionNodeIds) {
-            if (!usedEndpointNodeIds.contains(nid)) continue;
+            if (!usedEndpointNodeIds.contains(nid)) {
+                continue;
+            }
             OsmNode osmNode = nodeMap.get(nid);
 
             MapConfig.IntersectionConfig ic = new MapConfig.IntersectionConfig();
             ic.setNodeId("osm-" + nid);
 
-            if (osmNode != null && "traffic_signals".equals(osmNode.tags().get("highway"))) {
+            if (osmNode != null && "traffic_signals".equals(osmNode.tags().get(HIGHWAY_TAG))) {
                 ic.setType("SIGNAL");
-                ic.setSignalPhases(buildDefaultSignalPhases(nid, roads, roadIds));
+                ic.setSignalPhases(buildDefaultSignalPhases(nid, roads));
             } else if (roundaboutNodeIds.contains(nid)) {
                 ic.setType("ROUNDABOUT");
                 ic.setRoundaboutCapacity(8);
@@ -277,14 +413,22 @@ public class OsmPipelineService {
             }
             intersections.add(ic);
         }
+        return intersections;
+    }
 
-        // Generate SpawnPoint and DespawnPoint configs for terminal nodes
+    /** Intermediate result of endpoint generation. */
+    record EndpointResult(
+            List<MapConfig.SpawnPointConfig> spawnPoints,
+            List<MapConfig.DespawnPointConfig> despawnPoints) {}
+
+    private EndpointResult generateEndpoints(
+            Set<Long> terminalNodeIds, List<MapConfig.RoadConfig> roads) {
+
         List<MapConfig.SpawnPointConfig> spawnPoints = new ArrayList<>();
         List<MapConfig.DespawnPointConfig> despawnPoints = new ArrayList<>();
 
         for (long nid : terminalNodeIds) {
             String nodeId = "osm-" + nid;
-            // Spawn at roads where this terminal is the fromNode
             for (MapConfig.RoadConfig road : roads) {
                 if (road.getFromNodeId().equals(nodeId)) {
                     for (int lane = 0; lane < road.getLaneCount(); lane++) {
@@ -307,9 +451,21 @@ public class OsmPipelineService {
             }
         }
 
-        // Assemble MapConfig
-        String bboxId = String.format("osm-bbox-%.4f-%.4f-%.4f-%.4f",
-                bbox.south(), bbox.west(), bbox.north(), bbox.east());
+        return new EndpointResult(spawnPoints, despawnPoints);
+    }
+
+    private MapConfig assembleMapConfig(
+            BboxRequest bbox,
+            List<MapConfig.NodeConfig> nodes,
+            List<MapConfig.RoadConfig> roads,
+            List<MapConfig.IntersectionConfig> intersections,
+            List<MapConfig.SpawnPointConfig> spawnPoints,
+            List<MapConfig.DespawnPointConfig> despawnPoints) {
+
+        String bboxId =
+                String.format(
+                        "osm-bbox-%.4f-%.4f-%.4f-%.4f",
+                        bbox.south(), bbox.west(), bbox.north(), bbox.east());
 
         MapConfig config = new MapConfig();
         config.setId(bboxId);
@@ -321,8 +477,11 @@ public class OsmPipelineService {
         config.setSpawnPoints(spawnPoints.isEmpty() ? null : spawnPoints);
         config.setDespawnPoints(despawnPoints.isEmpty() ? null : despawnPoints);
 
-        log.info("Converted OSM data: {} nodes, {} roads, {} intersections",
-                nodes.size(), roads.size(), intersections.size());
+        log.info(
+                "Converted OSM data: {} nodes, {} roads, {} intersections",
+                nodes.size(),
+                roads.size(),
+                intersections.size());
 
         return config;
     }
@@ -332,11 +491,16 @@ public class OsmPipelineService {
     // -------------------------------------------------------------------------
 
     private String buildOverpassQuery(BboxRequest bbox) {
-        return String.format(
-                "[out:json][timeout:25];\n(\n  way[\"highway\"~" +
-                "\"^(motorway|trunk|primary|secondary|tertiary|unclassified|residential|living_street)$\"]" +
-                "(%f,%f,%f,%f);\n);\nout body;\n>;\nout skel qt;",
-                bbox.south(), bbox.west(), bbox.north(), bbox.east());
+        return """
+                [out:json][timeout:25];
+                (
+                  way["highway"~"^(motorway|trunk|primary|secondary|tertiary|unclassified|residential|living_street)$"](%f,%f,%f,%f);
+                );
+                out body;
+                >;
+                out skel qt;\
+                """
+                .formatted(bbox.south(), bbox.west(), bbox.north(), bbox.east());
     }
 
     private Map<String, String> parseTags(JsonNode element) {
@@ -361,8 +525,12 @@ public class OsmPipelineService {
     }
 
     private MapConfig.RoadConfig buildRoadConfig(
-            String id, long fromNodeId, long toNodeId,
-            double length, double speedLimit, int laneCount) {
+            String id,
+            long fromNodeId,
+            long toNodeId,
+            double length,
+            double speedLimit,
+            int laneCount) {
         MapConfig.RoadConfig road = new MapConfig.RoadConfig();
         road.setId(id);
         road.setFromNodeId("osm-" + fromNodeId);
@@ -375,14 +543,14 @@ public class OsmPipelineService {
 
     private double speedLimitForHighway(String highway) {
         return switch (highway) {
-            case "motorway"      -> 36.1;
-            case "trunk"         -> 27.8;
-            case "primary"       -> 19.4;
-            case "secondary"     -> 16.7;
-            case "tertiary"      -> 13.9;
-            case "unclassified"  -> 11.1;
+            case "motorway" -> 36.1;
+            case "trunk" -> 27.8;
+            case "primary" -> 19.4;
+            case "secondary" -> 16.7;
+            case "tertiary" -> 13.9;
+            case "unclassified" -> 11.1;
             case "living_street" -> 2.8;
-            default              -> 8.3; // residential + fallback
+            default -> 8.3; // residential + fallback
         };
     }
 
@@ -404,7 +572,7 @@ public class OsmPipelineService {
     }
 
     private List<MapConfig.SignalPhaseConfig> buildDefaultSignalPhases(
-            long nodeId, List<MapConfig.RoadConfig> roads, Set<String> roadIds) {
+            long nodeId, List<MapConfig.RoadConfig> roads) {
         String nid = "osm-" + nodeId;
 
         // Group inbound roads (roads where toNodeId == this node)
@@ -452,18 +620,21 @@ public class OsmPipelineService {
         final double R = 6_371_000.0;
         double dLat = Math.toRadians(lat2 - lat1);
         double dLon = Math.toRadians(lon2 - lon1);
-        double a = Math.sin(dLat / 2) * Math.sin(dLat / 2)
-                + Math.cos(Math.toRadians(lat1)) * Math.cos(Math.toRadians(lat2))
-                * Math.sin(dLon / 2) * Math.sin(dLon / 2);
+        double a =
+                Math.sin(dLat / 2) * Math.sin(dLat / 2)
+                        + Math.cos(Math.toRadians(lat1))
+                                * Math.cos(Math.toRadians(lat2))
+                                * Math.sin(dLon / 2)
+                                * Math.sin(dLon / 2);
         return R * 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
     }
 
-    private static double lonToX(double lon, double west, double east) {
+    static double lonToX(double lon, double west, double east) {
         double usable = CANVAS_W - 2 * CANVAS_PADDING;
         return CANVAS_PADDING + (lon - west) / (east - west) * usable;
     }
 
-    private static double latToY(double lat, double south, double north) {
+    static double latToY(double lat, double south, double north) {
         double usable = CANVAS_H - 2 * CANVAS_PADDING;
         return CANVAS_PADDING + (north - lat) / (north - south) * usable;
     }

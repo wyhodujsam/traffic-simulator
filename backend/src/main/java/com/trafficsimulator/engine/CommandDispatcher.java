@@ -39,8 +39,8 @@ public class CommandDispatcher {
     private final ObstacleManager obstacleManager;
     private final MapLoader mapLoader;
 
-    @SuppressWarnings("rawtypes")
-    private final Map<Class, Consumer> handlers = new LinkedHashMap<>();
+    private final Map<Class<? extends SimulationCommand>, Consumer<SimulationCommand>> handlers =
+            new LinkedHashMap<>();
 
     public CommandDispatcher(
             SimulationEngine engine,
@@ -88,9 +88,8 @@ public class CommandDispatcher {
                 cmd -> handleLoadConfig((SimulationCommand.LoadConfig) cmd));
     }
 
-    @SuppressWarnings("unchecked")
     public void dispatch(SimulationCommand cmd) {
-        Consumer handler = handlers.get(cmd.getClass());
+        Consumer<SimulationCommand> handler = handlers.get(cmd.getClass());
         if (handler != null) {
             handler.accept(cmd);
         } else {

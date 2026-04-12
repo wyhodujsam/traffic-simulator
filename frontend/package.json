@@ -22,6 +22,7 @@
   },
   "devDependencies": {
     "@eslint/js": "^9.13.0",
+    "@testing-library/dom": "^10.4.1",
     "@testing-library/jest-dom": "^6.9.1",
     "@testing-library/react": "^16.3.2",
     "@types/leaflet": "^1.9.21",
@@ -30,6 +31,7 @@
     "@types/sockjs-client": "^1.5.4",
     "@types/ws": "^8.18.1",
     "@vitejs/plugin-react": "^4.3.3",
+    "@vitest/coverage-v8": "^4.1.4",
     "eslint": "^9.13.0",
     "eslint-plugin-react-hooks": "^5.0.0",
     "eslint-plugin-react-refresh": "^0.4.14",
