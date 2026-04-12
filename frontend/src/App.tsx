@@ -1,22 +1,7 @@
 import { BrowserRouter, Routes, Route, Link, useLocation } from 'react-router-dom';
 import { useWebSocket } from './hooks/useWebSocket';
 import { SimulationPage } from './pages/SimulationPage';
-
-function MapPagePlaceholder() {
-  return (
-    <div style={{
-      flex: 1,
-      display: 'flex',
-      alignItems: 'center',
-      justifyContent: 'center',
-      color: '#888',
-      fontFamily: 'monospace',
-      fontSize: '18px',
-    }}>
-      Map page — coming in Plan 02
-    </div>
-  );
-}
+import { MapPage } from './pages/MapPage';
 
 function NavHeader() {
   const { pathname } = useLocation();
@@ -63,7 +48,7 @@ function App() {
         <NavHeader />
         <Routes>
           <Route path="/" element={<SimulationPage />} />
-          <Route path="/map" element={<MapPagePlaceholder />} />
+          <Route path="/map" element={<MapPage />} />
         </Routes>
       </div>
     </BrowserRouter>

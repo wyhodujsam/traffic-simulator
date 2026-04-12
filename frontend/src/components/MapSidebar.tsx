@@ -1,0 +1,139 @@
+import { BboxInfo } from './BoundingBoxMap';
+
+interface MapSidebarProps {
+  readonly bbox: BboxInfo | null;
+  readonly state: 'idle' | 'loading' | 'result';
+}
+
+const buttonBase: React.CSSProperties = {
+  background: '#1a1a2e',
+  border: '1px solid #444',
+  color: '#e0e0e0',
+  padding: '8px 16px',
+  cursor: 'pointer',
+  width: '100%',
+  marginBottom: '8px',
+  fontFamily: 'monospace',
+  fontSize: '13px',
+  textAlign: 'left',
+};
+
+function IdleContent({ bbox }: { readonly bbox: BboxInfo | null }) {
+  if (!bbox) {
+    return (
+      <p style={{ color: '#888', fontSize: '13px', margin: '0 0 12px' }}>
+        Move map to select area
+      </p>
+    );
+  }
+
+  const w = Math.round(bbox.widthMeters);
+  const h = Math.round(bbox.heightMeters);
+
+  return (
+    <>
+      <p style={{ margin: '0 0 4px', fontSize: '14px' }}>
+        {w}m x {h}m
+      </p>
+      <table style={{ fontSize: '12px', color: '#aaa', marginBottom: '16px', borderCollapse: 'collapse' }}>
+        <tbody>
+          <tr>
+            <td style={{ paddingRight: '8px' }}>N</td>
+            <td>{bbox.north.toFixed(4)}</td>
+          </tr>
+          <tr>
+            <td style={{ paddingRight: '8px' }}>S</td>
+            <td>{bbox.south.toFixed(4)}</td>
+          </tr>
+          <tr>
+            <td style={{ paddingRight: '8px' }}>W</td>
+            <td>{bbox.west.toFixed(4)}</td>
+          </tr>
+          <tr>
+            <td style={{ paddingRight: '8px' }}>E</td>
+            <td>{bbox.east.toFixed(4)}</td>
+          </tr>
+        </tbody>
+      </table>
+    </>
+  );
+}
+
+function IdleActions() {
+  return (
+    <>
+      <button style={buttonBase}>
+        Fetch Roads
+      </button>
+      <button
+        style={{ ...buttonBase, opacity: 0.5, marginBottom: 0 }}
+        title="Coming in Phase 20"
+        disabled
+      >
+        Upload Image
+      </button>
+    </>
+  );
+}
+
+function LoadingContent() {
+  return (
+    <div style={{ fontSize: '13px', color: '#aaa' }}>
+      <p style={{ margin: '0 0 8px' }}>Fetching road data...</p>
+      <div style={{
+        height: '6px',
+        background: '#333',
+        borderRadius: '3px',
+        overflow: 'hidden',
+      }}>
+        <div style={{
+          height: '100%',
+          width: '60%',
+          background: '#0088ff',
+          borderRadius: '3px',
+        }} />
+      </div>
+    </div>
+  );
+}
+
+function ResultContent() {
+  return (
+    <>
+      <p style={{ margin: '0 0 12px', fontSize: '13px', color: '#aaa' }}>Roads loaded</p>
+      <button style={buttonBase}>Run Simulation</button>
+      <button style={{ ...buttonBase, marginBottom: 0 }}>Export JSON</button>
+    </>
+  );
+}
+
+export function MapSidebar({ bbox, state }: MapSidebarProps) {
+  return (
+    <aside style={{
+      width: '260px',
+      minWidth: '260px',
+      flexShrink: 0,
+      borderLeft: '1px solid #333',
+      padding: '16px',
+      fontFamily: 'monospace',
+      color: '#e0e0e0',
+      background: '#0d0d1a',
+      display: 'flex',
+      flexDirection: 'column',
+      overflow: 'auto',
+    }}>
+      <p style={{ margin: '0 0 12px', fontWeight: 'bold', fontSize: '14px' }}>
+        Map Selection
+      </p>
+
+      {state === 'idle' && (
+        <>
+          <IdleContent bbox={bbox} />
+          <IdleActions />
+        </>
+      )}
+      {state === 'loading' && <LoadingContent />}
+      {state === 'result' && <ResultContent />}
+    </aside>
+  );
+}
