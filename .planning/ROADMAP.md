@@ -316,7 +316,7 @@ Plans:
 | # | Phase | Goal | Requirements | Success Criteria |
 |---|-------|------|--------------|------------------|
 | 17 | Routing & Map Embed | 2/2 | Complete   | 2026-04-12 |
-| 18 | OSM Data Pipeline | Backend fetches and converts OSM road data to MapConfig | OSM-01, OSM-02, OSM-03, OSM-04 | 4 |
+| 18 | OSM Data Pipeline | 1/2 | In Progress|  |
 | 19 | Simulation Integration & Export | User loads OSM-derived map into simulator and runs it | SINT-01, SINT-02, SINT-03 | 3 |
 | 20 | AI Vision (Claude CLI) | User uploads image; backend generates MapConfig via AI | AVI-01, AVI-02 | 3 |
 
@@ -345,10 +345,10 @@ Plans:
 **Goal:** Backend can fetch road data for a selected bounding box from Overpass API and convert OSM way/node data into a valid MapConfig (Road, Lane, Intersection).
 **Depends on:** Phase 17
 **Requirements:** OSM-01, OSM-02, OSM-03, OSM-04
-**Plans:** 2 plans
+**Plans:** 1/2 plans executed
 
 Plans:
-- [ ] 18-01-PLAN.md — LoadConfig command chain + OsmPipelineService (Overpass client + OSM-to-MapConfig converter) (OSM-01, OSM-02, OSM-03, OSM-04)
+- [x] 18-01-PLAN.md — LoadConfig command chain + OsmPipelineService (Overpass client + OSM-to-MapConfig converter) (OSM-01, OSM-02, OSM-03, OSM-04)
 - [ ] 18-02-PLAN.md — OsmController REST endpoint + frontend MapPage wiring (OSM-01, OSM-02, OSM-03, OSM-04)
 **UI hint**: no (backend-focused; frontend wiring of existing "Fetch Roads" button)
 

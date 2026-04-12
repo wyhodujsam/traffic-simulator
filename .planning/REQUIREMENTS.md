@@ -112,10 +112,10 @@ Requirements for milestone v2.0. Adds real-world map import via OSM + optional A
 
 ### OSM Data Pipeline
 
-- [ ] **OSM-01**: Backend pobiera dane drogowe z Overpass API dla wybranego bbox
-- [ ] **OSM-02**: Konwerter zamienia OSM way/node na MapConfig (Road, Lane, Intersection)
-- [ ] **OSM-03**: Konwerter rozpoznaje typy skrzyżowań z tagów OSM (traffic_signals→SIGNAL, roundabout→ROUNDABOUT)
-- [ ] **OSM-04**: Konwerter wykrywa liczbę pasów z tagu lanes=X
+- [x] **OSM-01**: Backend pobiera dane drogowe z Overpass API dla wybranego bbox
+- [x] **OSM-02**: Konwerter zamienia OSM way/node na MapConfig (Road, Lane, Intersection)
+- [x] **OSM-03**: Konwerter rozpoznaje typy skrzyżowań z tagów OSM (traffic_signals→SIGNAL, roundabout→ROUNDABOUT)
+- [x] **OSM-04**: Konwerter wykrywa liczbę pasów z tagu lanes=X
 
 ### Simulation Integration
 

@@ -2,15 +2,15 @@
 gsd_state_version: 1.0
 milestone: v2.0
 milestone_name: — Map Screenshot to Simulation
-current_phase: 17 — Routing & Map Embed (Plan 02 complete)
-current_plan: 18-01 (next phase)
-status: Phase 17 complete — both plans done, Phase 18 next
-last_updated: "2026-04-12T14:20:00Z"
+current_phase: 18 — OSM Data Pipeline (Plan 01 complete)
+current_plan: 19-01 (next phase)
+status: Phase 18 Plan 01 complete — OSM pipeline backend done
+last_updated: "2026-04-12T16:37:00Z"
 progress:
   total_phases: 20
   completed_phases: 15
-  total_plans: 64
-  completed_plans: 66
+  total_plans: 66
+  completed_plans: 67
 ---
 
 # Project State
@@ -55,16 +55,16 @@ See: .planning/PROJECT.md (updated 2026-04-12)
 | Phase | Name | Status |
 |-------|------|--------|
 | 17 | Routing & Map Embed | ✓ Complete (2/2 plans done) |
-| 18 | OSM Data Pipeline | ○ Not started |
+| 18 | OSM Data Pipeline | ✓ Complete (1/1 plans done) |
 | 19 | Simulation Integration & Export | ○ Not started |
 | 20 | AI Vision (Claude CLI) | ○ Not started |
 
 ## Current Position
 
-**Active phase:** 18 — OSM Data Pipeline
-**Current plan:** 18-01 (next)
-**Completed:** Phase 17 done — react-router-dom, BrowserRouter, SimulationPage extracted, NavHeader, Leaflet map page with bbox, MapSidebar, responsive layout
-**Integration point:** Existing MapConfig/MapLoader is the target for OSM-derived data
+**Active phase:** 19 — Simulation Integration & Export
+**Current plan:** 19-01 (next)
+**Completed:** Phase 18 Plan 01 done — OsmPipelineService (Overpass client + OSM converter), BboxRequest DTO, OsmClientConfig, LoadConfig command in sealed interface, MapLoader.loadFromConfig(), CommandDispatcher.handleLoadConfig()
+**Integration point:** Phase 19 wires OSM pipeline to frontend — OsmController POST endpoint + LoadConfig dispatch
 
 ## Key Decisions (v2.0)
 
@@ -76,6 +76,7 @@ See: .planning/PROJECT.md (updated 2026-04-12)
 | react-router-dom for routing | Standard React routing; enables /map page without full reload |
 | useWebSocket() at App root above Routes | Keeps WS STOMP connection alive when navigating to /map |
 | Page components in src/pages/, shared hooks in src/hooks/ | Separation of concerns for scalable routing |
+| Missing-node way throws IllegalStateException | Service correctly throws when all ways are filtered out — returning empty-roads MapConfig would fail MapValidator anyway |
 
 ## Session Log
 
@@ -101,3 +102,4 @@ See: .planning/PROJECT.md (updated 2026-04-12)
 - 2026-04-10: Milestone v2.0 roadmap created — 4 phases (17–20), 13 requirements mapped, starting Phase 17
 - 2026-04-12: Phase 17 Plan 01 complete — react-router-dom v6, BrowserRouter + Routes, SimulationPage extracted from App, NavHeader with useLocation active-link highlighting, useIsMobile hook extracted, leaflet + react-leaflet installed; tsc --noEmit clean
 - 2026-04-12: Phase 17 Plan 02 complete — MapPage with Leaflet/OSM map, BoundingBoxMap (L.rectangle 20% inset, moveend/zoomend updates), MapSidebar (idle/loading/result states, bbox dimensions in meters), responsive layout; tsc --noEmit clean; Phase 17 complete
+- 2026-04-12: Phase 18 Plan 01 complete — OsmPipelineService (Overpass client + OSM converter), BboxRequest DTO, OsmClientConfig, LoadConfig command in sealed interface, MapLoader.loadFromConfig(), CommandDispatcher.handleLoadConfig(); 216 total tests pass; Phase 18 complete
