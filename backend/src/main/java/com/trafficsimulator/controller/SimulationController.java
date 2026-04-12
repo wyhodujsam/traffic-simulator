@@ -17,6 +17,7 @@ import org.springframework.web.bind.annotation.RestController;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.trafficsimulator.config.MapConfig;
+import com.trafficsimulator.engine.command.SimulationCommand;
 import com.trafficsimulator.dto.IntersectionDto;
 import com.trafficsimulator.dto.LaneDto;
 import com.trafficsimulator.dto.MapInfoDto;
@@ -212,6 +213,13 @@ public class SimulationController {
             result.add(info);
         }
         return result;
+    }
+
+    /** Loads a MapConfig directly into the simulation engine — used by the OSM import flow. */
+    @PostMapping("/command/load-config")
+    public Map<String, String> loadConfig(@RequestBody MapConfig config) {
+        simulationEngine.enqueue(new SimulationCommand.LoadConfig(config));
+        return Map.of("status", "ok");
     }
 
     /** REST command endpoint for scripted testing (mirrors STOMP CommandHandler). */
