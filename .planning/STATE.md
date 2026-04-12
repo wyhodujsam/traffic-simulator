@@ -2,15 +2,15 @@
 gsd_state_version: 1.0
 milestone: v2.0
 milestone_name: — Map Screenshot to Simulation
-current_phase: 19 — Simulation Integration & Export (Plan 01 complete)
-current_plan: 19-02 (next)
-status: Phase 19 Plan 01 complete — road graph preview overlay + Export JSON download
-last_updated: "2026-04-12T20:10:00Z"
+current_phase: 19 — Simulation Integration & Export (Plan 02 complete)
+current_plan: 19-03 (next, if any — or Phase 20 start)
+status: Phase 19 Plan 02 complete — Run Simulation wired end-to-end (load-config endpoint + frontend navigation)
+last_updated: "2026-04-12T20:35:00Z"
 progress:
   total_phases: 20
-  completed_phases: 16
+  completed_phases: 17
   total_plans: 68
-  completed_plans: 69
+  completed_plans: 70
 ---
 
 # Project State
@@ -56,15 +56,15 @@ See: .planning/PROJECT.md (updated 2026-04-12)
 |-------|------|--------|
 | 17 | Routing & Map Embed | ✓ Complete (2/2 plans done) |
 | 18 | OSM Data Pipeline | ✓ Complete (1/1 plans done) |
-| 19 | Simulation Integration & Export | ◑ In progress (1/? plans done) |
+| 19 | Simulation Integration & Export | ◑ In progress (2/? plans done) |
 | 20 | AI Vision (Claude CLI) | ○ Not started |
 
 ## Current Position
 
 **Active phase:** 19 — Simulation Integration & Export
-**Current plan:** 19-02 (next)
-**Completed:** Phase 19 Plan 01 done — RoadGraphPreview overlay (CircleMarker/Polyline on Leaflet), BoundingBoxMap children prop, Export JSON Blob download wired in MapPage/MapSidebar
-**Integration point:** Phase 19 Plan 02 (if planned) will wire Run Simulation button to LoadConfig dispatch
+**Current plan:** 19-03 (next, if any)
+**Completed:** Phase 19 Plan 02 done — POST /api/command/load-config endpoint, Run Simulation button wired, useNavigate post-load redirect, STOMP START after load
+**Integration point:** Full OSM-to-simulation pipeline complete: Overpass → MapConfig → backend load → STOMP start → simulation renders on canvas
 
 ## Key Decisions (v2.0)
 
@@ -77,6 +77,8 @@ See: .planning/PROJECT.md (updated 2026-04-12)
 | useWebSocket() at App root above Routes | Keeps WS STOMP connection alive when navigating to /map |
 | Page components in src/pages/, shared hooks in src/hooks/ | Separation of concerns for scalable routing |
 | Missing-node way throws IllegalStateException | Service correctly throws when all ways are filtered out — returning empty-roads MapConfig would fail MapValidator anyway |
+| Dedicated /api/command/load-config endpoint | MapConfig body is too complex for generic CommandDto — dedicated endpoint is cleaner |
+| POST load-config then STOMP START in sequence | Ensures network loaded before simulation begins |
 
 ## Session Log
 
@@ -105,3 +107,4 @@ See: .planning/PROJECT.md (updated 2026-04-12)
 - 2026-04-12: Phase 18 Plan 01 complete — OsmPipelineService (Overpass client + OSM converter), BboxRequest DTO, OsmClientConfig, LoadConfig command in sealed interface, MapLoader.loadFromConfig(), CommandDispatcher.handleLoadConfig(); 216 total tests pass; Phase 18 complete
 - 2026-04-12: Phase 18 Plan 02 complete — OsmController POST /api/osm/fetch-roads (422/503 error handling), OsmControllerTest (3 WebMvcTest tests), MapPage wired to backend fetch, MapSidebar loading/error/result states with road+intersection counts; 219 total tests pass; Phase 18 fully complete
 - 2026-04-12: Phase 19 Plan 01 complete — RoadGraphPreview (CircleMarker nodes + Polyline edges on Leaflet), BoundingBoxMap children prop, Export JSON Blob download; tsc --noEmit clean
+- 2026-04-12: Phase 19 Plan 02 complete — POST /api/command/load-config endpoint in SimulationController, Run Simulation button wired in MapSidebar/MapPage, useNavigate redirect to /, STOMP START after load; both backend and frontend compile clean
