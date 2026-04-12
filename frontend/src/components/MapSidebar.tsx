@@ -2,8 +2,11 @@ import { BboxInfo } from './BoundingBoxMap';
 
 interface MapSidebarProps {
   readonly bbox: BboxInfo | null;
-  readonly state: 'idle' | 'loading' | 'result';
+  readonly state: 'idle' | 'loading' | 'result' | 'error';
   readonly onFetchRoads?: () => void;
+  readonly result?: { roadCount: number; intersectionCount: number } | null;
+  readonly error?: string | null;
+  readonly onReset?: () => void;
 }
 
 const buttonBase: React.CSSProperties = {
@@ -98,17 +101,43 @@ function LoadingContent() {
   );
 }
 
-function ResultContent() {
+function ErrorContent({ error, onReset }: { readonly error?: string | null; readonly onReset?: () => void }) {
   return (
     <>
-      <p style={{ margin: '0 0 12px', fontSize: '13px', color: '#aaa' }}>Roads loaded</p>
-      <button style={buttonBase}>Run Simulation</button>
-      <button style={{ ...buttonBase, marginBottom: 0 }}>Export JSON</button>
+      <p style={{ margin: '0 0 8px', fontSize: '13px', color: '#ff6b6b' }}>
+        {error ?? 'An error occurred'}
+      </p>
+      <button style={buttonBase} onClick={onReset}>
+        Try Again
+      </button>
     </>
   );
 }
 
-export function MapSidebar({ bbox, state, onFetchRoads }: MapSidebarProps) {
+function ResultContent({ result, onReset }: {
+  readonly result?: { roadCount: number; intersectionCount: number } | null;
+  readonly onReset?: () => void;
+}) {
+  return (
+    <>
+      <p style={{ margin: '0 0 4px', fontSize: '14px' }}>Roads loaded</p>
+      <p style={{ margin: '0 0 12px', fontSize: '13px', color: '#aaa' }}>
+        {result?.roadCount ?? 0} roads, {result?.intersectionCount ?? 0} intersections
+      </p>
+      <button style={buttonBase} title="Coming in Phase 19" disabled>
+        Run Simulation
+      </button>
+      <button style={buttonBase} title="Coming in Phase 19" disabled>
+        Export JSON
+      </button>
+      <button style={{ ...buttonBase, marginBottom: 0 }} onClick={onReset}>
+        New Selection
+      </button>
+    </>
+  );
+}
+
+export function MapSidebar({ bbox, state, onFetchRoads, result, error, onReset }: MapSidebarProps) {
   return (
     <aside style={{
       width: '260px',
@@ -134,7 +163,8 @@ export function MapSidebar({ bbox, state, onFetchRoads }: MapSidebarProps) {
         </>
       )}
       {state === 'loading' && <LoadingContent />}
-      {state === 'result' && <ResultContent />}
+      {state === 'error' && <ErrorContent error={error} onReset={onReset} />}
+      {state === 'result' && <ResultContent result={result} onReset={onReset} />}
     </aside>
   );
 }

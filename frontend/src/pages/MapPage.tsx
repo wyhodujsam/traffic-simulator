@@ -6,6 +6,10 @@ import { useIsMobile } from '../hooks/useIsMobile';
 export function MapPage() {
   const isMobile = useIsMobile();
   const [bbox, setBbox] = useState<BboxInfo | null>(null);
+  const [sidebarState, setSidebarState] = useState<'idle' | 'loading' | 'result' | 'error'>('idle');
+  const [fetchResult, setFetchResult] = useState<{ roadCount: number; intersectionCount: number } | null>(null);
+  const [fetchError, setFetchError] = useState<string | null>(null);
+  const [mapConfig, setMapConfig] = useState<unknown>(null);
 
   const mapViewRef = useRef<{ center: [number, number]; zoom: number }>({
     center: [52.2297, 21.0122],
@@ -16,12 +20,46 @@ export function MapPage() {
     mapViewRef.current = { center, zoom };
   };
 
-  const handleFetchRoads = useCallback(() => {
+  const handleFetchRoads = useCallback(async () => {
     if (!bbox) return;
-    // Phase 18 will replace this with actual Overpass API call
-    console.log('Fetch roads for bbox:', bbox);
-    alert(`Fetch Roads: ${Math.round(bbox.widthMeters)}m x ${Math.round(bbox.heightMeters)}m\n(Backend endpoint not yet implemented — Phase 18)`);
+    setSidebarState('loading');
+    setFetchError(null);
+    setFetchResult(null);
+    try {
+      const response = await fetch('/api/osm/fetch-roads', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          south: bbox.south,
+          west: bbox.west,
+          north: bbox.north,
+          east: bbox.east,
+        }),
+      });
+      if (!response.ok) {
+        const err = await response.json().catch(() => ({ error: 'Unknown error' }));
+        throw new Error((err as { error?: string }).error ?? `HTTP ${response.status}`);
+      }
+      const config = await response.json() as { roads?: unknown[]; intersections?: unknown[] };
+      setMapConfig(config);
+      setFetchResult({
+        roadCount: config.roads?.length ?? 0,
+        intersectionCount: config.intersections?.length ?? 0,
+      });
+      setSidebarState('result');
+    } catch (e: unknown) {
+      const message = e instanceof Error ? e.message : 'Failed to fetch roads';
+      setFetchError(message);
+      setSidebarState('error');
+    }
   }, [bbox]);
+
+  const handleReset = useCallback(() => {
+    setSidebarState('idle');
+    setFetchError(null);
+    setFetchResult(null);
+    setMapConfig(null);
+  }, []);
 
   const sidebarStyle: React.CSSProperties = isMobile
     ? {
@@ -38,6 +76,9 @@ export function MapPage() {
         borderLeft: '1px solid #333',
         overflow: 'auto',
       };
+
+  // mapConfig stored for Phase 19 wiring
+  void mapConfig;
 
   return (
     <div style={{
@@ -63,7 +104,14 @@ export function MapPage() {
       </div>
 
       <div style={sidebarStyle}>
-        <MapSidebar bbox={bbox} state="idle" onFetchRoads={handleFetchRoads} />
+        <MapSidebar
+          bbox={bbox}
+          state={sidebarState}
+          onFetchRoads={handleFetchRoads}
+          result={fetchResult}
+          error={fetchError}
+          onReset={handleReset}
+        />
       </div>
     </div>
   );
