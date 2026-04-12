@@ -108,7 +108,7 @@ Requirements for milestone v2.0. Adds real-world map import via OSM + optional A
 - [ ] **MAP-01**: Użytkownik może otworzyć stronę /map z interaktywną mapą OSM (Leaflet)
 - [ ] **MAP-02**: Użytkownik może przesuwać i zoomować mapę do wybranego obszaru
 - [ ] **MAP-03**: Użytkownik widzi bounding box pokazujący obszar do pobrania
-- [ ] **MAP-04**: Aplikacja ma routing między stroną symulacji (/) a stroną mapy (/map)
+- [x] **MAP-04**: Aplikacja ma routing między stroną symulacji (/) a stroną mapy (/map)
 
 ### OSM Data Pipeline
 

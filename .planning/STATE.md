@@ -1,23 +1,23 @@
 ---
 gsd_state_version: 1.0
 milestone: v2.0
-milestone_name: Map Screenshot to Simulation
-current_phase: 17
-status: Roadmap created — ready for phase planning
-last_updated: "2026-04-10T00:00:00.000Z"
+milestone_name: — Map Screenshot to Simulation
+current_phase: 17 — Routing & Map Embed (Plan 01 complete)
+status: Phase 17 in progress — Plan 01 done, Plan 02 next
+last_updated: "2026-04-12T14:15:00Z"
 progress:
-  total_phases: 4
-  completed_phases: 0
-  total_plans: 0
-  completed_plans: 0
+  total_phases: 20
+  completed_phases: 14
+  total_plans: 64
+  completed_plans: 65
 ---
 
 # Project State
 
 **Project:** Traffic Simulator
 **Milestone:** v2.0 — Map Screenshot to Simulation
-**Current Phase:** 17 — Routing & Map Embed (not started)
-**Last Updated:** 2026-04-10
+**Current Phase:** 17 — Routing & Map Embed (Plan 01 complete)
+**Last Updated:** 2026-04-12
 
 ## Project Reference
 
@@ -53,7 +53,7 @@ See: .planning/PROJECT.md (updated 2026-04-12)
 
 | Phase | Name | Status |
 |-------|------|--------|
-| 17 | Routing & Map Embed | ○ Not started |
+| 17 | Routing & Map Embed | ⟳ In progress (1/2 plans done) |
 | 18 | OSM Data Pipeline | ○ Not started |
 | 19 | Simulation Integration & Export | ○ Not started |
 | 20 | AI Vision (Claude CLI) | ○ Not started |
@@ -61,7 +61,8 @@ See: .planning/PROJECT.md (updated 2026-04-12)
 ## Current Position
 
 **Active phase:** 17 — Routing & Map Embed
-**Dependencies to add:** react-router-dom (frontend), Leaflet + react-leaflet (frontend)
+**Current plan:** 17-02 (MapPage with Leaflet)
+**Completed:** react-router-dom installed, BrowserRouter + Routes in App, SimulationPage extracted, NavHeader with active-link nav
 **Integration point:** Existing MapConfig/MapLoader is the target for OSM-derived data
 
 ## Key Decisions (v2.0)
@@ -72,6 +73,8 @@ See: .planning/PROJECT.md (updated 2026-04-12)
 | Overpass API for road data (primary) | Structured, queryable OSM data — more reliable than screenshot + AI as primary path |
 | AI Vision (Claude CLI) as separate phase | Optional path; should not block OSM pipeline delivery |
 | react-router-dom for routing | Standard React routing; enables /map page without full reload |
+| useWebSocket() at App root above Routes | Keeps WS STOMP connection alive when navigating to /map |
+| Page components in src/pages/, shared hooks in src/hooks/ | Separation of concerns for scalable routing |
 
 ## Session Log
 
@@ -95,3 +98,4 @@ See: .planning/PROJECT.md (updated 2026-04-12)
 - 2026-04-02: Phase 14 Plan 14-02 complete — Responsive flex layout (useIsMobile hook, 768px breakpoint), flexShrink:0 on sidebar (BUG-3 fix), CSS transform:scale canvas fill with ResizeObserver (BUG-4 fix), mobile stacked layout with 50vh canvas cap (BUG-2 fix); tsc --noEmit passes
 - 2026-04-08: Phase 16 Plan 16-01 complete — combined-loop.json capstone scenario: 14 nodes, 15 roads, 8 intersections (4 ROUNDABOUT + 1 SIGNAL + 3 PRIORITY); 6-phase traffic light; loop topology; MapLoaderScenarioTest.loadsCombinedLoop() passes; 7/7 scenario tests pass
 - 2026-04-10: Milestone v2.0 roadmap created — 4 phases (17–20), 13 requirements mapped, starting Phase 17
+- 2026-04-12: Phase 17 Plan 01 complete — react-router-dom v6, BrowserRouter + Routes, SimulationPage extracted from App, NavHeader with useLocation active-link highlighting, useIsMobile hook extracted, leaflet + react-leaflet installed; tsc --noEmit clean
