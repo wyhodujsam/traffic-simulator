@@ -325,7 +325,11 @@ Plans:
 **Goal:** User can navigate between the simulation page and a new /map page that shows an interactive OSM map with a bounding box selector.
 **Depends on:** Phase 16
 **Requirements:** MAP-01, MAP-02, MAP-03, MAP-04
-**Plans:** TBD
+**Plans:** 2 plans
+
+Plans:
+- [ ] 17-01-PLAN.md — Install deps, BrowserRouter routing, extract SimulationPage, nav header (MAP-04)
+- [ ] 17-02-PLAN.md — MapPage with Leaflet map, bounding box overlay, sidebar panel (MAP-01, MAP-02, MAP-03)
 **UI hint**: yes
 
 **Success Criteria (what must be TRUE):**
@@ -341,7 +345,11 @@ Plans:
 **Goal:** Backend can fetch road data for a selected bounding box from Overpass API and convert OSM way/node data into a valid MapConfig (Road, Lane, Intersection).
 **Depends on:** Phase 17
 **Requirements:** OSM-01, OSM-02, OSM-03, OSM-04
-**Plans:** TBD
+**Plans:** 2 plans
+
+Plans:
+- [ ] 17-01-PLAN.md — Install deps, BrowserRouter routing, extract SimulationPage, nav header (MAP-04)
+- [ ] 17-02-PLAN.md — MapPage with Leaflet map, bounding box overlay, sidebar panel (MAP-01, MAP-02, MAP-03)
 **UI hint**: no
 
 **Success Criteria (what must be TRUE):**
@@ -357,7 +365,11 @@ Plans:
 **Goal:** User can preview the road graph generated from OSM data, load it into the simulation engine, and export the MapConfig as JSON.
 **Depends on:** Phase 18
 **Requirements:** SINT-01, SINT-02, SINT-03
-**Plans:** TBD
+**Plans:** 2 plans
+
+Plans:
+- [ ] 17-01-PLAN.md — Install deps, BrowserRouter routing, extract SimulationPage, nav header (MAP-04)
+- [ ] 17-02-PLAN.md — MapPage with Leaflet map, bounding box overlay, sidebar panel (MAP-01, MAP-02, MAP-03)
 **UI hint**: yes
 
 **Success Criteria (what must be TRUE):**
@@ -372,7 +384,11 @@ Plans:
 **Goal:** User can upload a photo or screenshot of a road and the backend calls Claude CLI to analyse the image and generate a MapConfig that can be loaded into the simulator.
 **Depends on:** Phase 19
 **Requirements:** AVI-01, AVI-02
-**Plans:** TBD
+**Plans:** 2 plans
+
+Plans:
+- [ ] 17-01-PLAN.md — Install deps, BrowserRouter routing, extract SimulationPage, nav header (MAP-04)
+- [ ] 17-02-PLAN.md — MapPage with Leaflet map, bounding box overlay, sidebar panel (MAP-01, MAP-02, MAP-03)
 **UI hint**: yes
 
 **Success Criteria (what must be TRUE):**
@@ -386,7 +402,7 @@ Plans:
 
 | Phase | Plans Complete | Status | Completed |
 |-------|----------------|--------|-----------|
-| 17. Routing & Map Embed | 0/? | Not started | - |
+| 17. Routing & Map Embed | 0/2 | Planned | - |
 | 18. OSM Data Pipeline | 0/? | Not started | - |
 | 19. Simulation Integration & Export | 0/? | Not started | - |
 | 20. AI Vision (Claude CLI) | 0/? | Not started | - |
