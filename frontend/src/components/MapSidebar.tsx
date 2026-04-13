@@ -6,6 +6,7 @@ interface MapSidebarProps {
   readonly state: 'idle' | 'loading' | 'result' | 'error';
   readonly onFetchRoads?: () => void;
   readonly onUploadImage?: (file: File) => void;
+  readonly onAnalyzeBbox?: () => void;
   readonly result?: { roadCount: number; intersectionCount: number } | null;
   readonly error?: string | null;
   readonly onReset?: () => void;
@@ -72,9 +73,11 @@ function IdleContent({ bbox }: { readonly bbox: BboxInfo | null }) {
 function IdleActions({
   onFetchRoads,
   onUploadImage,
+  onAnalyzeBbox,
 }: {
   readonly onFetchRoads?: () => void;
   readonly onUploadImage?: (file: File) => void;
+  readonly onAnalyzeBbox?: () => void;
 }) {
   const fileInputRef = useRef<HTMLInputElement>(null);
 
@@ -93,6 +96,9 @@ function IdleActions({
     <>
       <button style={buttonBase} onClick={onFetchRoads}>
         Fetch Roads
+      </button>
+      <button style={buttonBase} onClick={onAnalyzeBbox}>
+        AI Vision (from bbox)
       </button>
       <input
         type="file"
@@ -180,6 +186,7 @@ export function MapSidebar({
   state,
   onFetchRoads,
   onUploadImage,
+  onAnalyzeBbox,
   result,
   error,
   onReset,
@@ -209,7 +216,7 @@ export function MapSidebar({
       {state === 'idle' && (
         <>
           <IdleContent bbox={bbox} />
-          <IdleActions onFetchRoads={onFetchRoads} onUploadImage={onUploadImage} />
+          <IdleActions onFetchRoads={onFetchRoads} onUploadImage={onUploadImage} onAnalyzeBbox={onAnalyzeBbox} />
         </>
       )}
       {state === 'loading' && <LoadingContent message={loadingMessage} />}

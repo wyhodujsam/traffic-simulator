@@ -22,6 +22,7 @@ import com.trafficsimulator.service.ClaudeVisionService;
 import com.trafficsimulator.service.ClaudeVisionService.ClaudeCliException;
 import com.trafficsimulator.service.ClaudeVisionService.ClaudeCliParseException;
 import com.trafficsimulator.service.ClaudeVisionService.ClaudeCliTimeoutException;
+import com.trafficsimulator.service.OsmStaticMapService;
 
 @WebMvcTest(VisionController.class)
 class VisionControllerTest {
@@ -29,6 +30,7 @@ class VisionControllerTest {
     @Autowired private MockMvc mockMvc;
 
     @MockBean private ClaudeVisionService claudeVisionService;
+    @MockBean private OsmStaticMapService osmStaticMapService;
 
     // -------------------------------------------------------------------------
     // Helper: minimal valid MapConfig

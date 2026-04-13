@@ -67,6 +67,41 @@ export function MapPage() {
     }
   }, [bbox]);
 
+  const handleAnalyzeBbox = useCallback(async () => {
+    if (!bbox) return;
+    setUploadMode(true);
+    setSidebarState('loading');
+    setFetchError(null);
+    setFetchResult(null);
+    try {
+      const response = await fetch('/api/vision/analyze-bbox', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          south: bbox.south,
+          west: bbox.west,
+          north: bbox.north,
+          east: bbox.east,
+        }),
+      });
+      if (!response.ok) {
+        const err = await response.json().catch(() => ({ error: 'Unknown error' }));
+        throw new Error((err as { error?: string }).error ?? `HTTP ${response.status}`);
+      }
+      const config = await response.json() as MapConfigData;
+      setMapConfig(config);
+      setFetchResult({
+        roadCount: config.roads?.length ?? 0,
+        intersectionCount: config.intersections?.length ?? 0,
+      });
+      setSidebarState('result');
+    } catch (e: unknown) {
+      const message = e instanceof Error ? e.message : 'Failed to analyze bbox';
+      setFetchError(message);
+      setSidebarState('error');
+    }
+  }, [bbox]);
+
   const handleUploadImage = useCallback(async (file: File) => {
     setUploadMode(true);
     setSidebarState('loading');
@@ -202,6 +237,7 @@ export function MapPage() {
           state={sidebarState}
           onFetchRoads={handleFetchRoads}
           onUploadImage={handleUploadImage}
+          onAnalyzeBbox={handleAnalyzeBbox}
           result={fetchResult}
           error={fetchError}
           onReset={handleReset}

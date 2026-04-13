@@ -122,23 +122,38 @@ public class ClaudeVisionService {
     public MapConfig analyzeImage(MultipartFile file) throws IOException {
         Path tempFile = createTempFile(file);
         try {
-            String promptWithFile = ANALYSIS_PROMPT
-                    + "\n\nAnalyze the road image at: " + tempFile.toAbsolutePath()
-                    + "\nOutput ONLY valid JSON, no markdown fences.";
-            String output = executeCliCommand(
-                    config.getPath(),
-                    "-p",
-                    promptWithFile,
-                    "--output-format",
-                    "text");
-
-            String json = extractJson(output);
-            MapConfig mapConfig = parseJson(json);
-            validateConfig(mapConfig);
-            return mapConfig;
+            return analyzeImagePath(tempFile);
         } finally {
             deleteSilently(tempFile);
         }
+    }
+
+    /** Analyse a PNG image given as raw bytes (e.g. composed server-side from OSM tiles). */
+    public MapConfig analyzeImageBytes(byte[] data) throws IOException {
+        Path tempFile = Files.createTempFile(Path.of(config.getTempDir()), "vision-bbox-", ".png");
+        try {
+            Files.write(tempFile, data);
+            return analyzeImagePath(tempFile);
+        } finally {
+            deleteSilently(tempFile);
+        }
+    }
+
+    private MapConfig analyzeImagePath(Path tempFile) throws IOException {
+        String promptWithFile = ANALYSIS_PROMPT
+                + "\n\nAnalyze the road image at: " + tempFile.toAbsolutePath()
+                + "\nOutput ONLY valid JSON, no markdown fences.";
+        String output = executeCliCommand(
+                config.getPath(),
+                "-p",
+                promptWithFile,
+                "--output-format",
+                "text");
+
+        String json = extractJson(output);
+        MapConfig mapConfig = parseJson(json);
+        validateConfig(mapConfig);
+        return mapConfig;
     }
 
     // -------------------------------------------------------------------------
