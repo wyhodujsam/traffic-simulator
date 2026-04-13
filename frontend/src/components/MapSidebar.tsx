@@ -1,4 +1,4 @@
-import { useRef } from 'react';
+import { useRef, useEffect, useState } from 'react';
 import { BboxInfo } from './BoundingBoxMap';
 
 interface MapSidebarProps {
@@ -117,23 +117,42 @@ function IdleActions({
   );
 }
 
+const LOADER_KEYFRAMES = `
+@keyframes ts-loader-slide {
+  0%   { transform: translateX(-100%); }
+  100% { transform: translateX(400%); }
+}`;
+
 function LoadingContent({ message }: { readonly message: string }) {
+  const [elapsed, setElapsed] = useState(0);
+  useEffect(() => {
+    const start = Date.now();
+    const id = setInterval(() => setElapsed(Math.round((Date.now() - start) / 1000)), 250);
+    return () => clearInterval(id);
+  }, []);
   return (
     <div style={{ fontSize: '13px', color: '#aaa' }}>
+      <style>{LOADER_KEYFRAMES}</style>
       <p style={{ margin: '0 0 8px' }}>{message}</p>
       <div style={{
         height: '6px',
         background: '#333',
         borderRadius: '3px',
         overflow: 'hidden',
+        position: 'relative',
       }}>
         <div style={{
+          position: 'absolute',
           height: '100%',
-          width: '60%',
+          width: '25%',
           background: '#0088ff',
           borderRadius: '3px',
+          animation: 'ts-loader-slide 1.4s ease-in-out infinite',
         }} />
       </div>
+      <p style={{ margin: '8px 0 0', fontSize: '11px', color: '#888' }}>
+        Elapsed: {elapsed}s
+      </p>
     </div>
   );
 }
