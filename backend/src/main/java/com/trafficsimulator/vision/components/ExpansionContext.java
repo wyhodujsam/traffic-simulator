@@ -1,7 +1,12 @@
 package com.trafficsimulator.vision.components;
 
+import java.awt.geom.Point2D;
 import java.util.ArrayList;
+import java.util.HashMap;
+import java.util.HashSet;
 import java.util.List;
+import java.util.Map;
+import java.util.Set;
 
 import com.trafficsimulator.config.MapConfig;
 import com.trafficsimulator.config.MapConfig.DespawnPointConfig;
@@ -13,6 +18,10 @@ import com.trafficsimulator.config.MapConfig.SpawnPointConfig;
 /**
  * Mutable accumulator passed to {@link ComponentSpec#expand(ExpansionContext)}. Each component
  * appends to the public lists; {@link #toMapConfig(String, String)} assembles the final config.
+ *
+ * <p>Plan 21-02 adds an arm index ({@link #registerArm}/{@link #lookupArm}) and stitching
+ * helpers used by {@link com.trafficsimulator.service.MapComponentLibrary} when fusing coincident
+ * arm endpoints into a shared INTERSECTION node.
  */
 public final class ExpansionContext {
 
@@ -24,6 +33,82 @@ public final class ExpansionContext {
     public final List<IntersectionConfig> intersections = new ArrayList<>();
     public final List<SpawnPointConfig> spawnPoints = new ArrayList<>();
     public final List<DespawnPointConfig> despawnPoints = new ArrayList<>();
+
+    /** Lookup of {@code componentId.armName} → arm record, populated by component expand methods. */
+    private final Map<String, ArmRecord> armIndex = new HashMap<>();
+
+    /**
+     * Records an emitted arm so the stitcher can resolve {@link ArmRef} references to concrete
+     * node ids and world coordinates.
+     */
+    public void registerArm(
+            String componentId,
+            String armName,
+            String entryNodeId,
+            String exitNodeId,
+            Point2D.Double worldPos) {
+        armIndex.put(componentId + "." + armName, new ArmRecord(entryNodeId, exitNodeId, worldPos));
+    }
+
+    /**
+     * Resolves an {@link ArmRef} to its {@link ArmRecord}.
+     *
+     * @throws IllegalArgumentException if the arm was never registered (typo or absent ring arm).
+     */
+    public ArmRecord lookupArm(ArmRef ref) {
+        ArmRecord r = armIndex.get(ref.componentId() + "." + ref.armName());
+        if (r == null) {
+            throw new IllegalArgumentException(
+                    "Unknown arm reference '"
+                            + ref.componentId()
+                            + "."
+                            + ref.armName()
+                            + "' — not emitted by any component (known: "
+                            + armIndex.keySet()
+                            + ")");
+        }
+        return r;
+    }
+
+    /** Rewrites {@code from}/{@code to} of any road whose endpoint appears in {@code deadIds}. */
+    public void rewriteRoadEndpoint(Set<String> deadIds, String newId) {
+        for (RoadConfig r : roads) {
+            if (deadIds.contains(r.getFromNodeId())) {
+                r.setFromNodeId(newId);
+            }
+            if (deadIds.contains(r.getToNodeId())) {
+                r.setToNodeId(newId);
+            }
+        }
+    }
+
+    /** Removes nodes whose ids appear in {@code ids}. */
+    public void dropNodes(Set<String> ids) {
+        nodes.removeIf(n -> ids.contains(n.getId()));
+    }
+
+    /**
+     * Drops spawn/despawn points referencing roads whose original from-/to-node id was just
+     * deleted. Concretely: a spawn lives on an {@code _in} road that started at an ENTRY; when
+     * that ENTRY is fused away the spawn must go too. Same for despawns on {@code _out} roads.
+     *
+     * <p>Implementation: drop spawn/despawn whose road no longer has either endpoint matching
+     * the original ENTRY/EXIT node id (i.e. it now points at the merged node). Simpler rule that
+     * mirrors plan intent — the road's other end is the structural node (ring/center) which
+     * survives, so any spawn/despawn on a road touching the merged node gets dropped.
+     */
+    public void dropSpawnDespawnForRoadsReferencing(Set<String> deadNodeIds) {
+        Set<String> affectedRoadIds = new HashSet<>();
+        for (RoadConfig r : roads) {
+            // After rewriteRoadEndpoint the from/to has already been swapped to mergedId; we
+            // cannot detect by current endpoints. Caller must invoke this BEFORE rewrite.
+            if (deadNodeIds.contains(r.getFromNodeId()) || deadNodeIds.contains(r.getToNodeId())) {
+                affectedRoadIds.add(r.getId());
+            }
+        }
+        spawnPoints.removeIf(sp -> affectedRoadIds.contains(sp.getRoadId()));
+        despawnPoints.removeIf(dp -> affectedRoadIds.contains(dp.getRoadId()));
+    }
 
     /**
      * Returns {@code componentId__localId}. The double underscore separator avoids collision with
@@ -99,4 +184,7 @@ public final class ExpansionContext {
         cfg.setDefaultSpawnRate(DEFAULT_SPAWN_RATE);
         return cfg;
     }
+
+    /** Arm registration record: ENTRY node id, EXIT node id, and world-pixel position. */
+    public record ArmRecord(String entryNodeId, String exitNodeId, Point2D.Double worldPos) {}
 }

@@ -63,6 +63,7 @@ public record TIntersection(
                     APPROACH_LEN, APPROACH_SPEED, 1);
             ctx.addSpawn(inRoad, 0, 0.0);
             ctx.addDespawn(outRoad, 0, APPROACH_LEN);
+            ctx.registerArm(id, arm, entryId, exitId, endPt);
         }
 
         IntersectionConfig ic = new IntersectionConfig();

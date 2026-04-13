@@ -60,6 +60,9 @@ class StraightSegmentExpansionTest {
                 "seg1", new Point2D.Double(0, 0), new Point2D.Double(100, 0), 100)));
         assertThat(cfg.getIntersections()).isEmpty();
         // Validate that the road id is the prefixed _in form (so MapValidator wouldn't choke later)
-        assertThat(cfg.getRoads().get(0).getId()).isEqualTo("seg1__r_main_in");
+        // Plan 21-02 rename: avoid "_in" suffix on the segment's single road so that
+        // IntersectionGeometry.reverseRoadId (best-effort _in→_out replace) doesn't conjure
+        // a non-existent sibling.
+        assertThat(cfg.getRoads().get(0).getId()).isEqualTo("seg1__r_main");
     }
 }

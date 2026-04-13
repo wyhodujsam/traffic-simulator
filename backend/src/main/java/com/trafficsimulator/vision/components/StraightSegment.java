@@ -39,10 +39,19 @@ public record StraightSegment(
 
         double geo = Math.hypot(endPx.x - startPx.x, endPx.y - startPx.y);
         double effectiveLen = Math.max(lengthPx, geo);
-        String roadId = ctx.prefix(id, "r_main_in");
+        // NOTE: must NOT end in "_in"/"_out" — segment is a single one-way connector with no
+        // sibling, so IntersectionGeometry.reverseRoadId (naive _in→_out replace) would
+        // otherwise hand back a road id that doesn't exist. Plain "r_main" keeps the contract.
+        String roadId = ctx.prefix(id, "r_main");
         ctx.addRoad(roadId, "Segment " + id, startId, endId, effectiveLen, SPEED, 1);
         ctx.addSpawn(roadId, 0, 0.0);
         ctx.addDespawn(roadId, 0, effectiveLen);
+        // For stitching: each terminal acts as both entry and exit for the single road that
+        // touches it. The stitcher only needs to identify the node id at that endpoint to
+        // rewrite road references; it doesn't matter whether we call it entry or exit since
+        // the merge replaces both with the new shared INTERSECTION id.
+        ctx.registerArm(id, "start", startId, startId, startPx);
+        ctx.registerArm(id, "end", endId, endId, endPx);
     }
 
     @Override
