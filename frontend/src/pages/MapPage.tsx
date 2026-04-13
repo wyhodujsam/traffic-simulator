@@ -130,6 +130,13 @@ export function MapPage() {
         const err = await response.json().catch(() => ({ error: 'Unknown error' }));
         throw new Error((err as { error?: string }).error ?? `HTTP ${response.status}`);
       }
+      // Clear stale snapshots/roads from previous scenario before re-fetching
+      useSimulationStore.getState().clearSnapshots();
+      const refetchRoads = useSimulationStore.getState().refetchRoads;
+      // Wait briefly for backend to process load-config, then refetch roads
+      await new Promise((resolve) => setTimeout(resolve, 200));
+      if (refetchRoads) refetchRoads();
+
       // Send START command via STOMP to begin simulation
       const sendCommand = useSimulationStore.getState().sendCommand;
       if (sendCommand) {
