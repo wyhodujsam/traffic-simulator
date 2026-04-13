@@ -9,8 +9,10 @@ import java.util.List;
 import java.util.Map;
 import java.util.Set;
 
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Service;
 import org.springframework.web.client.RestClient;
+import org.springframework.web.client.RestClientException;
 
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
@@ -48,6 +50,9 @@ public class OsmPipelineService {
 
     private final RestClient overpassRestClient;
     private final ObjectMapper objectMapper;
+
+    @Value("${osm.overpass.urls:https://overpass-api.de}")
+    private List<String> overpassMirrors;
 
     // -------------------------------------------------------------------------
     // Inner records for parsed OSM elements
@@ -95,17 +100,32 @@ public class OsmPipelineService {
         String query = buildOverpassQuery(bbox);
         String encoded = "data=" + URLEncoder.encode(query, StandardCharsets.UTF_8);
 
-        log.info("Fetching OSM data for bbox: {}", bbox);
-        String json =
-                overpassRestClient
+        log.info("Fetching OSM data for bbox: {} (mirrors={})", bbox, overpassMirrors);
+        String json = fetchFromMirrors(encoded);
+        return convertOsmToMapConfig(json, bbox);
+    }
+
+    private String fetchFromMirrors(String encodedBody) {
+        RestClientException lastError = null;
+        for (String baseUrl : overpassMirrors) {
+            String url = baseUrl.replaceAll("/+$", "") + "/api/interpreter";
+            try {
+                log.info("Overpass attempt: {}", url);
+                return overpassRestClient
                         .post()
-                        .uri("/api/interpreter")
+                        .uri(url)
                         .contentType(org.springframework.http.MediaType.APPLICATION_FORM_URLENCODED)
-                        .body(encoded)
+                        .body(encodedBody)
                         .retrieve()
                         .body(String.class);
-
-        return convertOsmToMapConfig(json, bbox);
+            } catch (RestClientException e) {
+                log.warn("Overpass mirror {} failed: {}", baseUrl, e.getMessage());
+                lastError = e;
+            }
+        }
+        throw new RestClientException(
+                "All Overpass mirrors failed (" + overpassMirrors.size() + " tried)",
+                lastError != null ? lastError : new RuntimeException("no mirrors configured"));
     }
 
     // -------------------------------------------------------------------------
