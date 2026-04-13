@@ -21,7 +21,7 @@ export function MapPage() {
   const [fetchError, setFetchError] = useState<string | null>(null);
   const [mapConfig, setMapConfig] = useState<MapConfigData | null>(null);
   const [simulationLoading, setSimulationLoading] = useState(false);
-  const [uploadMode, setUploadMode] = useState(false);
+  const [pipelineMode, setPipelineMode] = useState<'idle' | 'upload' | 'bbox' | 'components'>('idle');
 
   const mapViewRef = useRef<{ center: [number, number]; zoom: number }>({
     center: [52.5089, 21.0395],
@@ -34,7 +34,7 @@ export function MapPage() {
 
   const handleFetchRoads = useCallback(async () => {
     if (!bbox) return;
-    setUploadMode(false);
+    setPipelineMode('idle');
     setSidebarState('loading');
     setFetchError(null);
     setFetchResult(null);
@@ -69,7 +69,7 @@ export function MapPage() {
 
   const handleAnalyzeBbox = useCallback(async () => {
     if (!bbox) return;
-    setUploadMode(true);
+    setPipelineMode('bbox');
     setSidebarState('loading');
     setFetchError(null);
     setFetchResult(null);
@@ -102,8 +102,43 @@ export function MapPage() {
     }
   }, [bbox]);
 
+  const handleAnalyzeComponents = useCallback(async () => {
+    if (!bbox) return;
+    setPipelineMode('components');
+    setSidebarState('loading');
+    setFetchError(null);
+    setFetchResult(null);
+    try {
+      const response = await fetch('/api/vision/analyze-components-bbox', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          south: bbox.south,
+          west: bbox.west,
+          north: bbox.north,
+          east: bbox.east,
+        }),
+      });
+      if (!response.ok) {
+        const err = await response.json().catch(() => ({ error: 'Unknown error' }));
+        throw new Error((err as { error?: string }).error ?? `HTTP ${response.status}`);
+      }
+      const config = await response.json() as MapConfigData;
+      setMapConfig(config);
+      setFetchResult({
+        roadCount: config.roads?.length ?? 0,
+        intersectionCount: config.intersections?.length ?? 0,
+      });
+      setSidebarState('result');
+    } catch (e: unknown) {
+      const message = e instanceof Error ? e.message : 'Failed to analyze (component library)';
+      setFetchError(message);
+      setSidebarState('error');
+    }
+  }, [bbox]);
+
   const handleUploadImage = useCallback(async (file: File) => {
-    setUploadMode(true);
+    setPipelineMode('upload');
     setSidebarState('loading');
     setFetchError(null);
     setFetchResult(null);
@@ -137,7 +172,7 @@ export function MapPage() {
     setFetchError(null);
     setFetchResult(null);
     setMapConfig(null);
-    setUploadMode(false);
+    setPipelineMode('idle');
   }, []);
 
   const handleExportJson = useCallback(() => {
@@ -238,13 +273,19 @@ export function MapPage() {
           onFetchRoads={handleFetchRoads}
           onUploadImage={handleUploadImage}
           onAnalyzeBbox={handleAnalyzeBbox}
+          onAnalyzeComponents={handleAnalyzeComponents}
           result={fetchResult}
           error={fetchError}
           onReset={handleReset}
           onExportJson={handleExportJson}
           onRunSimulation={handleRunSimulation}
           simulationLoading={simulationLoading}
-          loadingMessage={uploadMode ? 'Analyzing road image...' : 'Fetching road data...'}
+          loadingMessage={
+            pipelineMode === 'upload' ? 'Analyzing road image...' :
+            pipelineMode === 'bbox' ? 'Analyzing bbox (free-form)...' :
+            pipelineMode === 'components' ? 'Analyzing components via Claude vision...' :
+            'Fetching road data...'
+          }
         />
       </div>
     </div>
