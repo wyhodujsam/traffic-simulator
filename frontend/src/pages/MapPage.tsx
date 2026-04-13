@@ -24,7 +24,7 @@ export function MapPage() {
   const [uploadMode, setUploadMode] = useState(false);
 
   const mapViewRef = useRef<{ center: [number, number]; zoom: number }>({
-    center: [52.2297, 21.0122],
+    center: [52.5089, 21.0395],
     zoom: 14,
   });
 
