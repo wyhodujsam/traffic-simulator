@@ -326,6 +326,9 @@ public class OsmPipelineService {
         usedEndpointNodeIds.add(lastId);
     }
 
+    // Lane width in backend coords (frontend renders LANE_WIDTH_PX = 14 * RENDER_SCALE).
+    private static final double LANE_WIDTH_BACKEND = 14.0;
+
     private void addRoadsForWay(List<MapConfig.RoadConfig> roads, WayRoadParams p) {
         if (p.isOnewayReverse()) {
             roads.add(
@@ -335,7 +338,8 @@ public class OsmPipelineService {
                             p.firstId(),
                             p.length(),
                             p.speedLimit(),
-                            p.laneCount()));
+                            p.laneCount(),
+                            0.0));
         } else if (p.isOnewayForward()) {
             roads.add(
                     buildRoadConfig(
@@ -344,8 +348,12 @@ public class OsmPipelineService {
                             p.lastId(),
                             p.length(),
                             p.speedLimit(),
-                            p.laneCount()));
+                            p.laneCount(),
+                            0.0));
         } else {
+            // Bidirectional: shift each direction perpendicular to its OWN forward
+            // (positive offset = right of driving direction → matches RHT layout).
+            double offset = p.laneCount() * LANE_WIDTH_BACKEND / 2.0 + 1.0;
             roads.add(
                     buildRoadConfig(
                             "osm-" + p.wayId() + "-fwd",
@@ -353,7 +361,8 @@ public class OsmPipelineService {
                             p.lastId(),
                             p.length(),
                             p.speedLimit(),
-                            p.laneCount()));
+                            p.laneCount(),
+                            offset));
             roads.add(
                     buildRoadConfig(
                             "osm-" + p.wayId() + "-rev",
@@ -361,7 +370,8 @@ public class OsmPipelineService {
                             p.firstId(),
                             p.length(),
                             p.speedLimit(),
-                            p.laneCount()));
+                            p.laneCount(),
+                            offset));
         }
     }
 
@@ -570,7 +580,8 @@ public class OsmPipelineService {
             long toNodeId,
             double length,
             double speedLimit,
-            int laneCount) {
+            int laneCount,
+            double lateralOffset) {
         MapConfig.RoadConfig road = new MapConfig.RoadConfig();
         road.setId(id);
         road.setFromNodeId("osm-" + fromNodeId);
@@ -578,6 +589,7 @@ public class OsmPipelineService {
         road.setLength(length);
         road.setSpeedLimit(speedLimit);
         road.setLaneCount(laneCount);
+        road.setLateralOffset(lateralOffset);
         return road;
     }
 

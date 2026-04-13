@@ -24,4 +24,5 @@ public class RoadDto {
     private List<LaneDto> lanes; // per-lane active status for frontend
     private double clipStart; // pixels to trim from road start (near intersection)
     private double clipEnd; // pixels to trim from road end (near intersection)
+    private double lateralOffset; // perpendicular render shift (backend coords)
 }

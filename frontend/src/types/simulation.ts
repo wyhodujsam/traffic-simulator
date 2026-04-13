@@ -83,6 +83,7 @@ export interface RoadDto {
   lanes?: LaneDto[];     // optional — present when backend sends lane details
   clipStart: number;     // pixels to trim from road start (near intersection)
   clipEnd: number;       // pixels to trim from road end (near intersection)
+  lateralOffset?: number; // perpendicular shift (backend coords) for bidirectional pairs
 }
 
 export interface SimulationStatusDto {

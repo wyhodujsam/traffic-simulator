@@ -19,6 +19,7 @@ public class Road {
     private double endY; // canvas/world Y of road end node
     private String fromNodeId; // connected node ID
     private String toNodeId; // connected node ID
+    private double lateralOffset; // perpendicular rendering offset (backend coords); 0 by default
 
     /** Returns the active lane to the left (higher index) of the given lane, or null. */
     public Lane getLeftNeighbor(Lane lane) {
