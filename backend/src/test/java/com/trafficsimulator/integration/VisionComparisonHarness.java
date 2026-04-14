@@ -9,10 +9,13 @@ import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.TreeMap;
+import java.util.stream.Stream;
 
 import org.junit.jupiter.api.Assumptions;
-import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.condition.EnabledIfSystemProperty;
+import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.Arguments;
+import org.junit.jupiter.params.provider.MethodSource;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.SpringBootTest;
 
@@ -25,14 +28,22 @@ import com.trafficsimulator.service.ComponentVisionService;
 
 /**
  * Diagnostic opt-in harness: runs both Phase 20 ({@link ClaudeVisionService}) and Phase 21
- * ({@link ComponentVisionService}) pipelines on the canonical roundabout fixture
- * ({@code /tmp/roundabout-test.png}) and dumps both {@link MapConfig} outputs plus a Markdown diff
- * report to {@code backend/target/vision-comparison/}.
+ * ({@link ComponentVisionService}) pipelines on a set of canonical fixture images and dumps both
+ * {@link MapConfig} outputs plus a Markdown diff report to
+ * {@code backend/target/vision-comparison/{fixture-label}/}.
+ *
+ * <p>Phase 22 extends the original single-fixture flow to a parametrised iteration over:
+ * <ul>
+ *   <li>{@code /tmp/roundabout-test.png}          — original Phase 21 fixture</li>
+ *   <li>{@code /tmp/viaduct-test.png}             — new Phase 22 VIADUCT coverage</li>
+ *   <li>{@code /tmp/highway-exit-ramp-test.png}   — new Phase 22 HIGHWAY_EXIT_RAMP coverage</li>
+ * </ul>
  *
  * <p>Gated by {@code -Dvision.harness=true} so the default Maven build never invokes the real
- * Claude CLI. Missing fixture triggers a JUnit {@link Assumptions} skip, not a failure. If either
- * pipeline throws, the exception is recorded in the diff report and the other pipeline still runs
- * — this harness is diagnostic, never regressive.
+ * Claude CLI. Missing fixture triggers a JUnit {@link Assumptions} skip, not a failure — the
+ * harness never regresses whether or not a fixture PNG is present on disk. If either pipeline
+ * throws, the exception is recorded in the per-fixture diff report and the other pipeline still
+ * runs.
  *
  * <p>Manual invocation:
  * <pre>cd backend && ./mvnw -Dvision.harness=true -Dtest=VisionComparisonHarness test</pre>
@@ -41,37 +52,49 @@ import com.trafficsimulator.service.ComponentVisionService;
 @EnabledIfSystemProperty(named = "vision.harness", matches = "true")
 class VisionComparisonHarness {
 
-    private static final Path FIXTURE = Path.of("/tmp/roundabout-test.png");
     private static final Path OUTPUT_DIR = Path.of("target/vision-comparison");
 
     @Autowired private ClaudeVisionService phase20;
     @Autowired private ComponentVisionService phase21;
     @Autowired private MapValidator validator;
 
-    @Test
-    void compareOnRoundaboutFixture() throws Exception {
-        Assumptions.assumeTrue(
-                Files.exists(FIXTURE),
-                "Fixture " + FIXTURE + " not present; harness skipped.");
+    /**
+     * Fixture set. Each entry is {@code (label, pngPath)}. Adding a new fixture = one line here;
+     * the harness iterates automatically.
+     */
+    private static Stream<Arguments> fixtures() {
+        return Stream.of(
+                Arguments.of("roundabout",        Path.of("/tmp/roundabout-test.png")),
+                Arguments.of("viaduct",           Path.of("/tmp/viaduct-test.png")),
+                Arguments.of("highway-exit-ramp", Path.of("/tmp/highway-exit-ramp-test.png")));
+    }
 
-        byte[] png = Files.readAllBytes(FIXTURE);
+    @ParameterizedTest(name = "compare on {0}")
+    @MethodSource("fixtures")
+    void compareOnFixture(String label, Path fixture) throws Exception {
+        Assumptions.assumeTrue(
+                Files.exists(fixture),
+                "Fixture " + fixture + " not present; harness skipped for label=" + label + ".");
+
+        byte[] png = Files.readAllBytes(fixture);
         Map<String, String> exceptions = new LinkedHashMap<>();
 
         MapConfig freeForm = safeCall("free-form", () -> phase20.analyzeImageBytes(png), exceptions);
         MapConfig components =
                 safeCall("components", () -> phase21.analyzeImageBytes(png), exceptions);
 
-        Files.createDirectories(OUTPUT_DIR);
+        Path perFixtureDir = OUTPUT_DIR.resolve(label);
+        Files.createDirectories(perFixtureDir);
         ObjectMapper mapper = new ObjectMapper().enable(SerializationFeature.INDENT_OUTPUT);
         if (freeForm != null) {
-            mapper.writeValue(OUTPUT_DIR.resolve("free-form.json").toFile(), freeForm);
+            mapper.writeValue(perFixtureDir.resolve("free-form.json").toFile(), freeForm);
         }
         if (components != null) {
-            mapper.writeValue(OUTPUT_DIR.resolve("components.json").toFile(), components);
+            mapper.writeValue(perFixtureDir.resolve("components.json").toFile(), components);
         }
 
-        String report = buildDiffReport(png.length, freeForm, components, exceptions);
-        Files.writeString(OUTPUT_DIR.resolve("diff.md"), report);
+        String report = buildDiffReport(label, fixture, png.length, freeForm, components, exceptions);
+        Files.writeString(perFixtureDir.resolve("diff.md"), report);
         System.out.println(report);
     }
 
@@ -148,6 +171,8 @@ class VisionComparisonHarness {
     }
 
     private String buildDiffReport(
+            String label,
+            Path fixture,
             int fixtureBytes,
             MapConfig freeForm,
             MapConfig components,
@@ -156,8 +181,8 @@ class VisionComparisonHarness {
         PipelineStats b = statsFor(components);
 
         StringBuilder sb = new StringBuilder();
-        sb.append("# Vision Comparison — ").append(Instant.now()).append('\n').append('\n');
-        sb.append("Fixture: ").append(FIXTURE).append(" (").append(fixtureBytes).append(" bytes)\n\n");
+        sb.append("# Vision Comparison — ").append(label).append(" — ").append(Instant.now()).append('\n').append('\n');
+        sb.append("Fixture: ").append(fixture).append(" (").append(fixtureBytes).append(" bytes)\n\n");
 
         sb.append("| Metric                    | free-form (Phase 20) | components (Phase 21) | Match |\n");
         sb.append("|---------------------------|----------------------|------------------------|-------|\n");
