@@ -12,7 +12,7 @@ import java.util.Map;
  * engine's {@code _in}/{@code _out} naming convention.
  */
 public sealed interface ComponentSpec
-        permits RoundaboutFourArm, SignalFourWay, TIntersection, StraightSegment {
+        permits RoundaboutFourArm, SignalFourWay, TIntersection, StraightSegment, Viaduct, HighwayExitRamp {
 
     /** Component identifier (must match {@code ^[a-z][a-z0-9]*$}; no {@code in}/{@code out} substrings). */
     String id();

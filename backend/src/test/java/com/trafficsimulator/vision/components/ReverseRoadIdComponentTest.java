@@ -94,4 +94,95 @@ class ReverseRoadIdComponentTest {
                     .doesNotContain("_out");
         }
     }
+
+    @Test
+    void reverseRoadId_flipsForEveryEmittedRoad_viaductStandalone() {
+        MapConfig cfg = library.expand(List.of(
+                new Viaduct("v1", new Point2D.Double(400, 300), 0)));
+
+        Set<String> roadIds = cfg.getRoads().stream()
+                .map(MapConfig.RoadConfig::getId)
+                .collect(Collectors.toSet());
+        for (String rid : roadIds) {
+            if (rid.endsWith("_in")) {
+                assertThat(roadIds)
+                        .as("reverseRoadId(%s)", rid)
+                        .contains(reverseRoadId(rid));
+            }
+        }
+        Set<String> nodeIds = cfg.getNodes().stream()
+                .map(MapConfig.NodeConfig::getId)
+                .collect(Collectors.toSet());
+        for (String nid : nodeIds) {
+            assertThat(nid)
+                    .as("viaduct node id %s must not contain _in/_out", nid)
+                    .doesNotContain("_in")
+                    .doesNotContain("_out");
+        }
+    }
+
+    @Test
+    void reverseRoadId_flipsForEveryEmittedRoad_exitRampStandalone() {
+        MapConfig cfg = library.expand(List.of(
+                new HighwayExitRamp("hx1", new Point2D.Double(400, 300), 0)));
+
+        Set<String> roadIds = cfg.getRoads().stream()
+                .map(MapConfig.RoadConfig::getId)
+                .collect(Collectors.toSet());
+        for (String rid : roadIds) {
+            if (rid.endsWith("_in")) {
+                assertThat(roadIds)
+                        .as("reverseRoadId(%s)", rid)
+                        .contains(reverseRoadId(rid));
+            }
+        }
+        Set<String> nodeIds = cfg.getNodes().stream()
+                .map(MapConfig.NodeConfig::getId)
+                .collect(Collectors.toSet());
+        for (String nid : nodeIds) {
+            assertThat(nid)
+                    .as("exit-ramp node id %s must not contain _in/_out", nid)
+                    .doesNotContain("_in")
+                    .doesNotContain("_out");
+        }
+    }
+
+    @Test
+    void reverseRoadId_flipsForEveryEmittedRoad_viaductBridgedToRoundabout() {
+        // Viaduct at (400, 300); east arm endpoint = (400 + 200, 300) = (600, 300).
+        // Roundabout at (1056, 300); west arm endpoint = (1056 - (RING_R + APPROACH_LEN), 300)
+        //                                             = (1056 - 228, 300) = (828, 300).
+        Viaduct v = new Viaduct("v1", new Point2D.Double(400, 300), 0);
+        RoundaboutFourArm rb = new RoundaboutFourArm(
+                "rb1", new Point2D.Double(1056, 300), 0, ALL_ARMS);
+        StraightSegment seg = new StraightSegment(
+                "seg1",
+                new Point2D.Double(600, 300),
+                new Point2D.Double(828, 300),
+                228);
+        Connection c1 = new Connection(new ArmRef("v1", "east"), new ArmRef("seg1", "start"));
+        Connection c2 = new Connection(new ArmRef("seg1", "end"), new ArmRef("rb1", "west"));
+
+        MapConfig cfg = library.expand(List.of(v, rb, seg), List.of(c1, c2));
+
+        Set<String> roadIds = cfg.getRoads().stream()
+                .map(MapConfig.RoadConfig::getId)
+                .collect(Collectors.toSet());
+        for (String rid : roadIds) {
+            if (rid.endsWith("_in")) {
+                assertThat(roadIds)
+                        .as("reverseRoadId(%s) must exist after viaduct↔roundabout stitch", rid)
+                        .contains(reverseRoadId(rid));
+            }
+        }
+        Set<String> nodeIds = cfg.getNodes().stream()
+                .map(MapConfig.NodeConfig::getId)
+                .collect(Collectors.toSet());
+        for (String nid : nodeIds) {
+            assertThat(nid)
+                    .as("stitched node id %s must not contain _in/_out", nid)
+                    .doesNotContain("_in")
+                    .doesNotContain("_out");
+        }
+    }
 }
