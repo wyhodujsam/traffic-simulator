@@ -18,6 +18,7 @@ import com.trafficsimulator.vision.components.ExpansionContext;
 import com.trafficsimulator.vision.components.ExpansionContext.ArmRecord;
 
 import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
 
 /**
  * Phase 21 component-library entry point. Expands a list of {@link ComponentSpec} into a single
@@ -30,6 +31,7 @@ import lombok.RequiredArgsConstructor;
  */
 @Service
 @RequiredArgsConstructor
+@Slf4j
 public class MapComponentLibrary {
 
     /** Allowed component-id pattern: lowercase letter then lowercase alphanumerics. */
@@ -95,18 +97,18 @@ public class MapComponentLibrary {
         } catch (IllegalArgumentException ex) {
             throw new ExpansionException(ex.getMessage(), ex);
         }
-        double d = ra.worldPos().distance(rb.worldPos());
-        if (d > MERGE_TOLERANCE_PX) {
-            throw new ExpansionException(
-                    String.format(
-                            "Arms %s.%s and %s.%s are %.1fpx apart (>%.1f). Insert a STRAIGHT_SEGMENT between them.",
-                            conn.a().componentId(),
-                            conn.a().armName(),
-                            conn.b().componentId(),
-                            conn.b().armName(),
-                            d,
-                            MERGE_TOLERANCE_PX));
-        }
+        // Explicit connection is authoritative — merge regardless of pixel distance.
+        // The distance gate was incompatible with Claude vision: the model can't know
+        // that a ROUNDABOUT_4ARM arm endpoint sits at center+dir*(RING_R+APPROACH_LEN)=228px.
+        // Implicit coincidence detection (no connection, auto-merge at ≤5px) is not
+        // implemented; if added later, MERGE_TOLERANCE_PX applies there.
+        log.debug(
+                "Stitching {}.{} ↔ {}.{} (distance {}px)",
+                conn.a().componentId(),
+                conn.a().armName(),
+                conn.b().componentId(),
+                conn.b().armName(),
+                String.format("%.1f", ra.worldPos().distance(rb.worldPos())));
         // mergedId uses double-underscores between fields and ALWAYS contains a digit-or-letter
         // run that does not include the substring "_in" or "_out", because component ids are
         // validated to exclude "in"/"out" and arm names are from the closed set

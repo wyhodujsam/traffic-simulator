@@ -65,7 +65,9 @@ public class ComponentVisionService {
                     + "  fields: id, centerPx{x,y}, rotationDeg (0 = stem points south),\n"
                     + "          armsPresent (exactly 3 of [north,east,south,west])\n"
                     + "- STRAIGHT_SEGMENT — connector road between two component arms\n"
-                    + "  fields: id, startPx{x,y}, endPx{x,y}, lengthPx\n\n"
+                    + "  fields: id, startPx{x,y}, endPx{x,y}, lengthPx\n"
+                    + "  ARM NAMES: exactly two — `start` and `end` (NOT `a`/`b`). Reference them\n"
+                    + "  in connections as `<segId>.start` and `<segId>.end`.\n\n"
                     + "OUTPUT FORMAT (raw JSON only, no markdown fences, no prose):\n"
                     + "{\n"
                     + "  \"components\": [ { \"type\": \"...\", \"id\": \"...\", ... }, ... ],\n"
@@ -77,7 +79,9 @@ public class ComponentVisionService {
                     + "  Safe prefixes: rb, sig, t, seg, then a digit (rb1, sig2, t3, seg4).\n"
                     + "- If two component arms meet at the same pixel location, emit one connection.\n"
                     + "- If two arms are separated by visible road, insert a STRAIGHT_SEGMENT and emit\n"
-                    + "  two connections (one per end).\n"
+                    + "  two connections (one per end). Example: connecting rb1.north to rb2.south\n"
+                    + "  via a segment seg1 → connections `[{a:\"rb1.north\", b:\"seg1.start\"},\n"
+                    + "  {a:\"seg1.end\", b:\"rb2.south\"}]`.\n"
                     + "- Unconnected arms = network boundaries (traffic enters/exits there). Fine.\n"
                     + "- At most ONE non-connector component per pixel location.";
 

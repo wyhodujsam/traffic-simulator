@@ -66,14 +66,16 @@ class MapComponentLibraryTest {
     }
 
     @Test
-    void stitch_rejectsNonCoincidentArms() {
+    void stitch_explicitConnection_mergesRegardlessOfDistance() {
+        // Explicit connection is authoritative — Claude vision cannot know exact arm endpoint
+        // positions (228px from roundabout center), so the merge trusts the connection.
         var rb1 = new RoundaboutFourArm("rb1", new Point2D.Double(400, 300), 0, ALL_ARMS);
         var rb2 = new RoundaboutFourArm("rb2", new Point2D.Double(1200, 300), 0, ALL_ARMS);
         var conn = new Connection(new ArmRef("rb1", "east"), new ArmRef("rb2", "west"));
 
-        assertThatThrownBy(() -> library.expand(List.of(rb1, rb2), List.of(conn)))
-                .isInstanceOf(ExpansionException.class)
-                .hasMessageContaining("Insert a STRAIGHT_SEGMENT");
+        var cfg = library.expand(List.of(rb1, rb2), List.of(conn));
+        assertThat(cfg.getIntersections())
+                .anyMatch(i -> i.getNodeId().startsWith("merged__rb1_east__rb2_west"));
     }
 
     @Test
