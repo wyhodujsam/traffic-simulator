@@ -21,10 +21,12 @@ import com.trafficsimulator.vision.components.ArmRef;
 import com.trafficsimulator.vision.components.ComponentSpec;
 import com.trafficsimulator.vision.components.ComponentSpecDto;
 import com.trafficsimulator.vision.components.Connection;
+import com.trafficsimulator.vision.components.HighwayExitRamp;
 import com.trafficsimulator.vision.components.RoundaboutFourArm;
 import com.trafficsimulator.vision.components.SignalFourWay;
 import com.trafficsimulator.vision.components.StraightSegment;
 import com.trafficsimulator.vision.components.TIntersection;
+import com.trafficsimulator.vision.components.Viaduct;
 
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -67,7 +69,19 @@ public class ComponentVisionService {
                     + "- STRAIGHT_SEGMENT — connector road between two component arms\n"
                     + "  fields: id, startPx{x,y}, endPx{x,y}, lengthPx\n"
                     + "  ARM NAMES: exactly two — `start` and `end` (NOT `a`/`b`). Reference them\n"
-                    + "  in connections as `<segId>.start` and `<segId>.end`.\n\n"
+                    + "  in connections as `<segId>.start` and `<segId>.end`.\n"
+                    + "- VIADUCT — two through-roads crossing at different heights (overpass)\n"
+                    + "  fields: id, centerPx{x,y}, rotationDeg\n"
+                    + "  ARMS ARE FIXED: [north, east, south, west] — OMIT the armsPresent field.\n"
+                    + "  Lower road connects south ↔ north, upper road connects west ↔ east; there\n"
+                    + "  is NO shared intersection at the crossing point. Example connection:\n"
+                    + "  `{a:\"rb1.north\", b:\"via1.south\"}`.\n"
+                    + "- HIGHWAY_EXIT_RAMP — PRIORITY split where a ramp exits the main line\n"
+                    + "  fields: id, centerPx{x,y}, rotationDeg\n"
+                    + "  ARMS ARE FIXED: [main_in, main_out, ramp_out] — OMIT the armsPresent field.\n"
+                    + "  main_in is upstream highway, main_out downstream continuation, ramp_out the\n"
+                    + "  exit ramp. Main-line traffic has PRIORITY. Example connection:\n"
+                    + "  `{a:\"hr1.main_out\", b:\"seg1.start\"}`.\n\n"
                     + "OUTPUT FORMAT (raw JSON only, no markdown fences, no prose):\n"
                     + "{\n"
                     + "  \"components\": [ { \"type\": \"...\", \"id\": \"...\", ... }, ... ],\n"
@@ -76,12 +90,16 @@ public class ComponentVisionService {
                     + "}\n\n"
                     + "RULES:\n"
                     + "- Component ids MUST match ^[a-z][a-z0-9]*$ and MUST NOT contain 'in' or 'out'.\n"
-                    + "  Safe prefixes: rb, sig, t, seg, then a digit (rb1, sig2, t3, seg4).\n"
+                    + "  Safe prefixes: rb, sig, t, seg, via, hr, then a digit (rb1, sig2, t3,\n"
+                    + "  seg4, via1, hr2).\n"
                     + "- If two component arms meet at the same pixel location, emit one connection.\n"
                     + "- If two arms are separated by visible road, insert a STRAIGHT_SEGMENT and emit\n"
                     + "  two connections (one per end). Example: connecting rb1.north to rb2.south\n"
                     + "  via a segment seg1 → connections `[{a:\"rb1.north\", b:\"seg1.start\"},\n"
-                    + "  {a:\"seg1.end\", b:\"rb2.south\"}]`.\n"
+                    + "  {a:\"seg1.end\", b:\"rb2.south\"}]`. A highway exit ramp can chain similarly:\n"
+                    + "  `hr1.main_out → seg1.start → rb2.west`.\n"
+                    + "- For VIADUCT and HIGHWAY_EXIT_RAMP, OMIT the armsPresent field entirely —\n"
+                    + "  arms are fixed by the component type.\n"
                     + "- Unconnected arms = network boundaries (traffic enters/exits there). Fine.\n"
                     + "- At most ONE non-connector component per pixel location.";
 
@@ -172,11 +190,13 @@ public class ComponentVisionService {
             case "STRAIGHT_SEGMENT" ->
                     new StraightSegment(
                             d.id, d.startPx, d.endPx, d.lengthPx == null ? 0.0 : d.lengthPx);
+            case "VIADUCT" -> new Viaduct(d.id, d.centerPx, d.rotationDeg);
+            case "HIGHWAY_EXIT_RAMP" -> new HighwayExitRamp(d.id, d.centerPx, d.rotationDeg);
             default ->
                     throw new ClaudeCliParseException(
                             "Unknown component type: "
                                     + d.type
-                                    + ". Valid types: ROUNDABOUT_4ARM, SIGNAL_4WAY, T_INTERSECTION, STRAIGHT_SEGMENT");
+                                    + ". Valid types: ROUNDABOUT_4ARM, SIGNAL_4WAY, T_INTERSECTION, STRAIGHT_SEGMENT, VIADUCT, HIGHWAY_EXIT_RAMP");
         };
     }
 

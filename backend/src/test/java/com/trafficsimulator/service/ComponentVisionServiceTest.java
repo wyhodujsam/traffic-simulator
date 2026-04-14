@@ -75,6 +75,22 @@ class ComponentVisionServiceTest {
     }
 
     @Test
+    void prompt_containsViaductAndHighwayExitRamp() {
+        String prompt = ComponentVisionService.ANALYSIS_PROMPT;
+        assertThat(prompt).contains("VIADUCT");
+        assertThat(prompt).contains("HIGHWAY_EXIT_RAMP");
+    }
+
+    @Test
+    void prompt_listsArmNamesForNewTypes() {
+        String prompt = ComponentVisionService.ANALYSIS_PROMPT;
+        assertThat(prompt).contains("main_in");
+        assertThat(prompt).contains("main_out");
+        assertThat(prompt).contains("ramp_out");
+        assertThat(prompt).containsIgnoringCase("no shared intersection");
+    }
+
+    @Test
     void prompt_forbidsInventedTypesAndInOutSubstrings() {
         String prompt = ComponentVisionService.ANALYSIS_PROMPT;
         assertThat(prompt).containsIgnoringCase("MUST NOT invent");
@@ -133,6 +149,30 @@ class ComponentVisionServiceTest {
     }
 
     @Test
+    void toSpec_viaduct_mapsCorrectly() {
+        ComponentVisionService svc = serviceReturning("ignored");
+        var dto = new com.trafficsimulator.vision.components.ComponentSpecDto();
+        dto.type = "VIADUCT";
+        dto.id = "via1";
+        dto.centerPx = new java.awt.geom.Point2D.Double(400, 300);
+        dto.rotationDeg = 0;
+        assertThat(svc.toSpec(dto))
+                .isInstanceOf(com.trafficsimulator.vision.components.Viaduct.class);
+    }
+
+    @Test
+    void toSpec_highwayExitRamp_mapsCorrectly() {
+        ComponentVisionService svc = serviceReturning("ignored");
+        var dto = new com.trafficsimulator.vision.components.ComponentSpecDto();
+        dto.type = "HIGHWAY_EXIT_RAMP";
+        dto.id = "hr1";
+        dto.centerPx = new java.awt.geom.Point2D.Double(500, 400);
+        dto.rotationDeg = 0;
+        assertThat(svc.toSpec(dto))
+                .isInstanceOf(com.trafficsimulator.vision.components.HighwayExitRamp.class);
+    }
+
+    @Test
     void toSpec_straightSegment_mapsCorrectly() {
         ComponentVisionService svc = serviceReturning("ignored");
         var dto = new com.trafficsimulator.vision.components.ComponentSpecDto();
@@ -175,6 +215,44 @@ class ComponentVisionServiceTest {
                 .allMatch(ic -> "ROUNDABOUT".equals(ic.getType()));
     }
 
+    @Test
+    void analyzeImageBytes_viaductStandalone_returnsValidatedMapConfig() throws IOException {
+        String canned =
+                "{\"components\":[{\"type\":\"VIADUCT\",\"id\":\"via1\","
+                        + "\"centerPx\":{\"x\":400,\"y\":300},\"rotationDeg\":0}],"
+                        + "\"connections\":[]}";
+        ComponentVisionService svc = serviceReturning(canned);
+
+        MapConfig result = svc.analyzeImageBytes(new byte[] {1, 2, 3});
+
+        assertThat(result).isNotNull();
+        // 4 arms × (ENTRY + EXIT) = 8 nodes.
+        assertThat(result.getNodes()).hasSize(8);
+        // 2 pairs of through-roads = 4 one-way roads.
+        assertThat(result.getRoads()).hasSize(4);
+        // No intersection — overpass has no shared junction.
+        assertThat(result.getIntersections()).isEmpty();
+    }
+
+    @Test
+    void analyzeImageBytes_highwayExitRamp_returnsValidatedMapConfig() throws IOException {
+        String canned =
+                "{\"components\":[{\"type\":\"HIGHWAY_EXIT_RAMP\",\"id\":\"hr1\","
+                        + "\"centerPx\":{\"x\":500,\"y\":400},\"rotationDeg\":0}],"
+                        + "\"connections\":[]}";
+        ComponentVisionService svc = serviceReturning(canned);
+
+        MapConfig result = svc.analyzeImageBytes(new byte[] {1, 2, 3});
+
+        assertThat(result).isNotNull();
+        // 1 centre INTERSECTION + 3 arms × (ENTRY + EXIT) = 7 nodes.
+        assertThat(result.getNodes()).hasSize(7);
+        // main_in, main_out, ramp_out = 3 roads.
+        assertThat(result.getRoads()).hasSize(3);
+        assertThat(result.getIntersections()).hasSize(1);
+        assertThat(result.getIntersections().get(0).getType()).isEqualTo("PRIORITY");
+    }
+
     // -------------------------------------------------------------------------
     // Error paths
     // -------------------------------------------------------------------------
@@ -190,7 +268,9 @@ class ComponentVisionServiceTest {
         assertThatThrownBy(() -> svc.analyzeImageBytes(new byte[] {1}))
                 .isInstanceOf(ClaudeCliParseException.class)
                 .hasMessageContaining("Unknown component type")
-                .hasMessageContaining("ROUNDABOUT_4ARM");
+                .hasMessageContaining("ROUNDABOUT_4ARM")
+                .hasMessageContaining("VIADUCT")
+                .hasMessageContaining("HIGHWAY_EXIT_RAMP");
     }
 
     @Test
