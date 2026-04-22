@@ -57,7 +57,9 @@ test.describe('Responsive layout (mobile)', () => {
     expect(asideBox.width).toBeGreaterThanOrEqual(375 - 16); // allow 16px for scrollbar/padding
 
     // Canvas area is capped at 50vh on mobile (SimulationPage.tsx sets maxHeight: 50vh).
-    expect(mainBox.height).toBeLessThanOrEqual(667 * 0.5 + 4);
+    // The <main> has content-box box-sizing with padding: 16px (top + bottom = 32px),
+    // so the rendered element height is 50vh + 32px. Allow a small tolerance on top.
+    expect(mainBox.height).toBeLessThanOrEqual(667 * 0.5 + 32 + 4);
 
     // Sidebar is visible (y starts within viewport).
     expect(asideBox.y).toBeLessThan(667);
