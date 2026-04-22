@@ -407,6 +407,46 @@ Plans:
 | 19. Simulation Integration & Export | 0/2 | Planned | - |
 | 20. AI Vision (Claude CLI) | 0/? | Not started | - |
 
+### Phase 23: GraphHopper-based OSM parser
+
+**Goal:** Swap custom Overpass converter for GraphHopper OSMReader/WaySegmentParser to get cleaner intersection splitting. Additive — coexists with Phase 18 `OsmPipelineService` via new `/api/osm/fetch-roads-gh` endpoint for A/B comparison on the same bbox.
+
+**Requirements**: TBD
+**Depends on:** Phase 18
+**Plans:** 0 plans
+
+Plans:
+- [ ] TBD (run /gsd:plan-phase 23 to break down)
+
+### Phase 24: osm2streets integration
+
+**Goal:** Integrate A/B Street's osm2streets (Rust/WASM) for lane-level street network with markings, turn lanes, and intersection shapes. New `/api/osm/fetch-roads-o2s` endpoint for three-way A/B comparison against Phase 18 and Phase 23.
+
+**Requirements**: TBD
+**Depends on:** Phase 18
+**Plans:** 0 plans
+
+Plans:
+- [ ] TBD (run /gsd:plan-phase 24 to break down)
+
+### Phase 25: Traffic flow visualization
+
+**Goal:** Scientific visualization for phantom-jam experiments — space-time diagram (trajectory t/x, color=speed), live fundamental diagram (flow vs density scatter), speed-colored vehicles, optional trails, ring-road scenario for Sugiyama-style self-emerging jams.
+
+**Scope:**
+- Space-time diagram canvas (rolling buffer of last N ticks × vehicle positions per road, color by speed).
+- Fundamental diagram component (scatter flow [veh/h] vs density [veh/km], sampled per second).
+- Vehicle rendering: color by speed (HSL red→green) with toggle.
+- Optional trails (last 2s path behind vehicle).
+- New scenario: `ring-road.json` — closed loop, uniform initial speed, no spawner; perturbations generate phantom jams.
+
+**Requirements**: TBD
+**Depends on:** Phase 5 (rendering), Phase 9 (scenarios)
+**Plans:** 0 plans
+
+Plans:
+- [ ] TBD (run /gsd:plan-phase 25 to break down)
+
 ---
 *v2.0 roadmap appended: 2026-04-10*
 *All 13 v2.0 requirements mapped across 4 phases (17–20)*
