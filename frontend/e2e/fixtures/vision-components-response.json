@@ -1,0 +1,24 @@
+{
+  "id": "stub-component-library",
+  "name": "Stubbed Component Library Result",
+  "description": "Canned MapConfig for Playwright e2e test — shape matches backend/src/main/resources/maps/*.json; not a real Claude response.",
+  "nodes": [
+    { "id": "n_entry",  "type": "ENTRY",        "x": 0.0,   "y": 100.0 },
+    { "id": "n_center", "type": "INTERSECTION", "x": 200.0, "y": 100.0 },
+    { "id": "n_exit",   "type": "EXIT",         "x": 400.0, "y": 100.0 }
+  ],
+  "roads": [
+    { "id": "r_in",  "name": "Inbound",  "fromNodeId": "n_entry",  "toNodeId": "n_center", "length": 200.0, "speedLimit": 13.9, "laneCount": 1 },
+    { "id": "r_out", "name": "Outbound", "fromNodeId": "n_center", "toNodeId": "n_exit",   "length": 200.0, "speedLimit": 13.9, "laneCount": 1 }
+  ],
+  "intersections": [
+    { "nodeId": "n_center", "type": "PRIORITY", "intersectionSize": 20 }
+  ],
+  "spawnPoints": [
+    { "roadId": "r_in", "laneIndex": 0, "position": 0.0 }
+  ],
+  "despawnPoints": [
+    { "roadId": "r_out", "laneIndex": 0, "position": 200.0 }
+  ],
+  "defaultSpawnRate": 0.5
+}
