@@ -289,10 +289,12 @@ class ComponentVisionServiceTest {
     }
 
     @Test
-    void analyzeImageBytes_disconnectedArms_throwsParseException() {
-        // Two roundabouts 800px apart; connect rb1.east ↔ rb2.west directly (no STRAIGHT_SEGMENT).
-        // rb1.east world pos = (400 + 28 + 200, 300) = (628, 300).
-        // rb2.west world pos = (1200 - 28 - 200, 300) = (972, 300). Gap = 344px >> 5px → throws.
+    void analyzeImageBytes_explicitConnection_mergesRegardlessOfDistance() throws IOException {
+        // Design contract (commit c2e4d59): an explicit Connection is authoritative — the
+        // stitcher averages geometry and merges the two arms into a shared INTERSECTION node,
+        // no matter how far apart their raw arm endpoints sit. Claude cannot know that a
+        // ROUNDABOUT_4ARM arm endpoint lives at center+dir*228px; it signals intent via the
+        // connection, and we trust it. (The old "reject if >5px" test has been replaced.)
         String canned =
                 "{\"components\":["
                         + "{\"type\":\"ROUNDABOUT_4ARM\",\"id\":\"rb1\","
@@ -304,9 +306,10 @@ class ComponentVisionServiceTest {
                         + "],\"connections\":[{\"a\":\"rb1.east\",\"b\":\"rb2.west\"}]}";
         ComponentVisionService svc = serviceReturning(canned);
 
-        assertThatThrownBy(() -> svc.analyzeImageBytes(new byte[] {1}))
-                .isInstanceOf(ClaudeCliParseException.class)
-                .hasMessageContaining("STRAIGHT_SEGMENT");
+        MapConfig cfg = svc.analyzeImageBytes(new byte[] {1});
+
+        assertThat(cfg).isNotNull();
+        assertThat(cfg.getNodes()).anyMatch(n -> n.getId().startsWith("merged__rb1_east__rb2_west"));
     }
 
     @Test

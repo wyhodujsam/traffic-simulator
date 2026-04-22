@@ -125,7 +125,7 @@ public class OsmPipelineService {
         }
         throw new RestClientException(
                 "All Overpass mirrors failed (" + overpassMirrors.size() + " tried)",
-                lastError != null ? lastError : new RuntimeException("no mirrors configured"));
+                lastError != null ? lastError : new IllegalStateException("no mirrors configured"));
     }
 
     // -------------------------------------------------------------------------
