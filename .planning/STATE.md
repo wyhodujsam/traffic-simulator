@@ -2,15 +2,16 @@
 gsd_state_version: 1.0
 milestone: v2.0
 milestone_name: — Map Screenshot to Simulation
-current_phase: 22 — Extend component library (VIADUCT + HIGHWAY_EXIT_RAMP)
+current_phase: 17 — Routing & Map Embed (Plan 01 complete)
 current_plan: —
-status: Phases 21 and 22 complete — component library + viaduct/exit-ramp extensions. All 308 backend + 51 frontend tests green.
-last_updated: "2026-04-22T17:20:00Z"
+status: Ready to execute
+last_updated: "2026-04-22T16:01:30.204Z"
 progress:
-  total_phases: 25
-  completed_phases: 20
-  total_plans: 80
+  total_phases: 26
+  completed_phases: 19
+  total_plans: 85
   completed_plans: 80
+  percent: 94
 ---
 
 # Project State
@@ -135,3 +136,4 @@ See: .planning/PROJECT.md (updated 2026-04-12)
 - Phase 23 added (2026-04-14): GraphHopper-based OSM parser — additive endpoint `/api/osm/fetch-roads-gh` for A/B comparison vs Phase 18.
 - Phase 24 added (2026-04-14): osm2streets (Rust/WASM) integration — lane-level street network; endpoint `/api/osm/fetch-roads-o2s`.
 - Phase 25 added (2026-04-14): Traffic flow visualization — space-time diagram, fundamental diagram, speed-colored vehicles, trails, ring-road scenario.
+- Phase 22.1 inserted after Phase 22 (2026-04-22): Playwright E2E test suite — install @playwright/test, config for backend+frontend dev servers, smoke tests for critical paths (simulation start/pause, AI Vision component-library flow, OSM bbox load, responsive layout) (URGENT / INSERTED)
