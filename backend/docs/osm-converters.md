@@ -1,85 +1,172 @@
 # OSM Converters — Architecture & Extension Guide
 
-**Last updated:** 2026-04-23 (Phase 23 close)
+**Last updated:** 2026-04-23 (Phase 24 close)
 
 ## Overview
 
-The backend exposes two OSM → `MapConfig` converters, both reachable via REST endpoints on the same base path. They coexist so we can A/B the output on the same bounding box.
+The backend exposes **three** OSM → `MapConfig` converters. All three are reachable via REST endpoints on the same base path and implement the shared `OsmConverter` interface. They coexist so we can A/B/C the output on the same bounding box.
 
-| Converter            | Phase | Endpoint                          | Service class                | Label returned by `converterName()` |
-|----------------------|-------|-----------------------------------|------------------------------|--------------------------------------|
-| Overpass (heuristic) | 18    | `POST /api/osm/fetch-roads`       | `OsmPipelineService`         | `"Overpass"`                          |
-| GraphHopper          | 23    | `POST /api/osm/fetch-roads-gh`    | `GraphHopperOsmService`      | `"GraphHopper"`                       |
-| (future) osm2streets | 24    | `POST /api/osm/fetch-roads-o2s`   | TBD                          | TBD                                  |
+| Converter              | Phase | Endpoint                          | Service class            | `converterName()` | Detail level          |
+|------------------------|-------|-----------------------------------|--------------------------|--------------------|------------------------|
+| Overpass (heuristic)   | 18    | `POST /api/osm/fetch-roads`       | `OsmPipelineService`     | `"Overpass"`       | Flat `laneCount`       |
+| GraphHopper            | 23    | `POST /api/osm/fetch-roads-gh`    | `GraphHopperOsmService`  | `"GraphHopper"`    | Flat `laneCount`       |
+| osm2streets            | 24    | `POST /api/osm/fetch-roads-o2s`   | `Osm2StreetsService`     | `"osm2streets"`    | Lane-level (`lanes[]`) |
 
-Both current converters implement the `OsmConverter` interface (`backend/src/main/java/com/trafficsimulator/service/OsmConverter.java`) and emit a `MapConfig` that passes `MapValidator` unmodified.
+All three emit a `MapConfig` that passes `MapValidator` unmodified. The `RoadConfig.lanes` field (added in Phase 24) is OPTIONAL — Phase 18 and Phase 23 leave it `null`, Phase 24 populates it from the osm2streets lane spec. The `@JsonInclude(Include.NON_NULL)` annotation ensures Phase 18/23 REST output stays byte-identical to their pre-Phase-24 shape.
 
-## Why two converters?
+## Why three converters?
 
-Phase 18's converter does a hand-rolled pass over Overpass JSON and detects intersections heuristically (a node is an intersection if it is referenced by ≥2 ways). This works for most urban geometry but misses subtle cases like signals placed on pillar nodes inside a single way, or produces slightly wrong road counts when ways fork/merge in ways Overpass reports with unusual element ordering.
+- **Phase 18** (Overpass converter) does a hand-rolled pass over Overpass JSON and detects intersections heuristically (a node is an intersection if ≥2 ways reference it). Works for most urban geometry but misses subtle cases.
+- **Phase 23** (GraphHopper) operates on OSM XML and splits ways at junctions by definition (GraphHopper's "tower nodes"). Corrects some intersection miscounts Phase 18 produces but still emits a flat `laneCount` per road.
+- **Phase 24** (osm2streets) goes one level deeper: it models roads at the **lane level** with typed lane arrays (driving/parking/cycling/sidewalk), width in metres, and per-lane direction. This is materially richer than Phase 18/23.
 
-Phase 23 adds GraphHopper's `WaySegmentParser`, which operates on OSM XML (not Overpass JSON directly) and splits ways at junctions by definition (GraphHopper calls them "tower nodes"). Its output differs from Phase 18 in several measurable ways — road count, intersection count, sometimes coordinate precision — and we want to quantify the delta before deciding whether to replace Phase 18 or keep both.
+The A/B/C comparison (`OsmPipelineComparisonTest`, gated by `-Dosm.online=on`) answers: "does the additional fidelity materially improve simulation quality, or is it pixel-dust we don't need?"
 
-**Non-goals:** this phase does NOT replace Phase 18, does NOT ship lane-level geometry (turn lanes, crosswalks, intersection polygons — that is Phase 24's scope), and does NOT persist any parsed graph to disk. Both services are stateless and hold state only for the duration of a single request.
+**Non-goals:** Phase 24 does NOT replace Phase 18 or Phase 23, does NOT render intersection polygons on the canvas, and does NOT wire `lanes[]` into the simulation engine. IDM/MOBIL still read the flat `laneCount`. Consuming lane-level data in the simulation is a future phase.
 
-## A/B fairness contract
+## Phase 24 integration strategy — Path B (Rust subprocess)
 
-A meaningful A/B comparison requires that both converters agree on everything except the graph-construction step. Shared logic lives in `OsmConversionUtils` (`backend/src/main/java/com/trafficsimulator/service/OsmConversionUtils.java`), which both services call into:
+osm2streets is a Rust library. Four integration paths were evaluated in Phase 24 research:
 
-- **Projection** (lat/lon → canvas x/y): `lonToX`, `latToY` and the `CANVAS_*` constants.
-- **Distance math**: `haversineMeters`, `computeWayLength` (sum-of-segments across all intermediate points — NOT endpoint-to-endpoint).
-- **Tag-driven defaults**: `speedLimitForHighway`, `laneCountForWay` (both include the same MAX-lane clamp = 4 for motorway/trunk and cascading defaults for lower classes).
-- **Endpoint assembly**: `collectSpawnPoints`, `collectDespawnPoints`, `assembleMapConfig`.
-- **Signal cycle defaults**: `buildDefaultSignalPhases` — a consistent N-S/E-W cycle applied in both pipelines when OSM carries `highway=traffic_signals` without an explicit cycle.
+- **Path A — Pre-built CLI:** does NOT exist (osm2streets has no releases, no tags).
+- **Path B — Custom Rust wrapper + static binary + ProcessBuilder:** **chosen**. Mirrors Phase 20's `ClaudeVisionService` pattern (external tool via subprocess). Single binary artefact, no new runtime dependency, no operational complexity.
+- **Path C — WASM in JVM:** `osm2streets-js` uses `wasm-bindgen` which is browser-only. Chicory and wasmer-java cannot provide the `__wbindgen_placeholder__` imports the bindgen runtime requires. Rejected.
+- **Path D — Sidecar HTTP service:** works but adds a separate server to deploy. Rejected for MVP.
 
-If you change one of these helpers, BOTH converters change at once. That is intentional — it preserves the fairness contract.
+### Binary provenance
 
-## Phase 23 data flow
+- **Source:** `tools/osm2streets-cli/` — a Cargo project with git-SHA-pinned osm2streets dependency.
+- **Pinned SHA:** `fc119c47dac567d030c6ce7c24a48896f58ed906` (recorded in `tools/osm2streets-cli/Cargo.toml` + `Cargo.lock`).
+- **Binary path:** `backend/bin/osm2streets-cli-linux-x64` — static-PIE musl-libc ELF, ~3.5 MB (comfortably under CONTEXT D9's 40 MB commit threshold).
+- **SHA-256:** `9e657692510b118ee730bd8c1d27b22abb557b36df6241f80ae3ab56c41a3a98` (see `backend/bin/osm2streets-cli-linux-x64.sha256`).
+- **Rebuild recipe:** see `backend/bin/README.md`. To rebuild after bumping the osm2streets SHA, `cd tools/osm2streets-cli && cargo build --release --target x86_64-unknown-linux-musl`, then copy `target/x86_64-unknown-linux-musl/release/osm2streets-cli` into `backend/bin/` and regenerate the SHA-256.
+
+### Invocation pattern
+
+`Osm2StreetsService.executeCli(byte[] osmXmlBytes)` spawns the binary via `ProcessBuilder`:
+- `redirectErrorStream(false)` — separate stdout/stderr streams.
+- Stdout and stderr each drained on their own `CompletableFuture` thread to avoid the single-buffer deadlock (mirrors and extends `ClaudeVisionService`'s pattern — osm2streets writes structured error text to stderr that we want to capture distinctly).
+- Stdin written synchronously then closed explicitly so the child can exit.
+- Hard timeout of 30 seconds per request (`Osm2StreetsConfig.timeoutSeconds`, configurable via `application.properties`).
+- `@Lazy @Service` on `Osm2StreetsService`: if the binary is missing at runtime, constructor is deferred to first request — a failing bean never crashes the Spring context (same A7 mitigation pattern Phase 23 adopted for GraphHopper).
+
+## Data flow
 
 ```
 BboxRequest
    │
    ▼
-OsmPipelineService.fetchFromMirrors  (Overpass `[out:xml]` query, reused by GH)
+OverpassXmlFetcher  (shared between Phase 23 and Phase 24; Phase 18 fetches JSON via its own client)
    │
    ▼
-Overpass XML → tempfile
+Overpass XML bytes
    │
-   ▼
-GraphHopper WaySegmentParser (Path B — parser only, no routing)
-   │   EdgeHandler captures:
-   │     - ReaderWay tags (highway, oneway, lanes, maxspeed, junction)
-   │     - Node tags on pillar points (traffic_signals, …)
-   │     - PointList geometry (deep-copied)
-   │
-   ▼
-GraphHopperOsmService.buildMapConfig
-   │     - node IDs prefixed "gh-"
-   │     - road IDs prefixed "gh-"
-   │     - intersections classified ROUNDABOUT/SIGNAL/PRIORITY from captured tags
-   │     - road length computed via OsmConversionUtils.computeWayLength
-   │     - lanes/speed/default signal phases via OsmConversionUtils
-   │
-   ▼
-MapValidator.validate(mapConfig)   (hard gate — throws on validator errors)
-   │
-   ▼
-MapConfig  → 200 OK
+   ├────────────────────┬────────────────────┐
+   │                    │                    │
+   ▼                    ▼                    ▼
+ Phase 18             Phase 23             Phase 24
+ (Overpass JSON       (GraphHopper         (osm2streets-cli
+  elements loop)      WaySegmentParser)     subprocess)
+   │                    │                    │
+   ▼                    ▼                    ▼
+ Handwritten         EdgeHandler           StreetNetwork
+ graph assembly      captures tags         JSON output
+   │                    │                    │
+   │                    │                    ▼
+   │                    │                  StreetNetworkMapper
+   │                    │                  (defensive JSON
+   │                    │                   parsing — handles
+   │                    │                   TitleCase/snake_case
+   │                    │                   + string/tagged-object
+   │                    │                   LaneType variants)
+   │                    │                    │
+   └────────────────────┴────────────────────┘
+                        │
+                        ▼
+                  OsmConversionUtils
+                  (projection, haversine, lane
+                   clamp, signal phases —
+                   IDENTICAL for all three)
+                        │
+                        ▼
+                   MapValidator
+                        │
+                        ▼
+                    MapConfig
 ```
 
-## Spike findings (Wave 0 of Phase 23)
+## A/B/C fairness contract
 
-Before committing to the Phase 23 implementation, a throwaway spike (`23-SPIKE.md`) probed two open questions. Keeping the findings here for historical record, since the spike test was deleted once Plan 23-07 closed the phase.
+A meaningful A/B/C comparison requires that the three converters agree on everything except the graph-construction step. Shared logic lives in `OsmConversionUtils` (extracted during Phase 23), which all three services call into:
 
-**A1 — does `WaySegmentParser.EdgeHandler.nodeTags` surface OSM node tags? → PASS.**
-The 5th parameter `List<Map<String, Object>> nodeTags` in GraphHopper 10.2 exposes the tags verbatim. A 3-node way with `<tag k="highway" v="traffic_signals"/>` on the middle node produced `nodeTags[1] = {highway=traffic_signals}`. No two-pass StAX fallback was needed.
+- **Projection** (lat/lon → canvas x/y): `lonToX`, `latToY` and the `CANVAS_*` constants.
+- **Distance math**: `haversineMeters`, `computeWayLength` (sum-of-segments — NOT endpoint-to-endpoint).
+- **Tag-driven defaults**: `speedLimitForHighway`, `laneCountForWay` (MAX-lane clamp = 4 for motorway/trunk, cascading defaults for lower classes).
+- **Endpoint assembly**: `collectSpawnPoints`, `collectDespawnPoints`, `assembleMapConfig`.
+- **Signal cycle defaults**: `buildDefaultSignalPhases`.
 
-**A7 — does a failing `@Service` bean degrade gracefully? → FAIL.**
-A bean that throws from its constructor aborts Spring context startup with `BeanCreationException`, taking down Phase 18 with it. Mitigation: `GraphHopperOsmService` is annotated `@Lazy`, and the controller injects it via constructor so the failure surface is deferred to first request — a classpath issue produces a 503 on `/fetch-roads-gh` without taking Phase 18's endpoint offline.
+Changing any shared helper changes all three converters simultaneously. That is intentional.
 
-## Adding a third converter (Phase 24 recipe)
+Phase 24 additionally shares `OverpassXmlFetcher` with Phase 23 — the `[out:xml]` Overpass query + mirror-retry logic was extracted from `OsmPipelineService.fetchFromMirrors` during Plan 24-04.
 
-1. Add the new dependency to `backend/pom.xml`.
+## Lane metadata contract (Phase 24 schema extension)
+
+`MapConfig.RoadConfig` gained an optional `lanes: List<LaneConfig>` field. Each `LaneConfig` is:
+
+```java
+public record LaneConfig(
+    String type,      // "driving" | "parking" | "cycling" | "sidewalk"
+    double width,     // metres
+    String direction  // "forward" | "backward" | "both"
+) {}
+```
+
+MVP lane types are locked (CONTEXT D7). Non-MVP osm2streets lane variants (`Buffer`, `Shoulder`, `TurnLane`, `Bus`, etc.) are folded into the nearest MVP category or dropped:
+
+| osm2streets variant | Mapped to |
+|---|---|
+| `Driving` | `driving` |
+| `Parking` (any sub-type) | `parking` |
+| `Cycling` / `Biking` | `cycling` |
+| `Sidewalk` / `Footway` | `sidewalk` |
+| `Bus` | `driving` (dedicated bus lane is out of simulation scope) |
+| `Buffer` / `Shoulder` / `TurnLane` | dropped |
+
+**Consumer status:** the simulation engine does NOT currently read `lanes[]`. IDM/MOBIL still operate on the flat `laneCount`. Consuming the lane-level data is a future phase.
+
+## Known gaps and limitations
+
+### Phase 24 — roundabout detection
+
+osm2streets' `IntersectionControl` enum only exposes four variants: `Uncontrolled`, `Signed`, `Signalled`, `Construction`. There is **no `Roundabout` variant**. Phase 24 therefore classifies all roundabout-like intersections as either `PRIORITY` (Uncontrolled) or `SIGNAL` (Signalled), missing the distinct ROUNDABOUT classification that Phases 18 and 23 produce for `junction=roundabout` tags.
+
+This is an **accepted MVP gap**. Mitigation options for a future spike:
+- Parse retained Overpass XML for `junction=roundabout` and cross-reference with osm2streets output by WGS84 position.
+- Contribute upstream to osm2streets to surface roundabout detection.
+- Fork and add a minimal post-processing pass in `tools/osm2streets-cli`.
+
+### Phase 24 — xmlgraphics-commons transitive dependency
+
+RESEARCH Q2 flagged whether `xmlgraphics-commons` (transitive dep of the Rust build via osm2streets) should be excluded. Decision (CONTEXT D9 era): **do not exclude** in this phase. Defer until a concrete jar-size complaint surfaces. The transitive lives only in the Rust build environment and does not affect the shipped binary.
+
+### Phase 24 — lane JSON field-name serde variance
+
+RESEARCH Q3 flagged MEDIUM confidence on osm2streets' serde field naming (TitleCase vs snake_case). Plan 24-01 recorded the observed shape on `straight.osm`: `lt` / `dir` / `width` with `Direction` values `Forward` / `Backward` / `Both`. Some `LaneType` variants (e.g. `Parking`, `Buffer`) serialise as tagged objects `{VariantName: subtype}` rather than bare strings. `StreetNetworkMapper` defensively handles both forms.
+
+## Error taxonomy
+
+All three converters surface the same HTTP error codes (mapped by `OsmController`'s `@ExceptionHandler`):
+
+| HTTP | When                                                                              |
+|------|-----------------------------------------------------------------------------------|
+| 400  | Request body malformed or bbox values out of range                                |
+| 422  | Parser ran but produced zero usable roads                                          |
+| 503  | Overpass mirrors all failed, GraphHopper init threw, or osm2streets-cli returned non-zero exit |
+| 504  | Upstream timeout (Overpass or osm2streets-cli hard timeout)                        |
+
+## Adding a fourth converter (extension recipe)
+
+1. Add the new dependency to `backend/pom.xml` (JVM lib) or bundle a new binary under `backend/bin/` (external tool).
 2. Create `YourConverterOsmService` under `backend/src/main/java/com/trafficsimulator/service/`:
    ```java
    @Service
@@ -91,26 +178,22 @@ A bean that throws from its constructor aborts Spring context startup with `Bean
        public String converterName() { return "YourConverter"; }
    }
    ```
-3. Reuse `OsmConversionUtils` for projection, distance, tag defaults, and endpoint assembly. Do NOT re-implement these; fairness is lost the moment two converters use different constants.
-4. Add `POST /api/osm/fetch-roads-your-slug` to `OsmController` (constructor injection + `@Lazy` on the dep). Mirror the error taxonomy from Phase 18 (400 / 422 / 503 / 504).
-5. Write tests under `backend/src/test/java/com/trafficsimulator/service/YourConverterOsmServiceTest.java` — cover at minimum: straight road, T-intersection, roundabout, signal, missing tags. Reuse the Phase 23 fixtures in `backend/src/test/resources/osm/` if applicable.
-6. Extend `OsmPipelineComparisonTest` to A/B/C the three converters (the test is gated by `@EnabledIfSystemProperty(named="osm.online", matches="on|true")` so CI stays offline).
-7. Add a frontend button mirroring Phase 23's "Fetch roads (GraphHopper)" pattern in `MapSidebar.tsx`; thread `resultOrigin` so the sidebar heading distinguishes the three origins.
-8. Add a Playwright spec under `frontend/e2e/` mirroring `osm-bbox-gh.spec.ts` that stubs `/api/osm/fetch-roads-your-slug`.
+3. Reuse `OsmConversionUtils` for projection/distance/tag-defaults and `OverpassXmlFetcher` for the XML fetch. Do NOT re-implement — A/B/C fairness depends on it.
+4. Add `POST /api/osm/fetch-roads-your-slug` to `OsmController` (constructor injection + `@Lazy` on the dep). Mirror the error taxonomy.
+5. Write unit + WebMvc tests mirroring Phase 23 / Phase 24 patterns.
+6. `OsmPipelineComparisonTest` autowires `List<OsmConverter>` and iterates; your service joins the rotation automatically once it's an `@Service` bean.
+7. Add a frontend button in `MapSidebar.tsx`, extend `resultOrigin` union, clone the handler in `MapPage.tsx`.
+8. Add a Playwright spec under `frontend/e2e/` mirroring `osm-bbox-o2s.spec.ts`.
 
-## Error taxonomy
+## Test suite
 
-Both converters surface the same HTTP error codes (mapped by `OsmController`'s `@ExceptionHandler`):
+- **Backend:** 381 passed + 1 skipped (the A/B/C comparison, gated by `-Dosm.online=on`).
+- **Vitest:** 59 passed + 3 skipped.
+- **Playwright:** 8 passed (one per converter flow + simulation + controls + responsive + vision).
 
-| HTTP | When                                                                            |
-|------|---------------------------------------------------------------------------------|
-| 400  | Request body malformed or bbox values out of range                              |
-| 422  | Parser ran but produced zero usable roads (empty intersection, all filtered)    |
-| 503  | Overpass mirrors all failed, or GraphHopper initialisation threw                |
-| 504  | Upstream Overpass timeout                                                       |
-
-## Known open questions (for future work)
-
-- **Should `xmlgraphics-commons` be excluded from `graphhopper-core`?** Not in this phase — defer until a concrete jar-size complaint surfaces. Research note: it is a transitive only used by GraphHopper's image-based debug output, which we do not use.
-- **Should the converters agree on intersection node IDs?** Currently they do NOT (Phase 18 uses `osm-<way>-<idx>`, Phase 23 uses `gh-<id>`). This prevents mismatched-ID noise in A/B diffs. If a future convergence layer compares geometry rather than IDs, this may need re-visiting.
-- **Threading.** Both services are singleton `@Service` beans. Neither holds mutable instance state; all per-request state lives on the call stack. Safe for concurrent requests. No shared `BaseGraph`, no shared `RAMDirectory`.
+Run the full gate with:
+```bash
+mvn test -pl backend
+cd frontend && npm test -- --run
+cd frontend && npx playwright test
+```
