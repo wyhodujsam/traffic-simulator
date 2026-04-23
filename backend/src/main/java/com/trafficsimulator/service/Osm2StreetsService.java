@@ -6,6 +6,7 @@ import java.io.OutputStream;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.nio.file.Path;
+import java.util.List;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.ExecutionException;
 import java.util.concurrent.TimeUnit;
@@ -14,7 +15,11 @@ import java.util.concurrent.TimeoutException;
 import org.springframework.context.annotation.Lazy;
 import org.springframework.stereotype.Service;
 
+import com.fasterxml.jackson.core.JsonProcessingException;
+import com.fasterxml.jackson.databind.JsonNode;
+import com.fasterxml.jackson.databind.ObjectMapper;
 import com.trafficsimulator.config.MapConfig;
+import com.trafficsimulator.config.MapValidator;
 import com.trafficsimulator.config.Osm2StreetsConfig;
 import com.trafficsimulator.dto.BboxRequest;
 
@@ -82,6 +87,9 @@ public class Osm2StreetsService implements OsmConverter {
     // ---------------------------------------------------------------------
 
     private final Osm2StreetsConfig config;
+    private final OverpassXmlFetcher overpassXmlFetcher;
+    private final ObjectMapper objectMapper;
+    private final MapValidator mapValidator;
 
     // ---------------------------------------------------------------------
     // OsmConverter contract
@@ -104,9 +112,37 @@ public class Osm2StreetsService implements OsmConverter {
 
     @Override
     public MapConfig fetchAndConvert(BboxRequest bbox) {
-        // NOTE: Plan 24-04 replaces this body with Overpass fetch → executeCli → StreetNetworkMapper.
-        throw new UnsupportedOperationException(
-                "Osm2StreetsService.fetchAndConvert — StreetNetworkMapper + Overpass fetch land in Plan 24-04");
+        byte[] xml = overpassXmlFetcher.fetchXmlBytes(bbox);
+
+        String json;
+        try {
+            json = executeCli(xml);
+        } catch (IOException e) {
+            throw new Osm2StreetsCliException("osm2streets-cli IO failure: " + e.getMessage());
+        }
+
+        JsonNode network;
+        try {
+            network = objectMapper.readTree(json);
+        } catch (JsonProcessingException e) {
+            throw new Osm2StreetsCliException(
+                    "osm2streets-cli produced invalid JSON: " + e.getMessage());
+        }
+
+        MapConfig cfg = StreetNetworkMapper.map(network, bbox);
+        List<String> errors = mapValidator.validate(cfg);
+        if (!errors.isEmpty()) {
+            log.warn("osm2streets output failed MapValidator: {}", errors);
+            throw new IllegalStateException(
+                    "osm2streets output failed validation: " + String.join(", ", errors));
+        }
+
+        log.info(
+                "osm2streets fetch succeeded: {} roads / {} intersections for bbox {}",
+                cfg.getRoads() == null ? 0 : cfg.getRoads().size(),
+                cfg.getIntersections() == null ? 0 : cfg.getIntersections().size(),
+                bbox);
+        return cfg;
     }
 
     // ---------------------------------------------------------------------

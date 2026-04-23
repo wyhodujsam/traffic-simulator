@@ -11,15 +11,18 @@ import java.nio.file.Paths;
 import java.nio.file.attribute.PosixFilePermission;
 import java.nio.file.attribute.PosixFilePermissions;
 import java.util.Arrays;
+import java.util.List;
 import java.util.Set;
 
 import org.junit.jupiter.api.Assumptions;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.io.TempDir;
+import org.springframework.web.client.RestClient;
 
+import com.fasterxml.jackson.databind.ObjectMapper;
+import com.trafficsimulator.config.MapValidator;
 import com.trafficsimulator.config.Osm2StreetsConfig;
-import com.trafficsimulator.dto.BboxRequest;
 import com.trafficsimulator.service.Osm2StreetsService.Osm2StreetsCliException;
 import com.trafficsimulator.service.Osm2StreetsService.Osm2StreetsCliTimeoutException;
 
@@ -138,7 +141,7 @@ class Osm2StreetsServiceExecuteCliTest {
         Osm2StreetsConfig cfg = new Osm2StreetsConfig();
         cfg.setBinaryPath("/nonexistent/path/to/osm2streets-cli");
         cfg.setTimeoutSeconds(10);
-        Osm2StreetsService svc = new Osm2StreetsService(cfg);
+        Osm2StreetsService svc = newServiceWith(cfg);
 
         assertThat(svc.isAvailable()).isFalse();
     }
@@ -160,7 +163,7 @@ class Osm2StreetsServiceExecuteCliTest {
         Osm2StreetsConfig cfg = new Osm2StreetsConfig();
         cfg.setBinaryPath(realBinary.toString());
         cfg.setTimeoutSeconds(10);
-        Osm2StreetsService svc = new Osm2StreetsService(cfg);
+        Osm2StreetsService svc = newServiceWith(cfg);
 
         assertThat(svc.isAvailable()).isTrue();
     }
@@ -177,16 +180,51 @@ class Osm2StreetsServiceExecuteCliTest {
     }
 
     // ------------------------------------------------------------------
-    // H — fetchAndConvert is a Plan 24-04 guard
+    // H — fetchAndConvert end-to-end smoke: after Plan 24-04 wiring, invoking with a shell
+    //     stand-in that emits empty JSON {roads:[],intersections:[]} funnels through
+    //     StreetNetworkMapper and surfaces the documented "No roads" IllegalStateException
+    //     rather than the previous UnsupportedOperationException placeholder.
     // ------------------------------------------------------------------
 
     @Test
-    void fetchAndConvert_throwsUnsupportedForNow() {
-        Osm2StreetsService svc = serviceFor(successScript, 10);
+    void fetchAndConvert_emptyPipelineSurfacesNoRoadsError(@TempDir Path scriptDir) throws IOException {
+        Path emptyJsonScript = scriptDir.resolve("empty.sh");
+        Files.writeString(
+                emptyJsonScript,
+                "#!/bin/sh\ncat >/dev/null\necho '{\"roads\":[],\"intersections\":[],\"gps_bounds\":{\"min_lon\":21.0,\"min_lat\":52.22,\"max_lon\":21.001,\"max_lat\":52.221}}'\n",
+                StandardCharsets.UTF_8);
+        Files.setPosixFilePermissions(
+                emptyJsonScript, PosixFilePermissions.fromString("rwxr-xr-x"));
 
-        assertThatThrownBy(() -> svc.fetchAndConvert(new BboxRequest(0, 0, 0.01, 0.01)))
-                .isInstanceOf(UnsupportedOperationException.class)
-                .hasMessageContaining("24-04");
+        // Build a service where executeCli is spied via a subclass (script is arbitrary — we
+        // override executeCli directly to keep the smoke test self-contained and avoid needing
+        // the real Overpass mirrors list).
+        Osm2StreetsConfig cfg = new Osm2StreetsConfig();
+        cfg.setBinaryPath(emptyJsonScript.toString());
+        cfg.setTimeoutSeconds(5);
+
+        OverpassXmlFetcher stubFetcher =
+                new OverpassXmlFetcher(RestClient.create(), List.of()) {
+                    @Override
+                    public byte[] fetchXmlBytes(com.trafficsimulator.dto.BboxRequest b) {
+                        return "<osm/>".getBytes(StandardCharsets.UTF_8);
+                    }
+                };
+
+        Osm2StreetsService svc =
+                new Osm2StreetsService(cfg, stubFetcher, new ObjectMapper(), new MapValidator()) {
+                    @Override
+                    String executeCli(byte[] osmXml) {
+                        return "{\"roads\":[],\"intersections\":[],\"gps_bounds\":{\"min_lon\":21.0,\"min_lat\":52.22,\"max_lon\":21.001,\"max_lat\":52.221}}";
+                    }
+                };
+
+        assertThatThrownBy(
+                        () ->
+                                svc.fetchAndConvert(
+                                        new com.trafficsimulator.dto.BboxRequest(52.22, 21.0, 52.221, 21.001)))
+                .isInstanceOf(IllegalStateException.class)
+                .hasMessageContaining("No roads");
     }
 
     // ------------------------------------------------------------------
@@ -197,7 +235,13 @@ class Osm2StreetsServiceExecuteCliTest {
         Osm2StreetsConfig cfg = new Osm2StreetsConfig();
         cfg.setBinaryPath(binary.toString());
         cfg.setTimeoutSeconds(timeoutSeconds);
-        return new Osm2StreetsService(cfg);
+        return newServiceWith(cfg);
+    }
+
+    /** Assembles a service with all Plan 24-04 dependencies wired to lightweight stand-ins. */
+    private Osm2StreetsService newServiceWith(Osm2StreetsConfig cfg) {
+        OverpassXmlFetcher fetcher = new OverpassXmlFetcher(RestClient.create(), List.of());
+        return new Osm2StreetsService(cfg, fetcher, new ObjectMapper(), new MapValidator());
     }
 
     private Path writeExecutableScript(String name, String body) throws IOException {
