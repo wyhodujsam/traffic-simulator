@@ -1,0 +1,18 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<osm version="0.6" generator="test">
+  <!-- Two-way tertiary boulevard with cycleways on both sides, sidewalks,
+       and lane-level parking. Exercises the full LaneSpec extraction path
+       (Driving/Parking/Biking/Sidewalk) in Phase 24-04 StreetNetworkMapper. -->
+  <node id="1" lat="52.2200" lon="21.0000"/>
+  <node id="2" lat="52.2210" lon="21.0010"/>
+  <way id="100">
+    <nd ref="1"/><nd ref="2"/>
+    <tag k="highway" v="tertiary"/>
+    <tag k="name" v="Bike Boulevard"/>
+    <tag k="lanes" v="2"/>
+    <tag k="maxspeed" v="30"/>
+    <tag k="cycleway:both" v="lane"/>
+    <tag k="sidewalk" v="both"/>
+    <tag k="parking:both" v="lane"/>
+  </way>
+</osm>
