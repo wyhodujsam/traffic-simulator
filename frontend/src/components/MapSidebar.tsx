@@ -6,6 +6,7 @@ interface MapSidebarProps {
   readonly state: 'idle' | 'loading' | 'result' | 'error';
   readonly onFetchRoads?: () => void;
   readonly onFetchRoadsGh?: () => void;
+  readonly onFetchRoadsO2s?: () => void;
   readonly onUploadImage?: (file: File) => void;
   readonly onAnalyzeBbox?: () => void;
   readonly onAnalyzeComponents?: () => void;
@@ -16,7 +17,7 @@ interface MapSidebarProps {
   readonly onRunSimulation?: () => void;
   readonly simulationLoading?: boolean;
   readonly loadingMessage?: string;
-  readonly resultOrigin?: 'Overpass' | 'GraphHopper' | null;
+  readonly resultOrigin?: 'Overpass' | 'GraphHopper' | 'osm2streets' | null;
 }
 
 const buttonBase: React.CSSProperties = {
@@ -76,12 +77,14 @@ function IdleContent({ bbox }: { readonly bbox: BboxInfo | null }) {
 function IdleActions({
   onFetchRoads,
   onFetchRoadsGh,
+  onFetchRoadsO2s,
   onUploadImage,
   onAnalyzeBbox,
   onAnalyzeComponents,
 }: {
   readonly onFetchRoads?: () => void;
   readonly onFetchRoadsGh?: () => void;
+  readonly onFetchRoadsO2s?: () => void;
   readonly onUploadImage?: (file: File) => void;
   readonly onAnalyzeBbox?: () => void;
   readonly onAnalyzeComponents?: () => void;
@@ -106,6 +109,9 @@ function IdleActions({
       </button>
       <button style={buttonBase} onClick={onFetchRoadsGh}>
         Fetch roads (GraphHopper)
+      </button>
+      <button style={buttonBase} onClick={onFetchRoadsO2s}>
+        Fetch roads (osm2streets)
       </button>
       <button style={buttonBase} onClick={onAnalyzeBbox}>
         AI Vision (from bbox)
@@ -189,7 +195,7 @@ function ResultContent({ result, onReset, onExportJson, onRunSimulation, simulat
   readonly onExportJson?: () => void;
   readonly onRunSimulation?: () => void;
   readonly simulationLoading?: boolean;
-  readonly resultOrigin?: 'Overpass' | 'GraphHopper' | null;
+  readonly resultOrigin?: 'Overpass' | 'GraphHopper' | 'osm2streets' | null;
 }) {
   const heading = resultOrigin ?? 'Roads loaded';
   return (
@@ -220,6 +226,7 @@ export function MapSidebar({
   state,
   onFetchRoads,
   onFetchRoadsGh,
+  onFetchRoadsO2s,
   onUploadImage,
   onAnalyzeBbox,
   onAnalyzeComponents,
@@ -256,6 +263,7 @@ export function MapSidebar({
           <IdleActions
             onFetchRoads={onFetchRoads}
             onFetchRoadsGh={onFetchRoadsGh}
+            onFetchRoadsO2s={onFetchRoadsO2s}
             onUploadImage={onUploadImage}
             onAnalyzeBbox={onAnalyzeBbox}
             onAnalyzeComponents={onAnalyzeComponents}
