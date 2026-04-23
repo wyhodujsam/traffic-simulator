@@ -5,6 +5,7 @@ interface MapSidebarProps {
   readonly bbox: BboxInfo | null;
   readonly state: 'idle' | 'loading' | 'result' | 'error';
   readonly onFetchRoads?: () => void;
+  readonly onFetchRoadsGh?: () => void;
   readonly onUploadImage?: (file: File) => void;
   readonly onAnalyzeBbox?: () => void;
   readonly onAnalyzeComponents?: () => void;
@@ -15,6 +16,7 @@ interface MapSidebarProps {
   readonly onRunSimulation?: () => void;
   readonly simulationLoading?: boolean;
   readonly loadingMessage?: string;
+  readonly resultOrigin?: 'Overpass' | 'GraphHopper' | null;
 }
 
 const buttonBase: React.CSSProperties = {
@@ -73,11 +75,13 @@ function IdleContent({ bbox }: { readonly bbox: BboxInfo | null }) {
 
 function IdleActions({
   onFetchRoads,
+  onFetchRoadsGh,
   onUploadImage,
   onAnalyzeBbox,
   onAnalyzeComponents,
 }: {
   readonly onFetchRoads?: () => void;
+  readonly onFetchRoadsGh?: () => void;
   readonly onUploadImage?: (file: File) => void;
   readonly onAnalyzeBbox?: () => void;
   readonly onAnalyzeComponents?: () => void;
@@ -99,6 +103,9 @@ function IdleActions({
     <>
       <button style={buttonBase} onClick={onFetchRoads}>
         Fetch Roads
+      </button>
+      <button style={buttonBase} onClick={onFetchRoadsGh}>
+        Fetch roads (GraphHopper)
       </button>
       <button style={buttonBase} onClick={onAnalyzeBbox}>
         AI Vision (from bbox)
@@ -176,16 +183,18 @@ function ErrorContent({ error, onReset }: { readonly error?: string | null; read
   );
 }
 
-function ResultContent({ result, onReset, onExportJson, onRunSimulation, simulationLoading }: {
+function ResultContent({ result, onReset, onExportJson, onRunSimulation, simulationLoading, resultOrigin }: {
   readonly result?: { roadCount: number; intersectionCount: number } | null;
   readonly onReset?: () => void;
   readonly onExportJson?: () => void;
   readonly onRunSimulation?: () => void;
   readonly simulationLoading?: boolean;
+  readonly resultOrigin?: 'Overpass' | 'GraphHopper' | null;
 }) {
+  const heading = resultOrigin ?? 'Roads loaded';
   return (
     <>
-      <p style={{ margin: '0 0 4px', fontSize: '14px' }}>Roads loaded</p>
+      <p style={{ margin: '0 0 4px', fontSize: '14px' }}>{heading}</p>
       <p style={{ margin: '0 0 12px', fontSize: '13px', color: '#aaa' }}>
         {result?.roadCount ?? 0} roads, {result?.intersectionCount ?? 0} intersections
       </p>
@@ -210,6 +219,7 @@ export function MapSidebar({
   bbox,
   state,
   onFetchRoads,
+  onFetchRoadsGh,
   onUploadImage,
   onAnalyzeBbox,
   onAnalyzeComponents,
@@ -220,6 +230,7 @@ export function MapSidebar({
   onRunSimulation,
   simulationLoading,
   loadingMessage = 'Fetching road data...',
+  resultOrigin,
 }: MapSidebarProps) {
   return (
     <aside style={{
@@ -242,7 +253,13 @@ export function MapSidebar({
       {state === 'idle' && (
         <>
           <IdleContent bbox={bbox} />
-          <IdleActions onFetchRoads={onFetchRoads} onUploadImage={onUploadImage} onAnalyzeBbox={onAnalyzeBbox} onAnalyzeComponents={onAnalyzeComponents} />
+          <IdleActions
+            onFetchRoads={onFetchRoads}
+            onFetchRoadsGh={onFetchRoadsGh}
+            onUploadImage={onUploadImage}
+            onAnalyzeBbox={onAnalyzeBbox}
+            onAnalyzeComponents={onAnalyzeComponents}
+          />
         </>
       )}
       {state === 'loading' && <LoadingContent message={loadingMessage} />}
@@ -254,6 +271,7 @@ export function MapSidebar({
           onExportJson={onExportJson}
           onRunSimulation={onRunSimulation}
           simulationLoading={simulationLoading}
+          resultOrigin={resultOrigin}
         />
       )}
     </aside>
