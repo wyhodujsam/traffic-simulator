@@ -1,0 +1,20 @@
+[package]
+name = "osm2streets-cli"
+version = "0.1.0"
+edition = "2021"
+description = "Thin wrapper CLI around osm2streets for the traffic-simulator backend. Reads OSM XML on stdin (or --input file), emits StreetNetwork JSON on stdout (or --output file)."
+
+# osm2streets has no crates.io release and no tagged versions. Pin to a specific
+# 40-char commit SHA for reproducible rebuilds. Bump only via deliberate review.
+[dependencies]
+osm2streets      = { git = "https://github.com/a-b-street/osm2streets", rev = "fc119c47dac567d030c6ce7c24a48896f58ed906" }
+streets_reader   = { git = "https://github.com/a-b-street/osm2streets", rev = "fc119c47dac567d030c6ce7c24a48896f58ed906" }
+abstutil         = { git = "https://github.com/a-b-street/abstreet" }
+serde_json       = "1"
+anyhow           = "1"
+
+[profile.release]
+opt-level = 3
+lto       = true
+strip     = true
+codegen-units = 1
