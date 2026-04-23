@@ -1,0 +1,9 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<osm version="0.6" generator="test">
+  <node id="1" lat="52.2200" lon="21.0000"/>
+  <node id="2" lat="52.2210" lon="21.0010"/>
+  <way id="100">
+    <nd ref="1"/><nd ref="2"/>
+    <tag k="name" v="unnamed path"/>
+  </way>
+</osm>
