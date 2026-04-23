@@ -21,10 +21,11 @@ export function MapPage() {
   const [fetchError, setFetchError] = useState<string | null>(null);
   const [mapConfig, setMapConfig] = useState<MapConfigData | null>(null);
   const [simulationLoading, setSimulationLoading] = useState(false);
-  const [uploadMode, setUploadMode] = useState(false);
+  const [pipelineMode, setPipelineMode] = useState<'idle' | 'upload' | 'bbox' | 'components' | 'gh'>('idle');
+  const [resultOrigin, setResultOrigin] = useState<'Overpass' | 'GraphHopper' | null>(null);
 
   const mapViewRef = useRef<{ center: [number, number]; zoom: number }>({
-    center: [52.2297, 21.0122],
+    center: [52.5089, 21.0395],
     zoom: 14,
   });
 
@@ -34,7 +35,8 @@ export function MapPage() {
 
   const handleFetchRoads = useCallback(async () => {
     if (!bbox) return;
-    setUploadMode(false);
+    setPipelineMode('idle');
+    setResultOrigin(null);
     setSidebarState('loading');
     setFetchError(null);
     setFetchResult(null);
@@ -59,6 +61,7 @@ export function MapPage() {
         roadCount: config.roads?.length ?? 0,
         intersectionCount: config.intersections?.length ?? 0,
       });
+      setResultOrigin('Overpass');
       setSidebarState('result');
     } catch (e: unknown) {
       const message = e instanceof Error ? e.message : 'Failed to fetch roads';
@@ -67,8 +70,115 @@ export function MapPage() {
     }
   }, [bbox]);
 
+  const handleFetchRoadsGh = useCallback(async () => {
+    if (!bbox) return;
+    setPipelineMode('gh');
+    setResultOrigin(null);
+    setSidebarState('loading');
+    setFetchError(null);
+    setFetchResult(null);
+    try {
+      const response = await fetch('/api/osm/fetch-roads-gh', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          south: bbox.south,
+          west: bbox.west,
+          north: bbox.north,
+          east: bbox.east,
+        }),
+      });
+      if (!response.ok) {
+        const err = await response.json().catch(() => ({ error: 'Unknown error' }));
+        throw new Error((err as { error?: string }).error ?? `HTTP ${response.status}`);
+      }
+      const config = await response.json() as MapConfigData;
+      setMapConfig(config);
+      setFetchResult({
+        roadCount: config.roads?.length ?? 0,
+        intersectionCount: config.intersections?.length ?? 0,
+      });
+      setResultOrigin('GraphHopper');
+      setSidebarState('result');
+    } catch (e: unknown) {
+      const message = e instanceof Error ? e.message : 'Failed to fetch roads (GraphHopper)';
+      setFetchError(message);
+      setSidebarState('error');
+    }
+  }, [bbox]);
+
+  const handleAnalyzeBbox = useCallback(async () => {
+    if (!bbox) return;
+    setPipelineMode('bbox');
+    setSidebarState('loading');
+    setFetchError(null);
+    setFetchResult(null);
+    try {
+      const response = await fetch('/api/vision/analyze-bbox', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          south: bbox.south,
+          west: bbox.west,
+          north: bbox.north,
+          east: bbox.east,
+        }),
+      });
+      if (!response.ok) {
+        const err = await response.json().catch(() => ({ error: 'Unknown error' }));
+        throw new Error((err as { error?: string }).error ?? `HTTP ${response.status}`);
+      }
+      const config = await response.json() as MapConfigData;
+      setMapConfig(config);
+      setFetchResult({
+        roadCount: config.roads?.length ?? 0,
+        intersectionCount: config.intersections?.length ?? 0,
+      });
+      setSidebarState('result');
+    } catch (e: unknown) {
+      const message = e instanceof Error ? e.message : 'Failed to analyze bbox';
+      setFetchError(message);
+      setSidebarState('error');
+    }
+  }, [bbox]);
+
+  const handleAnalyzeComponents = useCallback(async () => {
+    if (!bbox) return;
+    setPipelineMode('components');
+    setSidebarState('loading');
+    setFetchError(null);
+    setFetchResult(null);
+    try {
+      const response = await fetch('/api/vision/analyze-components-bbox', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          south: bbox.south,
+          west: bbox.west,
+          north: bbox.north,
+          east: bbox.east,
+        }),
+      });
+      if (!response.ok) {
+        const err = await response.json().catch(() => ({ error: 'Unknown error' }));
+        throw new Error((err as { error?: string }).error ?? `HTTP ${response.status}`);
+      }
+      const config = await response.json() as MapConfigData;
+      setMapConfig(config);
+      setFetchResult({
+        roadCount: config.roads?.length ?? 0,
+        intersectionCount: config.intersections?.length ?? 0,
+      });
+      setSidebarState('result');
+    } catch (e: unknown) {
+      const message = e instanceof Error ? e.message : 'Failed to analyze (component library)';
+      setFetchError(message);
+      setSidebarState('error');
+    }
+  }, [bbox]);
+
   const handleUploadImage = useCallback(async (file: File) => {
-    setUploadMode(true);
+    setPipelineMode('upload');
     setSidebarState('loading');
     setFetchError(null);
     setFetchResult(null);
@@ -102,7 +212,8 @@ export function MapPage() {
     setFetchError(null);
     setFetchResult(null);
     setMapConfig(null);
-    setUploadMode(false);
+    setPipelineMode('idle');
+    setResultOrigin(null);
   }, []);
 
   const handleExportJson = useCallback(() => {
@@ -130,6 +241,13 @@ export function MapPage() {
         const err = await response.json().catch(() => ({ error: 'Unknown error' }));
         throw new Error((err as { error?: string }).error ?? `HTTP ${response.status}`);
       }
+      // Clear stale snapshots/roads from previous scenario before re-fetching
+      useSimulationStore.getState().clearSnapshots();
+      const refetchRoads = useSimulationStore.getState().refetchRoads;
+      // Wait briefly for backend to process load-config, then refetch roads
+      await new Promise((resolve) => setTimeout(resolve, 200));
+      if (refetchRoads) refetchRoads();
+
       // Send START command via STOMP to begin simulation
       const sendCommand = useSimulationStore.getState().sendCommand;
       if (sendCommand) {
@@ -194,14 +312,24 @@ export function MapPage() {
           bbox={bbox}
           state={sidebarState}
           onFetchRoads={handleFetchRoads}
+          onFetchRoadsGh={handleFetchRoadsGh}
           onUploadImage={handleUploadImage}
+          onAnalyzeBbox={handleAnalyzeBbox}
+          onAnalyzeComponents={handleAnalyzeComponents}
           result={fetchResult}
           error={fetchError}
           onReset={handleReset}
           onExportJson={handleExportJson}
           onRunSimulation={handleRunSimulation}
           simulationLoading={simulationLoading}
-          loadingMessage={uploadMode ? 'Analyzing road image...' : 'Fetching road data...'}
+          resultOrigin={resultOrigin}
+          loadingMessage={
+            pipelineMode === 'upload' ? 'Analyzing road image...' :
+            pipelineMode === 'bbox' ? 'Analyzing bbox (free-form)...' :
+            pipelineMode === 'components' ? 'Analyzing components via Claude vision...' :
+            pipelineMode === 'gh' ? 'Fetching road data (GraphHopper)...' :
+            'Fetching road data...'
+          }
         />
       </div>
     </div>

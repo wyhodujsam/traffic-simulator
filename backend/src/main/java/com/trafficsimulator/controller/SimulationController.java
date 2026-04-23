@@ -116,6 +116,7 @@ public class SimulationController {
                             .lanes(laneDtos)
                             .clipStart(clipStart)
                             .clipEnd(clipEnd)
+                            .lateralOffset(road.getLateralOffset())
                             .build());
         }
         return result;

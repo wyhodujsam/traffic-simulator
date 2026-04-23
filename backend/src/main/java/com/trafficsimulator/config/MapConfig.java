@@ -57,6 +57,7 @@ public class MapConfig {
         private double speedLimit;
         private int laneCount;
         private List<Integer> closedLanes; // lane indexes to close at load (optional)
+        private double lateralOffset; // perpendicular shift (backend coords) for rendering bidirectional pairs
     }
 
     @Data

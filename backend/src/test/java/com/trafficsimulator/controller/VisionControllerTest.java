@@ -8,6 +8,8 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
 
 import java.util.List;
 
+import org.springframework.http.MediaType;
+
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.autoconfigure.web.servlet.WebMvcTest;
@@ -22,6 +24,8 @@ import com.trafficsimulator.service.ClaudeVisionService;
 import com.trafficsimulator.service.ClaudeVisionService.ClaudeCliException;
 import com.trafficsimulator.service.ClaudeVisionService.ClaudeCliParseException;
 import com.trafficsimulator.service.ClaudeVisionService.ClaudeCliTimeoutException;
+import com.trafficsimulator.service.ComponentVisionService;
+import com.trafficsimulator.service.OsmStaticMapService;
 
 @WebMvcTest(VisionController.class)
 class VisionControllerTest {
@@ -29,6 +33,8 @@ class VisionControllerTest {
     @Autowired private MockMvc mockMvc;
 
     @MockBean private ClaudeVisionService claudeVisionService;
+    @MockBean private OsmStaticMapService osmStaticMapService;
+    @MockBean private ComponentVisionService componentVisionService;
 
     // -------------------------------------------------------------------------
     // Helper: minimal valid MapConfig
@@ -172,5 +178,137 @@ class VisionControllerTest {
         mockMvc.perform(MockMvcRequestBuilders.multipart("/api/vision/analyze").file(file))
                 .andExpect(status().isServiceUnavailable())
                 .andExpect(jsonPath("$.error").value(containsString("OSM fetch path")));
+    }
+
+    // -------------------------------------------------------------------------
+    // Phase 20 regression: /analyze-bbox
+    // -------------------------------------------------------------------------
+
+    @Test
+    void analyzeBbox_validRequest_returns200WithMapConfig() throws Exception {
+        when(osmStaticMapService.composeBboxPng(any())).thenReturn(new byte[]{9, 9, 9});
+        when(claudeVisionService.analyzeImageBytes(any(byte[].class)))
+                .thenReturn(minimalMapConfig());
+
+        String body = "{\"south\":52.0,\"west\":21.0,\"north\":52.1,\"east\":21.1}";
+
+        mockMvc.perform(MockMvcRequestBuilders.post("/api/vision/analyze-bbox")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(body))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.id").value("vision-generated"));
+    }
+
+    // -------------------------------------------------------------------------
+    // Phase 21: /analyze-components happy path
+    // -------------------------------------------------------------------------
+
+    @Test
+    void analyzeComponents_validPng_returns200WithMapConfig() throws Exception {
+        when(componentVisionService.analyzeImage(any(MultipartFile.class)))
+                .thenReturn(minimalMapConfig());
+
+        MockMultipartFile file = new MockMultipartFile(
+                "image", "road.png", "image/png", new byte[]{1, 2, 3});
+
+        mockMvc.perform(
+                        MockMvcRequestBuilders.multipart("/api/vision/analyze-components").file(file))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.id").value("vision-generated"))
+                .andExpect(jsonPath("$.name").value("AI Generated Map"));
+    }
+
+    @Test
+    void analyzeComponents_emptyFile_returns400() throws Exception {
+        MockMultipartFile file = new MockMultipartFile(
+                "image", "empty.png", "image/png", new byte[0]);
+
+        mockMvc.perform(
+                        MockMvcRequestBuilders.multipart("/api/vision/analyze-components").file(file))
+                .andExpect(status().isBadRequest())
+                .andExpect(jsonPath("$.error").exists());
+    }
+
+    @Test
+    void analyzeComponents_nonImageContentType_returns400() throws Exception {
+        MockMultipartFile file = new MockMultipartFile(
+                "image", "doc.pdf", "application/pdf", new byte[]{1, 2, 3});
+
+        mockMvc.perform(
+                        MockMvcRequestBuilders.multipart("/api/vision/analyze-components").file(file))
+                .andExpect(status().isBadRequest())
+                .andExpect(jsonPath("$.error").value(containsString("JPEG and PNG")));
+    }
+
+    @Test
+    void analyzeComponents_tooLarge_returns400() throws Exception {
+        byte[] huge = new byte[11 * 1024 * 1024];
+        MockMultipartFile file = new MockMultipartFile("image", "big.png", "image/png", huge);
+
+        mockMvc.perform(
+                        MockMvcRequestBuilders.multipart("/api/vision/analyze-components").file(file))
+                .andExpect(status().isBadRequest())
+                .andExpect(jsonPath("$.error").value(containsString("10MB")));
+    }
+
+    @Test
+    void analyzeComponents_parseError_returns422() throws Exception {
+        when(componentVisionService.analyzeImage(any(MultipartFile.class)))
+                .thenThrow(new ClaudeCliParseException("bad component spec"));
+
+        MockMultipartFile file = new MockMultipartFile(
+                "image", "road.png", "image/png", new byte[]{1, 2, 3});
+
+        mockMvc.perform(
+                        MockMvcRequestBuilders.multipart("/api/vision/analyze-components").file(file))
+                .andExpect(status().isUnprocessableEntity())
+                .andExpect(jsonPath("$.error").value(containsString("parse")));
+    }
+
+    @Test
+    void analyzeComponents_cliUnavailable_returns503() throws Exception {
+        when(componentVisionService.analyzeImage(any(MultipartFile.class)))
+                .thenThrow(new ClaudeCliException("binary not found"));
+
+        MockMultipartFile file = new MockMultipartFile(
+                "image", "road.png", "image/png", new byte[]{1, 2, 3});
+
+        mockMvc.perform(
+                        MockMvcRequestBuilders.multipart("/api/vision/analyze-components").file(file))
+                .andExpect(status().isServiceUnavailable())
+                .andExpect(jsonPath("$.error").value(containsString("OSM fetch path")));
+    }
+
+    @Test
+    void analyzeComponents_timeout_returns504() throws Exception {
+        when(componentVisionService.analyzeImage(any(MultipartFile.class)))
+                .thenThrow(new ClaudeCliTimeoutException("timed out"));
+
+        MockMultipartFile file = new MockMultipartFile(
+                "image", "road.png", "image/png", new byte[]{1, 2, 3});
+
+        mockMvc.perform(
+                        MockMvcRequestBuilders.multipart("/api/vision/analyze-components").file(file))
+                .andExpect(status().isGatewayTimeout())
+                .andExpect(jsonPath("$.error").value(containsString("timed out")));
+    }
+
+    // -------------------------------------------------------------------------
+    // Phase 21: /analyze-components-bbox happy path
+    // -------------------------------------------------------------------------
+
+    @Test
+    void analyzeComponentsBbox_validRequest_returns200WithMapConfig() throws Exception {
+        when(osmStaticMapService.composeBboxPng(any())).thenReturn(new byte[]{7, 7, 7});
+        when(componentVisionService.analyzeImageBytes(any(byte[].class)))
+                .thenReturn(minimalMapConfig());
+
+        String body = "{\"south\":52.0,\"west\":21.0,\"north\":52.1,\"east\":21.1}";
+
+        mockMvc.perform(MockMvcRequestBuilders.post("/api/vision/analyze-components-bbox")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(body))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.id").value("vision-generated"));
     }
 }

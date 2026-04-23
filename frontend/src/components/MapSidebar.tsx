@@ -1,11 +1,14 @@
-import { useRef } from 'react';
+import { useRef, useEffect, useState } from 'react';
 import { BboxInfo } from './BoundingBoxMap';
 
 interface MapSidebarProps {
   readonly bbox: BboxInfo | null;
   readonly state: 'idle' | 'loading' | 'result' | 'error';
   readonly onFetchRoads?: () => void;
+  readonly onFetchRoadsGh?: () => void;
   readonly onUploadImage?: (file: File) => void;
+  readonly onAnalyzeBbox?: () => void;
+  readonly onAnalyzeComponents?: () => void;
   readonly result?: { roadCount: number; intersectionCount: number } | null;
   readonly error?: string | null;
   readonly onReset?: () => void;
@@ -13,6 +16,7 @@ interface MapSidebarProps {
   readonly onRunSimulation?: () => void;
   readonly simulationLoading?: boolean;
   readonly loadingMessage?: string;
+  readonly resultOrigin?: 'Overpass' | 'GraphHopper' | null;
 }
 
 const buttonBase: React.CSSProperties = {
@@ -71,10 +75,16 @@ function IdleContent({ bbox }: { readonly bbox: BboxInfo | null }) {
 
 function IdleActions({
   onFetchRoads,
+  onFetchRoadsGh,
   onUploadImage,
+  onAnalyzeBbox,
+  onAnalyzeComponents,
 }: {
   readonly onFetchRoads?: () => void;
+  readonly onFetchRoadsGh?: () => void;
   readonly onUploadImage?: (file: File) => void;
+  readonly onAnalyzeBbox?: () => void;
+  readonly onAnalyzeComponents?: () => void;
 }) {
   const fileInputRef = useRef<HTMLInputElement>(null);
 
@@ -94,6 +104,15 @@ function IdleActions({
       <button style={buttonBase} onClick={onFetchRoads}>
         Fetch Roads
       </button>
+      <button style={buttonBase} onClick={onFetchRoadsGh}>
+        Fetch roads (GraphHopper)
+      </button>
+      <button style={buttonBase} onClick={onAnalyzeBbox}>
+        AI Vision (from bbox)
+      </button>
+      <button style={buttonBase} onClick={onAnalyzeComponents}>
+        AI Vision (component library)
+      </button>
       <input
         type="file"
         ref={fileInputRef}
@@ -111,23 +130,42 @@ function IdleActions({
   );
 }
 
+const LOADER_KEYFRAMES = `
+@keyframes ts-loader-slide {
+  0%   { transform: translateX(-100%); }
+  100% { transform: translateX(400%); }
+}`;
+
 function LoadingContent({ message }: { readonly message: string }) {
+  const [elapsed, setElapsed] = useState(0);
+  useEffect(() => {
+    const start = Date.now();
+    const id = setInterval(() => setElapsed(Math.round((Date.now() - start) / 1000)), 250);
+    return () => clearInterval(id);
+  }, []);
   return (
     <div style={{ fontSize: '13px', color: '#aaa' }}>
+      <style>{LOADER_KEYFRAMES}</style>
       <p style={{ margin: '0 0 8px' }}>{message}</p>
       <div style={{
         height: '6px',
         background: '#333',
         borderRadius: '3px',
         overflow: 'hidden',
+        position: 'relative',
       }}>
         <div style={{
+          position: 'absolute',
           height: '100%',
-          width: '60%',
+          width: '25%',
           background: '#0088ff',
           borderRadius: '3px',
+          animation: 'ts-loader-slide 1.4s ease-in-out infinite',
         }} />
       </div>
+      <p style={{ margin: '8px 0 0', fontSize: '11px', color: '#888' }}>
+        Elapsed: {elapsed}s
+      </p>
     </div>
   );
 }
@@ -145,16 +183,18 @@ function ErrorContent({ error, onReset }: { readonly error?: string | null; read
   );
 }
 
-function ResultContent({ result, onReset, onExportJson, onRunSimulation, simulationLoading }: {
+function ResultContent({ result, onReset, onExportJson, onRunSimulation, simulationLoading, resultOrigin }: {
   readonly result?: { roadCount: number; intersectionCount: number } | null;
   readonly onReset?: () => void;
   readonly onExportJson?: () => void;
   readonly onRunSimulation?: () => void;
   readonly simulationLoading?: boolean;
+  readonly resultOrigin?: 'Overpass' | 'GraphHopper' | null;
 }) {
+  const heading = resultOrigin ?? 'Roads loaded';
   return (
     <>
-      <p style={{ margin: '0 0 4px', fontSize: '14px' }}>Roads loaded</p>
+      <p style={{ margin: '0 0 4px', fontSize: '14px' }}>{heading}</p>
       <p style={{ margin: '0 0 12px', fontSize: '13px', color: '#aaa' }}>
         {result?.roadCount ?? 0} roads, {result?.intersectionCount ?? 0} intersections
       </p>
@@ -179,7 +219,10 @@ export function MapSidebar({
   bbox,
   state,
   onFetchRoads,
+  onFetchRoadsGh,
   onUploadImage,
+  onAnalyzeBbox,
+  onAnalyzeComponents,
   result,
   error,
   onReset,
@@ -187,6 +230,7 @@ export function MapSidebar({
   onRunSimulation,
   simulationLoading,
   loadingMessage = 'Fetching road data...',
+  resultOrigin,
 }: MapSidebarProps) {
   return (
     <aside style={{
@@ -209,7 +253,13 @@ export function MapSidebar({
       {state === 'idle' && (
         <>
           <IdleContent bbox={bbox} />
-          <IdleActions onFetchRoads={onFetchRoads} onUploadImage={onUploadImage} />
+          <IdleActions
+            onFetchRoads={onFetchRoads}
+            onFetchRoadsGh={onFetchRoadsGh}
+            onUploadImage={onUploadImage}
+            onAnalyzeBbox={onAnalyzeBbox}
+            onAnalyzeComponents={onAnalyzeComponents}
+          />
         </>
       )}
       {state === 'loading' && <LoadingContent message={loadingMessage} />}
@@ -221,6 +271,7 @@ export function MapSidebar({
           onExportJson={onExportJson}
           onRunSimulation={onRunSimulation}
           simulationLoading={simulationLoading}
+          resultOrigin={resultOrigin}
         />
       )}
     </aside>

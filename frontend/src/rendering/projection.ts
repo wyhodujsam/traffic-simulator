@@ -7,6 +7,19 @@ export interface ProjectedPosition {
   angle: number;
 }
 
+function applyLateralOffset(road: RoadDto, x: number, y: number): { x: number; y: number } {
+  const lateral = road.lateralOffset ?? 0;
+  if (!lateral) return { x, y };
+  const dx = road.endX - road.startX;
+  const dy = road.endY - road.startY;
+  const len = Math.hypot(dx, dy) || 1;
+  // Perpendicular pointing right of driving direction (matches drawRoads after rotate).
+  const perpX = -dy / len;
+  const perpY = dx / len;
+  const shift = lateral * RENDER_SCALE;
+  return { x: x + perpX * shift, y: y + perpY * shift };
+}
+
 /**
  * Projects a vehicle from domain coordinates to pixel coordinates.
  * Uses road geometry (startX/Y, endX/Y) and lane index, scaled by RENDER_SCALE.
@@ -31,7 +44,8 @@ export function projectVehicle(vehicle: VehicleDto, roads: RoadDto[]): Projected
   }
 
   const angle = Math.atan2(road.endY - road.startY, road.endX - road.startX);
-  return { x, y, angle };
+  const shifted = applyLateralOffset(road, x, y);
+  return { x: shifted.x, y: shifted.y, angle };
 }
 
 /**
@@ -47,5 +61,6 @@ export function projectObstacle(obstacle: ObstacleDto, roads: RoadDto[]): Projec
   const laneOffset = (obstacle.laneIndex - (road.laneCount - 1) / 2) * LANE_WIDTH_PX;
   const y = yBase + laneOffset;
   const angle = Math.atan2(road.endY - road.startY, road.endX - road.startX);
-  return { x, y, angle };
+  const shifted = applyLateralOffset(road, x, y);
+  return { x: shifted.x, y: shifted.y, angle };
 }

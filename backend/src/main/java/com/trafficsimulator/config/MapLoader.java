@@ -123,6 +123,7 @@ public class MapLoader {
                         .startY(coords[1])
                         .endX(coords[2])
                         .endY(coords[3])
+                        .lateralOffset(rc.getLateralOffset())
                         .lanes(new ArrayList<>())
                         .build();
 

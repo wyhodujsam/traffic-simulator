@@ -2,22 +2,23 @@
 gsd_state_version: 1.0
 milestone: v2.0
 milestone_name: — Map Screenshot to Simulation
-current_phase: 20 — AI Vision (Claude CLI) (Plan 01 complete)
-current_plan: 20-02 (next, if any)
-status: Phase 20 Plan 01 complete — ClaudeVisionService + VisionController POST /api/vision/analyze
-last_updated: "2026-04-12T22:30:00Z"
+current_phase: 23
+current_plan: 1
+status: Executing Phase 23
+last_updated: "2026-04-23T05:33:59.154Z"
 progress:
-  total_phases: 20
-  completed_phases: 18
-  total_plans: 71
-  completed_plans: 71
+  total_phases: 26
+  completed_phases: 20
+  total_plans: 93
+  completed_plans: 86
+  percent: 92
 ---
 
 # Project State
 
 **Project:** Traffic Simulator
 **Milestone:** v2.0 — Map Screenshot to Simulation
-**Current Phase:** 17 — Routing & Map Embed (Plan 01 complete)
+**Current Phase:** 23
 **Last Updated:** 2026-04-12
 
 ## Project Reference
@@ -25,7 +26,7 @@ progress:
 See: .planning/PROJECT.md (updated 2026-04-12)
 
 **Core value:** Wierna symulacja fizyki ruchu drogowego
-**Current focus:** Milestone v2.0 — roadmap created, starting Phase 17
+**Current focus:** Phase 23 — GraphHopper-based OSM parser
 
 ## Phase Status
 
@@ -55,16 +56,23 @@ See: .planning/PROJECT.md (updated 2026-04-12)
 | Phase | Name | Status |
 |-------|------|--------|
 | 17 | Routing & Map Embed | ✓ Complete (2/2 plans done) |
-| 18 | OSM Data Pipeline | ✓ Complete (1/1 plans done) |
-| 19 | Simulation Integration & Export | ◑ In progress (2/? plans done) |
-| 20 | AI Vision (Claude CLI) | ○ Not started |
+| 18 | OSM Data Pipeline | ✓ Complete (2/2 plans done) |
+| 19 | Simulation Integration & Export | ✓ Complete (2/2 plans done) |
+| 20 | AI Vision (Claude CLI) | ✓ Complete (1/1 plans done) |
+| 21 | Predefined Map Components (Pattern Library) | ✓ Complete (6/6 plans done) |
+| 22 | Extend Component Library (VIADUCT + HIGHWAY_EXIT_RAMP) | ✓ Complete (3/3 plans done) |
+| 23 | GraphHopper-based OSM parser | ○ Not started |
+| 24 | osm2streets integration | ○ Not started |
+| 25 | Traffic flow visualization | ○ Not started |
 
 ## Current Position
 
-**Active phase:** 19 — Simulation Integration & Export
-**Current plan:** 19-03 (next, if any)
-**Completed:** Phase 19 Plan 02 done — POST /api/command/load-config endpoint, Run Simulation button wired, useNavigate post-load redirect, STOMP START after load
-**Integration point:** Full OSM-to-simulation pipeline complete: Overpass → MapConfig → backend load → STOMP start → simulation renders on canvas
+Phase: 23 (GraphHopper-based OSM parser) — EXECUTING
+Plan: 1 of 8
+**Active phase:** — (between phases; ready to pick up 23/24/25)
+**Current plan:** 1
+**Completed:** Phase 22 Plan 03 — VisionComparisonHarness parametrised over viaduct + highway-exit-ramp fixtures. All 308 backend + 51 frontend tests green.
+**Integration point:** Full component-library vision pipeline ships end-to-end with 6 component types (ROUNDABOUT_4ARM, SIGNAL_4WAY, T_INTERSECTION, STRAIGHT_SEGMENT, VIADUCT, HIGHWAY_EXIT_RAMP). Phase 20 free-form pipeline coexists; harness runs both for A/B comparison.
 
 ## Key Decisions (v2.0)
 
@@ -109,3 +117,25 @@ See: .planning/PROJECT.md (updated 2026-04-12)
 - 2026-04-12: Phase 19 Plan 01 complete — RoadGraphPreview (CircleMarker nodes + Polyline edges on Leaflet), BoundingBoxMap children prop, Export JSON Blob download; tsc --noEmit clean
 - 2026-04-12: Phase 19 Plan 02 complete — POST /api/command/load-config endpoint in SimulationController, Run Simulation button wired in MapSidebar/MapPage, useNavigate redirect to /, STOMP START after load; both backend and frontend compile clean
 - 2026-04-12: Phase 20 Plan 01 complete — ClaudeVisionService (ProcessBuilder Claude CLI, JSON extraction, MapValidator), VisionController POST /api/vision/analyze (JPEG/PNG, 10MB limit, 400/422/503/504), ClaudeCliConfig @ConfigurationProperties; 238 tests pass (19 new)
+- 2026-04-13: Phase 21 Plan 01 complete — vision/components package: sealed ComponentSpec + 4 records (RoundaboutFourArm, SignalFourWay, TIntersection, StraightSegment) + ArmRef/Connection/ExpansionContext + MapComponentLibrary skeleton (commit 997d733)
+- 2026-04-13: Phase 21 Plan 02 complete — stitching algorithm (merge-coincident + bridge-via-segment); MapComponentLibrary.expand(components, connections) with ExpansionException on non-coincident arms; +11 tests (commit 8cdbfd9)
+- 2026-04-13: Phase 21 Plan 03 complete — ComponentVisionService: Claude prompt enumerating 4 MVP types, two-pass DTO parsing, expansion integration (commit b66a1f5)
+- 2026-04-13: Phase 21 Plan 04 complete — VisionController: POST /api/vision/analyze-components + /analyze-components-bbox; Phase 20 regression suite green (commit 0000a03)
+- 2026-04-13: Phase 21 Plan 05 complete — MapSidebar "AI Vision (component library)" button routes bbox to new endpoint (commit a72dc18)
+- 2026-04-13: Phase 21 Plan 06 complete — VisionComparisonHarness: opt-in @SpringBootTest (@EnabledIfSystemProperty vision.harness=true), writes target/vision-comparison/{free-form,components}/{map.json,diff.md} (commit 25ec1c4)
+- 2026-04-14: Phase 21 fix — commit c2e4d59: explicit connection authoritative (drop 5px distance gate; Claude cannot know arm-endpoint geometry), STRAIGHT_SEGMENT prompt clarifies start/end arm names
+- 2026-04-14: Phase 22 Plan 01 complete — Viaduct + HighwayExitRamp records + expansion tests; sealed ComponentSpec permits clause extended (commit f88d818)
+- 2026-04-14: Phase 22 Plan 02 complete — ComponentVisionService prompt and DTO toSpec switch expose VIADUCT + HIGHWAY_EXIT_RAMP to Claude (commit d2bf9aa)
+- 2026-04-14: Phase 22 Plan 03 complete — VisionComparisonHarness parametrised over viaduct + highway-exit-ramp fixtures; assume-skip when fixtures absent (commit 710d4bc)
+- 2026-04-22: Phase 21/22 closed — wrote missing SUMMARY.md files, VERIFICATION.md for both phases; fixed two test failures surfaced by full-suite run (ArchitectureTest OsmPipelineService RuntimeException → IllegalStateException; ComponentVisionServiceTest disconnectedArms replaced by explicitConnection_mergesRegardlessOfDistance to match c2e4d59 contract); 308 backend + 51 frontend tests green
+
+## Accumulated Context
+
+### Roadmap Evolution
+
+- Phase 21 added: Predefined map components — pattern library for Claude vision (roundabout, signal junction, T-intersection) with deterministic connection logic.
+- Phase 22 added (2026-04-14): Extend component library — VIADUCT + HIGHWAY_EXIT_RAMP.
+- Phase 23 added (2026-04-14): GraphHopper-based OSM parser — additive endpoint `/api/osm/fetch-roads-gh` for A/B comparison vs Phase 18.
+- Phase 24 added (2026-04-14): osm2streets (Rust/WASM) integration — lane-level street network; endpoint `/api/osm/fetch-roads-o2s`.
+- Phase 25 added (2026-04-14): Traffic flow visualization — space-time diagram, fundamental diagram, speed-colored vehicles, trails, ring-road scenario.
+- Phase 22.1 inserted after Phase 22 (2026-04-22): Playwright E2E test suite — install @playwright/test, config for backend+frontend dev servers, smoke tests for critical paths (simulation start/pause, AI Vision component-library flow, OSM bbox load, responsive layout) (URGENT / INSERTED)

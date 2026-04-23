@@ -87,6 +87,11 @@ function drawRoad(ctx: CanvasRenderingContext2D, road: RoadDto, suppressedSides:
   ctx.save();
   ctx.translate(road.startX * RENDER_SCALE, road.startY * RENDER_SCALE);
   ctx.rotate(angle);
+  // Apply perpendicular offset (positive = right of driving direction). After
+  // ctx.rotate, +y is perpendicular-right, so a plain translate works.
+  if (road.lateralOffset) {
+    ctx.translate(0, road.lateralOffset * RENDER_SCALE);
+  }
 
   ctx.fillStyle = '#3a3a3a';
   ctx.fillRect(visibleStart, -roadWidth / 2, visibleLength, roadWidth);

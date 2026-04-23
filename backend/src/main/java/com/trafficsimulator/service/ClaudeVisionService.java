@@ -94,7 +94,30 @@ public class ClaudeVisionService {
                     + "- Add spawnPoints on roads leaving ENTRY nodes (position 0.0)\n"
                     + "- Add despawnPoints on roads entering EXIT nodes (position = road length)\n"
                     + "- Intersection types: PRIORITY (default), SIGNAL (if traffic lights visible), "
-                    + "ROUNDABOUT (if roundabout visible)\n"
+                    + "ROUNDABOUT (if roundabout visible)\n\n"
+                    + "ROUNDABOUT GEOMETRY (CRITICAL — do NOT collapse a roundabout into a single "
+                    + "intersection point!):\n"
+                    + "When you see a roundabout (circular ring road in the image), you MUST emit:\n"
+                    + "1. FOUR ring nodes placed on the circle (n_ring_n at top, n_ring_e right, "
+                    + "n_ring_s bottom, n_ring_w left), each ~28 px from the centre.\n"
+                    + "2. ONE approach road per arm with id `r_<arm>_in` (e.g. r_north_in): from "
+                    + "the arm's ENTRY node TO the closest ring node. laneCount=1 unless the "
+                    + "image clearly shows multiple lanes per direction.\n"
+                    + "3. ONE departure road per arm with id `r_<arm>_out` (e.g. r_north_out): "
+                    + "from the same ring node TO the arm's EXIT node. laneCount must MATCH the "
+                    + "matching `_in` road. ENTRY and EXIT can share the same (x,y) — give them "
+                    + "different ids. NAMING IS CRITICAL: the engine uses the `_in`/`_out` suffix "
+                    + "to detect U-turns and prevent vehicles from exiting back the way they "
+                    + "came. Without this naming, cars will U-turn at the roundabout instead of "
+                    + "circulating.\n"
+                    + "4. FOUR ring roads forming a counter-clockwise loop with ids "
+                    + "`r_ring_nw`, `r_ring_ws`, `r_ring_se`, `r_ring_en`: n_ring_n→n_ring_w, "
+                    + "n_ring_w→n_ring_s, n_ring_s→n_ring_e, n_ring_e→n_ring_n. length 22, "
+                    + "speedLimit 8.3, laneCount 1.\n"
+                    + "5. FOUR intersections — one per ring node — all type=ROUNDABOUT, "
+                    + "intersectionSize=12, roundaboutCapacity=8.\n"
+                    + "If only some arms are visible, emit only those approach/departure pairs but "
+                    + "STILL emit all four ring nodes and all four ring roads.\n\n"
                     + "- Output ONLY valid JSON. No markdown fences. No explanation text.";
 
     // -------------------------------------------------------------------------
@@ -122,23 +145,38 @@ public class ClaudeVisionService {
     public MapConfig analyzeImage(MultipartFile file) throws IOException {
         Path tempFile = createTempFile(file);
         try {
-            String promptWithFile = ANALYSIS_PROMPT
-                    + "\n\nAnalyze the road image at: " + tempFile.toAbsolutePath()
-                    + "\nOutput ONLY valid JSON, no markdown fences.";
-            String output = executeCliCommand(
-                    config.getPath(),
-                    "-p",
-                    promptWithFile,
-                    "--output-format",
-                    "text");
-
-            String json = extractJson(output);
-            MapConfig mapConfig = parseJson(json);
-            validateConfig(mapConfig);
-            return mapConfig;
+            return analyzeImagePath(tempFile);
         } finally {
             deleteSilently(tempFile);
         }
+    }
+
+    /** Analyse a PNG image given as raw bytes (e.g. composed server-side from OSM tiles). */
+    public MapConfig analyzeImageBytes(byte[] data) throws IOException {
+        Path tempFile = Files.createTempFile(Path.of(config.getTempDir()), "vision-bbox-", ".png");
+        try {
+            Files.write(tempFile, data);
+            return analyzeImagePath(tempFile);
+        } finally {
+            deleteSilently(tempFile);
+        }
+    }
+
+    private MapConfig analyzeImagePath(Path tempFile) throws IOException {
+        String promptWithFile = ANALYSIS_PROMPT
+                + "\n\nAnalyze the road image at: " + tempFile.toAbsolutePath()
+                + "\nOutput ONLY valid JSON, no markdown fences.";
+        String output = executeCliCommand(
+                config.getPath(),
+                "-p",
+                promptWithFile,
+                "--output-format",
+                "text");
+
+        String json = extractJson(output);
+        MapConfig mapConfig = parseJson(json);
+        validateConfig(mapConfig);
+        return mapConfig;
     }
 
     // -------------------------------------------------------------------------

@@ -19,6 +19,7 @@ import org.springframework.web.client.RestClientException;
 
 import com.trafficsimulator.config.MapConfig;
 import com.trafficsimulator.dto.BboxRequest;
+import com.trafficsimulator.service.GraphHopperOsmService;
 import com.trafficsimulator.service.OsmPipelineService;
 
 @WebMvcTest(OsmController.class)
@@ -27,6 +28,7 @@ class OsmControllerTest {
     @Autowired private MockMvc mockMvc;
 
     @MockBean private OsmPipelineService osmPipelineService;
+    @MockBean private GraphHopperOsmService graphHopperOsmService;
 
     private static final String VALID_BBOX_JSON =
             """
@@ -87,6 +89,53 @@ class OsmControllerTest {
 
         mockMvc.perform(
                         post("/api/osm/fetch-roads")
+                                .contentType(MediaType.APPLICATION_JSON)
+                                .content(VALID_BBOX_JSON))
+                .andExpect(status().isServiceUnavailable())
+                .andExpect(jsonPath("$.error").value(containsString("unavailable")));
+    }
+
+    // -------------------------------------------------------------------------
+    // Phase 23 — /fetch-roads-gh endpoint tests (identical taxonomy to /fetch-roads)
+    // -------------------------------------------------------------------------
+
+    @Test
+    void fetchRoadsGh_validBbox_returns200WithMapConfig() throws Exception {
+        MapConfig config = new MapConfig();
+        config.setId("gh-bbox-test");
+        config.setName("OSM Import");
+        config.setRoads(List.of());
+        config.setNodes(List.of());
+        when(graphHopperOsmService.fetchAndConvert(any(BboxRequest.class))).thenReturn(config);
+
+        mockMvc.perform(
+                        post("/api/osm/fetch-roads-gh")
+                                .contentType(MediaType.APPLICATION_JSON)
+                                .content(VALID_BBOX_JSON))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.id").exists());
+    }
+
+    @Test
+    void fetchRoadsGh_emptyArea_returns422WithErrorMessage() throws Exception {
+        when(graphHopperOsmService.fetchAndConvert(any(BboxRequest.class)))
+                .thenThrow(new IllegalStateException("No roads found in selected area"));
+
+        mockMvc.perform(
+                        post("/api/osm/fetch-roads-gh")
+                                .contentType(MediaType.APPLICATION_JSON)
+                                .content(VALID_BBOX_JSON))
+                .andExpect(status().isUnprocessableEntity())
+                .andExpect(jsonPath("$.error").value(containsString("No roads")));
+    }
+
+    @Test
+    void fetchRoadsGh_overpassUnavailable_returns503WithErrorMessage() throws Exception {
+        when(graphHopperOsmService.fetchAndConvert(any(BboxRequest.class)))
+                .thenThrow(new RestClientException("Connection refused"));
+
+        mockMvc.perform(
+                        post("/api/osm/fetch-roads-gh")
                                 .contentType(MediaType.APPLICATION_JSON)
                                 .content(VALID_BBOX_JSON))
                 .andExpect(status().isServiceUnavailable())

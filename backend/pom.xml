@@ -36,6 +36,13 @@
             <artifactId>spring-boot-starter-web</artifactId>
         </dependency>
 
+        <!-- GraphHopper OSM parser (Phase 23 — additive, coexists with OsmPipelineService) -->
+        <dependency>
+            <groupId>com.graphhopper</groupId>
+            <artifactId>graphhopper-core</artifactId>
+            <version>10.2</version>
+        </dependency>
+
         <!-- Lombok (boilerplate reduction for DTOs and domain objects) -->
         <dependency>
             <groupId>org.projectlombok</groupId>

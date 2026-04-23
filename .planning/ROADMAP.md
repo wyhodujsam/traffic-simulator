@@ -398,14 +398,121 @@ Plans:
 
 ---
 
+### Phase 21: Predefined Map Components (Pattern Library for Claude Vision)
+
+**Goal:** Add an alternative Claude vision pipeline where a component catalog (ROUNDABOUT_4ARM, SIGNAL_4WAY, T_INTERSECTION, STRAIGHT_SEGMENT) owns the geometry in deterministic Java code. Claude only identifies component types, anchor positions, rotations, and arm-to-arm connections. Phase 20 endpoints remain byte-for-byte identical — both pipelines coexist for A/B comparison.
+
+**Depends on:** Phase 20
+**Requirements:** P21-CATALOG-TYPES, P21-CATALOG-SEALED, P21-LIB-SKELETON, P21-STITCH-MERGE, P21-STITCH-BRIDGE, P21-STITCH-ORPHAN, P21-VISION-PROMPT, P21-VISION-PARSE, P21-VISION-EXPAND-INTEGRATION, P21-ENDPOINT-MULTIPART, P21-ENDPOINT-BBOX, P21-PHASE20-REGRESSION, P21-FRONTEND-BUTTON, P21-FRONTEND-HANDLER, P21-HARNESS-GATED, P21-HARNESS-DIFF
+**Plans:** 6/6 plans executed
+
+Plans:
+- [x] 21-01-PLAN.md — Component catalog (sealed ComponentSpec + 4 records + MapComponentLibrary skeleton)
+- [x] 21-02-PLAN.md — Stitching algorithm (merge-coincident + bridge-via-segment)
+- [x] 21-03-PLAN.md — ComponentVisionService (Claude prompt + parse + expansion integration)
+- [x] 21-04-PLAN.md — POST /api/vision/analyze-components + /analyze-components-bbox endpoints
+- [x] 21-05-PLAN.md — Frontend "AI Vision (component library)" button
+- [x] 21-06-PLAN.md — VisionComparisonHarness (opt-in @SpringBootTest diff tool)
+
+**Success Criteria (what must be TRUE):**
+1. The /map page has a third button "AI Vision (component library)" that routes the current bbox to the component-library pipeline and loads the returned MapConfig.
+2. The backend deterministically expands Claude's component recognition into a MapValidator-clean MapConfig; output passes the same validation gate as Phase 20 output.
+3. Phase 20 endpoints (`/api/vision/analyze` and `/api/vision/analyze-bbox`) remain byte-for-byte identical; users can A/B the two pipelines on the same input.
+
+---
+
+### Phase 22: Extend Component Library (VIADUCT + HIGHWAY_EXIT_RAMP)
+
+**Goal:** Add two component records to the Phase 21 catalog — `VIADUCT` (two through-roads crossing at different heights, no shared node) and `HIGHWAY_EXIT_RAMP` (three arms: mainIn, mainOut, rampOut with a PRIORITY split). Follow the existing sealed-interface patterns so adding types stays cheap.
+
+**Depends on:** Phase 21
+**Requirements:** CLIB-V22-01, CLIB-V22-02, CLIB-V22-03, CLIB-V22-04
+**Plans:** 3/3 plans executed
+
+Plans:
+- [x] 22-01-PLAN.md — Viaduct + HighwayExitRamp records + expansion tests
+- [x] 22-02-PLAN.md — Expose VIADUCT + HIGHWAY_EXIT_RAMP to Claude (prompt + DTO switch)
+- [x] 22-03-PLAN.md — VisionComparisonHarness parametrised over viaduct + highway-exit-ramp fixtures
+
+**Success Criteria (what must be TRUE):**
+1. Claude can return VIADUCT or HIGHWAY_EXIT_RAMP in the components envelope and the pipeline expands them into a MapValidator-clean MapConfig.
+2. No edits to Phase 20 code or the 4 original Phase 21 component records; `git log --stat` confirms additive diff.
+3. `VisionComparisonHarness` covers both new fixture types via parametrised entries; harness still skips cleanly when fixture images are absent.
+
+---
+
 ### v2.0 Progress Table
 
 | Phase | Plans Complete | Status | Completed |
 |-------|----------------|--------|-----------|
 | 17. Routing & Map Embed | 2/2 | Complete | 2026-04-12 |
 | 18. OSM Data Pipeline | 2/2 | Complete | 2026-04-12 |
-| 19. Simulation Integration & Export | 0/2 | Planned | - |
-| 20. AI Vision (Claude CLI) | 0/? | Not started | - |
+| 19. Simulation Integration & Export | 2/2 | Complete | 2026-04-12 |
+| 20. AI Vision (Claude CLI) | 1/1 | Complete | 2026-04-12 |
+| 21. Predefined Map Components | 6/6 | Complete | 2026-04-14 |
+| 22. Extend Component Library (VIADUCT + HIGHWAY_EXIT_RAMP) | 3/3 | Complete | 2026-04-14 |
+
+### Phase 22.1: Playwright E2E test suite — install @playwright/test, config for backend+frontend dev servers, smoke tests for critical paths (simulation start/pause, AI Vision component-library flow, OSM bbox load, responsive layout) (INSERTED)
+
+**Goal:** Install and configure Playwright e2e test framework in the frontend workspace and author five smoke tests for the critical user flows — simulation start/pause, AI Vision (component library) with stubbed backend, OSM bbox load with stubbed backend, responsive layout at mobile/desktop viewports, and sim controls (speed + spawn rate) reflected in StatsPanel. Infrastructure + smoke tests only; comprehensive coverage is a follow-up.
+**Requirements**: N/A (inserted phase; scope is defined by CONTEXT.md decisions, not ROADMAP requirements)
+**Depends on:** Phase 22
+**Plans:** 6 plans
+
+Plans:
+- [ ] 22.1-01-PLAN.md — Install @playwright/test + @types/node, Chromium binary, playwright.config.ts with two-server webServer (backend 8086, frontend 5173), test:e2e script, e2e/ directory + README + .gitignore updates
+- [ ] 22.1-02-PLAN.md — simulation.spec.ts: real-backend smoke test for four-way-signal Start -> vehicles spawn, Pause -> count freezes (no stubs)
+- [ ] 22.1-03-PLAN.md — vision-components.spec.ts: stubbed /api/vision/analyze-components-bbox flow, RoadGraphPreview renders, Run Simulation navigates to /
+- [ ] 22.1-04-PLAN.md — osm-bbox.spec.ts: stubbed /api/osm/fetch-roads flow, sidebar transitions to result state with correct counts
+- [ ] 22.1-05-PLAN.md — responsive.spec.ts: mobile (375x667) stacked + desktop (1920x1080) side-by-side layouts via boundingBox geometry
+- [ ] 22.1-06-PLAN.md — controls.spec.ts: speed slider + spawn rate slider round-trip through STOMP to StatsPanel (vehicle count climbs at 3x spawn rate)
+
+### Phase 23: GraphHopper-based OSM parser
+
+**Goal:** Swap custom Overpass converter for GraphHopper OSMReader/WaySegmentParser to get cleaner intersection splitting. Additive — coexists with Phase 18 `OsmPipelineService` via new `/api/osm/fetch-roads-gh` endpoint for A/B comparison on the same bbox.
+
+**Requirements**: TBD (inserted phase — scope defined by 23-CONTEXT.md and 23-RESEARCH.md decisions)
+**Depends on:** Phase 18
+**Plans:** 8 plans
+
+Plans:
+- [ ] 23-00-PLAN.md — Wave-0 spike: verify A1 (WaySegmentParser nodeTags) + A7 (failing @Service bean vs Spring context) + add GraphHopper 10.2 dependency
+- [ ] 23-01-PLAN.md — Extract Phase 18 helpers into OsmConversionUtils (shared projection/speed/lane/signal/endpoint utilities for A/B fairness)
+- [ ] 23-02-PLAN.md — Create OsmConverter interface; retrofit OsmPipelineService to implement it with converterName() = "Overpass"
+- [ ] 23-03-PLAN.md — Implement GraphHopperOsmService (WaySegmentParser Path B) + 5 OSM XML fixtures + 7+ unit tests
+- [ ] 23-04-PLAN.md — Wire POST /api/osm/fetch-roads-gh in OsmController + 3 WebMvc tests + OsmPipelineComparisonTest (@SpringBootTest, disabled-by-default)
+- [ ] 23-05-PLAN.md — Frontend: Fetch roads (GraphHopper) button in MapSidebar + MapPage handler + origin-labelled result headline + Vitest tests
+- [ ] 23-06-PLAN.md — Playwright spec osm-bbox-gh.spec.ts mirroring Phase 22.1 osm-bbox.spec.ts
+- [ ] 23-07-PLAN.md — Docs: backend/docs/osm-converters.md + delete Wave-0 spike + final full-suite gate
+
+### Phase 24: osm2streets integration
+
+**Goal:** Integrate A/B Street's osm2streets (Rust/WASM) for lane-level street network with markings, turn lanes, and intersection shapes. New `/api/osm/fetch-roads-o2s` endpoint for three-way A/B comparison against Phase 18 and Phase 23.
+
+**Requirements**: TBD
+**Depends on:** Phase 18
+**Plans:** 0 plans
+
+Plans:
+- [ ] TBD (run /gsd:plan-phase 24 to break down)
+
+### Phase 25: Traffic flow visualization
+
+**Goal:** Scientific visualization for phantom-jam experiments — space-time diagram (trajectory t/x, color=speed), live fundamental diagram (flow vs density scatter), speed-colored vehicles, optional trails, ring-road scenario for Sugiyama-style self-emerging jams.
+
+**Scope:**
+- Space-time diagram canvas (rolling buffer of last N ticks × vehicle positions per road, color by speed).
+- Fundamental diagram component (scatter flow [veh/h] vs density [veh/km], sampled per second).
+- Vehicle rendering: color by speed (HSL red→green) with toggle.
+- Optional trails (last 2s path behind vehicle).
+- New scenario: `ring-road.json` — closed loop, uniform initial speed, no spawner; perturbations generate phantom jams.
+
+**Requirements**: TBD
+**Depends on:** Phase 5 (rendering), Phase 9 (scenarios)
+**Plans:** 0 plans
+
+Plans:
+- [ ] TBD (run /gsd:plan-phase 25 to break down)
 
 ---
 *v2.0 roadmap appended: 2026-04-10*
