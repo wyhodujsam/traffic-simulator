@@ -35,8 +35,11 @@ class GraphHopperOsmServiceTest {
     private final BboxRequest bbox = new BboxRequest(52.2180, 20.9980, 52.2240, 21.0050);
 
     private GraphHopperOsmService newService() {
-        // RestClient is unused on the File overload, but the constructor requires one.
-        return new GraphHopperOsmService(RestClient.create(), validator);
+        // OverpassXmlFetcher is unused on the File overload, but the constructor requires one.
+        // Pass a real fetcher backed by a throwaway RestClient + empty mirrors list — the File
+        // overload never exercises the HTTP path so this instance is only a placeholder.
+        OverpassXmlFetcher fetcher = new OverpassXmlFetcher(RestClient.create(), List.of());
+        return new GraphHopperOsmService(fetcher, validator);
     }
 
     private File fixture(String name) {
