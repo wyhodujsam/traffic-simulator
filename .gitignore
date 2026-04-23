@@ -1,0 +1,4 @@
+# Rust build cache for tools/osm2streets-cli (Phase 24)
+# Keep Cargo.lock and backend/bin/osm2streets-cli-linux-x64 checked in; only
+# exclude the target/ build output directory.
+tools/osm2streets-cli/target/
