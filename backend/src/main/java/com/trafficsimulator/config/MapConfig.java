@@ -2,8 +2,10 @@ package com.trafficsimulator.config;
 
 import java.util.List;
 
+import com.fasterxml.jackson.annotation.JsonInclude;
 import com.fasterxml.jackson.annotation.JsonProperty;
 
+import lombok.AllArgsConstructor;
 import lombok.Data;
 import lombok.NoArgsConstructor;
 
@@ -58,6 +60,10 @@ public class MapConfig {
         private int laneCount;
         private List<Integer> closedLanes; // lane indexes to close at load (optional)
         private double lateralOffset; // perpendicular shift (backend coords) for rendering bidirectional pairs
+
+        /** Phase 24: optional per-lane metadata from osm2streets. Null for Phase 18/23 output. */
+        @JsonInclude(JsonInclude.Include.NON_NULL)
+        private List<LaneConfig> lanes;
     }
 
     @Data
@@ -92,5 +98,22 @@ public class MapConfig {
         private String roadId;
         private int laneIndex;
         private double position;
+    }
+
+    @Data
+    @NoArgsConstructor
+    @AllArgsConstructor
+    public static class LaneConfig {
+        /** One of: "driving", "parking", "cycling", "sidewalk". MVP set per 24-CONTEXT §7. */
+        @JsonProperty("type")
+        private String type;
+
+        /** Lane width in metres, as reported by osm2streets LaneSpec.width. */
+        @JsonProperty("width")
+        private double width;
+
+        /** One of: "forward", "backward", "both". */
+        @JsonProperty("direction")
+        private String direction;
     }
 }
