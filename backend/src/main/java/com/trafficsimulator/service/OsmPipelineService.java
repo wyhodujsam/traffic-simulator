@@ -33,7 +33,7 @@ import lombok.extern.slf4j.Slf4j;
 @Service
 @RequiredArgsConstructor
 @Slf4j
-public class OsmPipelineService {
+public class OsmPipelineService implements OsmConverter {
 
     private static final String HIGHWAY_TAG = "highway";
     private static final String OSM_ID_PREFIX = "osm-";
@@ -86,6 +86,7 @@ public class OsmPipelineService {
      * @return populated MapConfig ready for loading into the simulation engine
      * @throws IllegalStateException if no roads are found in the area
      */
+    @Override
     public MapConfig fetchAndConvert(BboxRequest bbox) {
         String query = buildOverpassQuery(bbox);
         String encoded = "data=" + URLEncoder.encode(query, StandardCharsets.UTF_8);
@@ -93,6 +94,16 @@ public class OsmPipelineService {
         log.info("Fetching OSM data for bbox: {} (mirrors={})", bbox, overpassMirrors);
         String json = fetchFromMirrors(encoded);
         return convertOsmToMapConfig(json, bbox);
+    }
+
+    /**
+     * Stable short label for A/B comparison logging. Returns {@code "Overpass"} (NOT the class
+     * name) so logs paired with Phase 23's GraphHopper converter read cleanly:
+     * {@code "Overpass: 42 roads / 11 intersections; GraphHopper: 38 roads / 9 intersections"}.
+     */
+    @Override
+    public String converterName() {
+        return "Overpass";
     }
 
     private String fetchFromMirrors(String encodedBody) {
