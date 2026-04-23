@@ -197,7 +197,23 @@ class GraphHopperOsmServiceTest {
     }
 
     // ---------------------------------------------------------------------
-    // 7. Lane clamp: highway=motorway + lanes=6 must yield laneCount == 4
+    // 7. Phase 24 regression: Phase 23 must never populate RoadConfig.lanes
+    // ---------------------------------------------------------------------
+
+    @Test
+    void lanesFieldIsNullForPhase23() {
+        GraphHopperOsmService service = newService();
+
+        MapConfig cfg = service.fetchAndConvert(fixture("straight.osm"), bbox);
+
+        assertThat(cfg.getRoads()).isNotEmpty();
+        assertThat(cfg.getRoads())
+                .as("Phase 23 must never populate lanes[] — it's osm2streets-only")
+                .allSatisfy(r -> assertThat(r.getLanes()).isNull());
+    }
+
+    // ---------------------------------------------------------------------
+    // 8. Lane clamp: highway=motorway + lanes=6 must yield laneCount == 4
     // ---------------------------------------------------------------------
 
     @Test

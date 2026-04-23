@@ -368,6 +368,25 @@ class OsmPipelineServiceTest {
                 .hasMessageContaining("No roads found");
     }
 
+    // Phase 24 regression: Phase 18 must never populate RoadConfig.lanes — it's osm2streets-only.
+    @Test
+    void lanesFieldIsNullForPhase18() {
+        String json =
+                overpassJson(
+                        osmNode(101, 51.005, 17.005)
+                                + ","
+                                + osmNode(102, 51.006, 17.005)
+                                + ","
+                                + osmWay(1001, new long[] {101, 102}, "highway", "residential"));
+
+        MapConfig config = service.convertOsmToMapConfig(json, defaultBbox);
+
+        assertThat(config.getRoads()).isNotEmpty();
+        assertThat(config.getRoads())
+                .as("Phase 18 must never populate lanes[] — it's osm2streets-only")
+                .allSatisfy(r -> assertThat(r.getLanes()).isNull());
+    }
+
     // Test 12: Haversine distance — 2 nodes ~111m apart at equator
     @Test
     void convertOsmToMapConfig_haversineDistance_twoNodesOneDegreeLat_approx111m() {
