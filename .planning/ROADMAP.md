@@ -471,12 +471,19 @@ Plans:
 
 **Goal:** Swap custom Overpass converter for GraphHopper OSMReader/WaySegmentParser to get cleaner intersection splitting. Additive — coexists with Phase 18 `OsmPipelineService` via new `/api/osm/fetch-roads-gh` endpoint for A/B comparison on the same bbox.
 
-**Requirements**: TBD
+**Requirements**: TBD (inserted phase — scope defined by 23-CONTEXT.md and 23-RESEARCH.md decisions)
 **Depends on:** Phase 18
-**Plans:** 0 plans
+**Plans:** 8 plans
 
 Plans:
-- [ ] TBD (run /gsd:plan-phase 23 to break down)
+- [ ] 23-00-PLAN.md — Wave-0 spike: verify A1 (WaySegmentParser nodeTags) + A7 (failing @Service bean vs Spring context) + add GraphHopper 10.2 dependency
+- [ ] 23-01-PLAN.md — Extract Phase 18 helpers into OsmConversionUtils (shared projection/speed/lane/signal/endpoint utilities for A/B fairness)
+- [ ] 23-02-PLAN.md — Create OsmConverter interface; retrofit OsmPipelineService to implement it with converterName() = "Overpass"
+- [ ] 23-03-PLAN.md — Implement GraphHopperOsmService (WaySegmentParser Path B) + 5 OSM XML fixtures + 7+ unit tests
+- [ ] 23-04-PLAN.md — Wire POST /api/osm/fetch-roads-gh in OsmController + 3 WebMvc tests + OsmPipelineComparisonTest (@SpringBootTest, disabled-by-default)
+- [ ] 23-05-PLAN.md — Frontend: Fetch roads (GraphHopper) button in MapSidebar + MapPage handler + origin-labelled result headline + Vitest tests
+- [ ] 23-06-PLAN.md — Playwright spec osm-bbox-gh.spec.ts mirroring Phase 22.1 osm-bbox.spec.ts
+- [ ] 23-07-PLAN.md — Docs: backend/docs/osm-converters.md + delete Wave-0 spike + final full-suite gate
 
 ### Phase 24: osm2streets integration
 

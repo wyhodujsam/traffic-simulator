@@ -2,23 +2,23 @@
 gsd_state_version: 1.0
 milestone: v2.0
 milestone_name: — Map Screenshot to Simulation
-current_phase: 17 — Routing & Map Embed (Plan 01 complete)
-current_plan: —
+current_phase: 22.1
+current_plan: 1
 status: Ready to execute
-last_updated: "2026-04-22T16:01:30.204Z"
+last_updated: "2026-04-22T21:19:54.161Z"
 progress:
   total_phases: 26
-  completed_phases: 19
-  total_plans: 85
-  completed_plans: 80
-  percent: 94
+  completed_phases: 20
+  total_plans: 93
+  completed_plans: 86
+  percent: 92
 ---
 
 # Project State
 
 **Project:** Traffic Simulator
 **Milestone:** v2.0 — Map Screenshot to Simulation
-**Current Phase:** 17 — Routing & Map Embed (Plan 01 complete)
+**Current Phase:** 22.1
 **Last Updated:** 2026-04-12
 
 ## Project Reference
@@ -26,7 +26,7 @@ progress:
 See: .planning/PROJECT.md (updated 2026-04-12)
 
 **Core value:** Wierna symulacja fizyki ruchu drogowego
-**Current focus:** Milestone v2.0 — roadmap created, starting Phase 17
+**Current focus:** Phase 22.1 — Playwright E2E test suite
 
 ## Phase Status
 
@@ -67,8 +67,10 @@ See: .planning/PROJECT.md (updated 2026-04-12)
 
 ## Current Position
 
+Phase: 22.1 (Playwright E2E test suite) — EXECUTING
+Plan: 1 of 6
 **Active phase:** — (between phases; ready to pick up 23/24/25)
-**Current plan:** —
+**Current plan:** 1
 **Completed:** Phase 22 Plan 03 — VisionComparisonHarness parametrised over viaduct + highway-exit-ramp fixtures. All 308 backend + 51 frontend tests green.
 **Integration point:** Full component-library vision pipeline ships end-to-end with 6 component types (ROUNDABOUT_4ARM, SIGNAL_4WAY, T_INTERSECTION, STRAIGHT_SEGMENT, VIADUCT, HIGHWAY_EXIT_RAMP). Phase 20 free-form pipeline coexists; harness runs both for A/B comparison.
 
