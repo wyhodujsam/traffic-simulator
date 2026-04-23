@@ -13,6 +13,7 @@ import org.springframework.web.client.RestClientException;
 
 import com.trafficsimulator.config.MapConfig;
 import com.trafficsimulator.dto.BboxRequest;
+import com.trafficsimulator.service.GraphHopperOsmService;
 import com.trafficsimulator.service.OsmPipelineService;
 
 import lombok.RequiredArgsConstructor;
@@ -29,6 +30,7 @@ public class OsmController {
     private static final String ERROR_KEY = "error";
 
     private final OsmPipelineService osmPipelineService;
+    private final GraphHopperOsmService graphHopperOsmService;
 
     /**
      * Fetches roads from the Overpass API for the given bounding box and returns a MapConfig JSON.
@@ -41,6 +43,24 @@ public class OsmController {
         MapConfig config = osmPipelineService.fetchAndConvert(bbox);
         log.info(
                 "OSM fetch succeeded: {} roads for bbox {}",
+                config.getRoads() != null ? config.getRoads().size() : 0,
+                bbox);
+        return ResponseEntity.ok(config);
+    }
+
+    /**
+     * GraphHopper-based OSM conversion (Phase 23). Additive to {@link #fetchRoads}, coexists for
+     * A/B comparison. Shares the exception taxonomy (422/503) with the Phase 18 endpoint via the
+     * class-level exception handlers below.
+     *
+     * @param bbox bounding box in WGS84 coordinates
+     * @return 200 MapConfig on success
+     */
+    @PostMapping("/fetch-roads-gh")
+    public ResponseEntity<MapConfig> fetchRoadsGh(@RequestBody BboxRequest bbox) {
+        MapConfig config = graphHopperOsmService.fetchAndConvert(bbox);
+        log.info(
+                "OSM (GraphHopper) fetch succeeded: {} roads for bbox {}",
                 config.getRoads() != null ? config.getRoads().size() : 0,
                 bbox);
         return ResponseEntity.ok(config);
