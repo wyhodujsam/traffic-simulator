@@ -2,10 +2,10 @@
 gsd_state_version: 1.0
 milestone: v2.0
 milestone_name: — Map Screenshot to Simulation
-current_phase: 22.1
+current_phase: 23
 current_plan: 1
-status: Ready to execute
-last_updated: "2026-04-22T21:19:54.161Z"
+status: Executing Phase 23
+last_updated: "2026-04-23T05:33:59.154Z"
 progress:
   total_phases: 26
   completed_phases: 20
@@ -18,7 +18,7 @@ progress:
 
 **Project:** Traffic Simulator
 **Milestone:** v2.0 — Map Screenshot to Simulation
-**Current Phase:** 22.1
+**Current Phase:** 23
 **Last Updated:** 2026-04-12
 
 ## Project Reference
@@ -26,7 +26,7 @@ progress:
 See: .planning/PROJECT.md (updated 2026-04-12)
 
 **Core value:** Wierna symulacja fizyki ruchu drogowego
-**Current focus:** Phase 22.1 — Playwright E2E test suite
+**Current focus:** Phase 23 — GraphHopper-based OSM parser
 
 ## Phase Status
 
@@ -67,8 +67,8 @@ See: .planning/PROJECT.md (updated 2026-04-12)
 
 ## Current Position
 
-Phase: 22.1 (Playwright E2E test suite) — EXECUTING
-Plan: 1 of 6
+Phase: 23 (GraphHopper-based OSM parser) — EXECUTING
+Plan: 1 of 8
 **Active phase:** — (between phases; ready to pick up 23/24/25)
 **Current plan:** 1
 **Completed:** Phase 22 Plan 03 — VisionComparisonHarness parametrised over viaduct + highway-exit-ramp fixtures. All 308 backend + 51 frontend tests green.

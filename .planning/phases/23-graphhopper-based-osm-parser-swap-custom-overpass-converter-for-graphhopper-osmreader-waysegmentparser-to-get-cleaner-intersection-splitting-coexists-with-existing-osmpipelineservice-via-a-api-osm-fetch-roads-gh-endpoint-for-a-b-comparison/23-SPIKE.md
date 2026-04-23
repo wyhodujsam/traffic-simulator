@@ -195,3 +195,16 @@ capturedNodeTags (one entry per parsed segment):
   edge 0->1 points=3 wayTags={highway=residential} nodeTags=[{}, {highway=traffic_signals}, {}]
 signalTagFound=true
 ```
+- **A7:** FAIL
+```
+outcome=CONTEXT_ABORTED_BeanCreationException
+exceptionClass=org.springframework.beans.factory.BeanCreationException
+exceptionMessage=Error creating bean with name 'dummyBean' defined in com.trafficsimulator.spike.GraphHopperSpikeTest$FailingServiceBeanProbe: Failed to instantiate [com.trafficsimulator.spike.GraphHopperSpikeTest$DummyBean]: Factory method 'dummyBean' threw exception with message: simulated init failure (A7 spike probe)
+```
+- **A1:** PASS
+```
+edgeCount=1
+capturedNodeTags (one entry per parsed segment):
+  edge 0->1 points=3 wayTags={highway=residential} nodeTags=[{}, {highway=traffic_signals}, {}]
+signalTagFound=true
+```
