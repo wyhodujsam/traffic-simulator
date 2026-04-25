@@ -509,7 +509,7 @@ Plans:
 
 **Requirements**: N/A (inserted hotfix; scope authoritative in 24.1-CONTEXT.md)
 **Depends on:** Phase 23, Phase 24
-**Plans:** 4/3 plans complete
+**Plans:** 3/3 plans complete
 
 Plans:
 - [x] 24.1-01-PLAN.md — RED unit test + GREEN fix in OverpassXmlFetcher.buildOverpassXmlQuery (Wave 1, autonomous)
