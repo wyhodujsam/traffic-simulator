@@ -181,7 +181,65 @@ class Osm2StreetsConfigTest {
                                 .isEqualTo("does/not/exist/osm2streets-cli"));
     }
 
-    // Test 6 added by Task 3 (real-repo smoke — does NOT use @TempDir).
+    /**
+     * Test 6 — real-filesystem smoke (Warning #5 from plan-checker iter-1): the {@link TempDir}
+     * fixture co-evolves with the algorithm under test. To make sure the resolver actually
+     * behaves against the REAL repo layout ({@code .git} at root, {@code pom.xml} only in
+     * {@code backend/}, binary at {@code backend/bin/osm2streets-cli-linux-x64}), run the default
+     * config against the JVM's actual {@code user.dir}.
+     *
+     * <p>Surefire sets {@code user.dir = backend/} (Maven module basedir). The default configured
+     * path is {@code "backend/bin/osm2streets-cli-linux-x64"} (project-root relative). The
+     * resolver should walk up from {@code backend/}, find {@code .git} at the repo root, and
+     * return the absolute path to the existing binary.
+     *
+     * <p>Skip semantics: probe the binary's existence using a path computed INDEPENDENTLY of the
+     * resolver under test (walk up looking for {@code .git} directly here, then resolve the
+     * canonical bin path against it). This way a regression of the resolver does NOT cause a
+     * silent skip — if the resolver breaks, the test FAILS rather than silently SKIPs.
+     */
+    @Test
+    void getBinaryPath_realRepoLayout_resolvesToExistingExecutable() {
+        // Independent probe: walk up from user.dir looking for .git
+        Path probe = Path.of(System.getProperty("user.dir")).toAbsolutePath();
+        Path projectRoot = null;
+        while (probe != null) {
+            if (Files.isDirectory(probe.resolve(".git"))) {
+                projectRoot = probe;
+                break;
+            }
+            probe = probe.getParent();
+        }
+        org.junit.jupiter.api.Assumptions.assumeTrue(
+                projectRoot != null,
+                "Real-repo smoke skipped: no .git ancestor of user.dir="
+                        + System.getProperty("user.dir"));
+        Path canonicalBinary = projectRoot.resolve("backend/bin/osm2streets-cli-linux-x64");
+        org.junit.jupiter.api.Assumptions.assumeTrue(
+                Files.isExecutable(canonicalBinary),
+                "Real-repo smoke skipped: binary not present at "
+                        + canonicalBinary
+                        + " (build Phase 24 artifact or restore the file)");
+
+        // Now exercise the RESOLVER under test against the default config.
+        // Default binaryPath = "backend/bin/osm2streets-cli-linux-x64".
+        Osm2StreetsConfig cfg = new Osm2StreetsConfig();
+        String resolved = cfg.getBinaryPath();
+        Path resolvedPath = Path.of(resolved);
+
+        // The resolved path must be either absolute (project-root walk-up case)
+        // OR cwd-resolvable to an existing executable (the user.dir=project-root case).
+        boolean okAbsolute = resolvedPath.isAbsolute() && Files.isExecutable(resolvedPath);
+        boolean okCwdRelative =
+                !resolvedPath.isAbsolute()
+                        && Files.isExecutable(
+                                Path.of(System.getProperty("user.dir")).resolve(resolvedPath));
+        assertThat(okAbsolute || okCwdRelative)
+                .as(
+                        "Resolved path '%s' must be an executable from cwd '%s'",
+                        resolved, System.getProperty("user.dir"))
+                .isTrue();
+    }
 
     /**
      * Runs {@code body} with {@code user.dir} system property temporarily set to
