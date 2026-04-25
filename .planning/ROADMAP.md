@@ -451,21 +451,22 @@ Plans:
 | 20. AI Vision (Claude CLI) | 1/1 | Complete | 2026-04-12 |
 | 21. Predefined Map Components | 6/6 | Complete | 2026-04-14 |
 | 22. Extend Component Library (VIADUCT + HIGHWAY_EXIT_RAMP) | 3/3 | Complete | 2026-04-14 |
+| 22.1. Playwright E2E test suite | 6/6 | Complete | 2026-04-25 |
 
 ### Phase 22.1: Playwright E2E test suite — install @playwright/test, config for backend+frontend dev servers, smoke tests for critical paths (simulation start/pause, AI Vision component-library flow, OSM bbox load, responsive layout) (INSERTED)
 
 **Goal:** Install and configure Playwright e2e test framework in the frontend workspace and author five smoke tests for the critical user flows — simulation start/pause, AI Vision (component library) with stubbed backend, OSM bbox load with stubbed backend, responsive layout at mobile/desktop viewports, and sim controls (speed + spawn rate) reflected in StatsPanel. Infrastructure + smoke tests only; comprehensive coverage is a follow-up.
 **Requirements**: N/A (inserted phase; scope is defined by CONTEXT.md decisions, not ROADMAP requirements)
 **Depends on:** Phase 22
-**Plans:** 6 plans
+**Plans:** 6/6 plans complete
 
 Plans:
-- [ ] 22.1-01-PLAN.md — Install @playwright/test + @types/node, Chromium binary, playwright.config.ts with two-server webServer (backend 8086, frontend 5173), test:e2e script, e2e/ directory + README + .gitignore updates
-- [ ] 22.1-02-PLAN.md — simulation.spec.ts: real-backend smoke test for four-way-signal Start -> vehicles spawn, Pause -> count freezes (no stubs)
-- [ ] 22.1-03-PLAN.md — vision-components.spec.ts: stubbed /api/vision/analyze-components-bbox flow, RoadGraphPreview renders, Run Simulation navigates to /
-- [ ] 22.1-04-PLAN.md — osm-bbox.spec.ts: stubbed /api/osm/fetch-roads flow, sidebar transitions to result state with correct counts
-- [ ] 22.1-05-PLAN.md — responsive.spec.ts: mobile (375x667) stacked + desktop (1920x1080) side-by-side layouts via boundingBox geometry
-- [ ] 22.1-06-PLAN.md — controls.spec.ts: speed slider + spawn rate slider round-trip through STOMP to StatsPanel (vehicle count climbs at 3x spawn rate)
+- [x] 22.1-01-PLAN.md — Install @playwright/test + @types/node, Chromium binary, playwright.config.ts with two-server webServer (backend 8086, frontend 5173), test:e2e script, e2e/ directory + README + .gitignore updates
+- [x] 22.1-02-PLAN.md — simulation.spec.ts: real-backend smoke test for four-way-signal Start -> vehicles spawn, Pause -> count freezes (no stubs)
+- [x] 22.1-03-PLAN.md — vision-components.spec.ts: stubbed /api/vision/analyze-components-bbox flow, RoadGraphPreview renders, Run Simulation navigates to /
+- [x] 22.1-04-PLAN.md — osm-bbox.spec.ts: stubbed /api/osm/fetch-roads flow, sidebar transitions to result state with correct counts
+- [x] 22.1-05-PLAN.md — responsive.spec.ts: mobile (375x667) stacked + desktop (1920x1080) side-by-side layouts via boundingBox geometry
+- [x] 22.1-06-PLAN.md — controls.spec.ts: speed slider + spawn rate slider round-trip through STOMP to StatsPanel (vehicle count climbs at 3x spawn rate)
 
 ### Phase 23: GraphHopper-based OSM parser
 
@@ -482,7 +483,7 @@ Plans:
 - [ ] 23-03-PLAN.md — Implement GraphHopperOsmService (WaySegmentParser Path B) + 5 OSM XML fixtures + 7+ unit tests
 - [ ] 23-04-PLAN.md — Wire POST /api/osm/fetch-roads-gh in OsmController + 3 WebMvc tests + OsmPipelineComparisonTest (@SpringBootTest, disabled-by-default)
 - [ ] 23-05-PLAN.md — Frontend: Fetch roads (GraphHopper) button in MapSidebar + MapPage handler + origin-labelled result headline + Vitest tests
-- [ ] 23-06-PLAN.md — Playwright spec osm-bbox-gh.spec.ts mirroring Phase 22.1 osm-bbox.spec.ts
+- [x] 23-06-PLAN.md — Playwright spec osm-bbox-gh.spec.ts mirroring Phase 22.1 osm-bbox.spec.ts (completed 2026-04-25)
 - [ ] 23-07-PLAN.md — Docs: backend/docs/osm-converters.md + delete Wave-0 spike + final full-suite gate
 
 ### Phase 24: osm2streets integration
@@ -523,3 +524,64 @@ Plans:
 ---
 *v2.0 roadmap appended: 2026-04-10*
 *All 13 v2.0 requirements mapped across 4 phases (17–20)*
+
+---
+
+## Endgame Vision (added 2026-04-25)
+
+**Two business functions the simulator exists to deliver:**
+1. **Predict congestion** — load real-world road fragment from a map, set traffic intensity, and predict where jams will form (e.g. impact of closing a lane, adding a signal, narrowing a road).
+2. **LLM-assisted redesign** — assuming the simulator is faithful, an LLM iteratively modifies the network (add lane, retime signal, change topology) and uses simulation feedback to maximise throughput.
+
+**Biggest current problem:** faithful representation of the existing road network. Until OSM-imported maps match reality closely enough, predictions are not trustworthy.
+
+### What the project already covers
+- ✅ Realistic physics: IDM car-following + MOBIL lane changes + 5 IDM safety guards
+- ✅ Intersections: signals (configurable cycles, deadlock watchdog), priority (right-of-way), roundabouts (yield + entry gating)
+- ✅ Live obstacle placement → already supports the "close a lane" scenario natively
+- ✅ JSON MapConfig + 5 predefined scenarios + combined-loop capstone
+- ✅ OSM import (3 converters in A/B/C): Phase 18 Overpass, Phase 23 GraphHopper, Phase 24 osm2streets
+- ✅ AI Vision pipeline (Phase 20 free-form + Phase 21/22 component library, 6 component types)
+- ✅ Live stats: avg speed, density, throughput, vehicle count
+- ✅ /map page → Run Simulation flow (Phase 19) + JSON export
+- ⏳ Phase 25 planned: space-time diagram + fundamental diagram + ring-road scenario (scientific viz)
+
+### Gap analysis — what's still missing (rough phases, not yet planned)
+
+#### Milestone v3.0 — Faithful representation (unblocks Goal 1)
+*Goal: an OSM-imported simulation looks and behaves like the real intersection it represents.*
+
+- **Conversion quality benchmark** — A/B/C the 3 converters on a curated set of real bboxes; ground-truth metrics (lane-count match %, intersection coverage, geometry RMSE, missing signals); pick a default per road class.
+- **OSM heuristics for missing tags** — sensible defaults when `lanes=`, `maxspeed=`, `traffic_signals=` are absent; road-type → IDM parameter mapping (highway vs residential vs primary).
+- **Curved road geometry** — follow OSM polyline shape (multi-point ways, arcs); today every road is a straight segment between two nodes.
+- **Extended OSM features** — one-way streets, bus/bike lanes, mid-road exit ramps, P+R nodes, turn restrictions (`restriction=no_left_turn` etc.).
+- **Manual edit mode (post-import GUI editor)** — fix conversion errors before simulating: add/remove lanes, override signal timing, mark closed lanes, adjust intersection type.
+- **Conversion validation harness** — side-by-side: OSM rendered map vs simulator's render of the same bbox; visual diff for QA.
+
+#### Milestone v4.0 — Predictive analysis (delivers Goal 1)
+*Goal: user sets a real fragment + traffic demand → trustworthy congestion prediction with KPIs.*
+
+- **Origin-Destination matrix + routing** — vehicles currently flow reactively; need OD demand model and per-vehicle path planning (Dijkstra / A* / contraction hierarchies on the network) so demand is realistic.
+- **Configurable traffic intensity profiles** — peak hours, time-of-day curve, per-OD-cell demand; ramp-up/down, not just a constant spawner rate.
+- **Quality metrics (KPI suite)** — travel time, mean delay, queue length, level-of-service grade, throughput per segment and per intersection; rolling time-window aggregates.
+- **Scenario A/B comparison view** — baseline vs modified network side-by-side, animated together, with KPI delta table; this is the user-facing answer to "what if we close this lane?"
+- **Calibration & validation** — fit IDM/MOBIL parameters to real-world flow data (if obtainable: counters, Google traffic snapshots); confidence intervals attached to predictions.
+- **Run determinism** — fixed-seed RNG, reproducible scenarios, scenario duration contract; required for honest A/B and for v5.0.
+
+#### Milestone v5.0 — LLM-assisted redesign (delivers Goal 2)
+*Goal: an LLM agent proposes network edits, the simulator scores them, the agent iterates toward maximum throughput.*
+
+- **Programmatic MapConfig API** — high-level CRUD operations the LLM can call (`addLane`, `retimeSignal`, `convertToRoundabout`, `addTurnRestriction`); each call validated for legal/physical feasibility before apply.
+- **Headless batch runner** — run N scenarios in parallel, faster-than-real-time, no GUI; the inner loop of the optimiser.
+- **Reward function** — multi-objective scalar (throughput + mean delay + fairness across OD pairs + robustness to demand perturbation); user-tunable weights.
+- **LLM agent harness** — propose-change → run-sim → score → feedback loop; experiment log; integration with Claude CLI similar to Phase 20 vision pipeline.
+- **Experiment tracking UI** — variant tree of edits, "best-so-far" pinned, reproducible replay of any node, exportable report.
+- **Constraint guardrails** — LLM cannot violate hard constraints (legal lane counts, minimum geometry, budget envelope if defined); soft constraints affect reward.
+
+### Order-of-operations notes
+- v3.0 and Phase 25 (viz) can run in parallel — viz consumes whatever the converters produce.
+- v4.0 routing assumes v3.0 network quality is "good enough" — a wrong network gives wrong routes.
+- v5.0 is meaningless without v4.0 KPIs (no reward signal).
+- Phase 22.1 (Playwright) and Phase 23 (GraphHopper) remain queued from v2.0 — finish before opening v3.0.
+
+*Endgame appended: 2026-04-25*

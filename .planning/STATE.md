@@ -70,7 +70,7 @@ See: .planning/PROJECT.md (updated 2026-04-12)
 Phase: 23 (GraphHopper-based OSM parser) — EXECUTING
 Plan: 1 of 8
 **Active phase:** — (between phases; ready to pick up 23/24/25)
-**Current plan:** 1
+**Current plan:** Not started
 **Completed:** Phase 22 Plan 03 — VisionComparisonHarness parametrised over viaduct + highway-exit-ramp fixtures. All 308 backend + 51 frontend tests green.
 **Integration point:** Full component-library vision pipeline ships end-to-end with 6 component types (ROUNDABOUT_4ARM, SIGNAL_4WAY, T_INTERSECTION, STRAIGHT_SEGMENT, VIADUCT, HIGHWAY_EXIT_RAMP). Phase 20 free-form pipeline coexists; harness runs both for A/B comparison.
 
