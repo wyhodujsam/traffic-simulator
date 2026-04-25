@@ -451,21 +451,22 @@ Plans:
 | 20. AI Vision (Claude CLI) | 1/1 | Complete | 2026-04-12 |
 | 21. Predefined Map Components | 6/6 | Complete | 2026-04-14 |
 | 22. Extend Component Library (VIADUCT + HIGHWAY_EXIT_RAMP) | 3/3 | Complete | 2026-04-14 |
+| 22.1. Playwright E2E test suite | 6/6 | Complete | 2026-04-25 |
 
 ### Phase 22.1: Playwright E2E test suite — install @playwright/test, config for backend+frontend dev servers, smoke tests for critical paths (simulation start/pause, AI Vision component-library flow, OSM bbox load, responsive layout) (INSERTED)
 
 **Goal:** Install and configure Playwright e2e test framework in the frontend workspace and author five smoke tests for the critical user flows — simulation start/pause, AI Vision (component library) with stubbed backend, OSM bbox load with stubbed backend, responsive layout at mobile/desktop viewports, and sim controls (speed + spawn rate) reflected in StatsPanel. Infrastructure + smoke tests only; comprehensive coverage is a follow-up.
 **Requirements**: N/A (inserted phase; scope is defined by CONTEXT.md decisions, not ROADMAP requirements)
 **Depends on:** Phase 22
-**Plans:** 6 plans
+**Plans:** 6/6 plans complete
 
 Plans:
-- [ ] 22.1-01-PLAN.md — Install @playwright/test + @types/node, Chromium binary, playwright.config.ts with two-server webServer (backend 8086, frontend 5173), test:e2e script, e2e/ directory + README + .gitignore updates
-- [ ] 22.1-02-PLAN.md — simulation.spec.ts: real-backend smoke test for four-way-signal Start -> vehicles spawn, Pause -> count freezes (no stubs)
-- [ ] 22.1-03-PLAN.md — vision-components.spec.ts: stubbed /api/vision/analyze-components-bbox flow, RoadGraphPreview renders, Run Simulation navigates to /
-- [ ] 22.1-04-PLAN.md — osm-bbox.spec.ts: stubbed /api/osm/fetch-roads flow, sidebar transitions to result state with correct counts
-- [ ] 22.1-05-PLAN.md — responsive.spec.ts: mobile (375x667) stacked + desktop (1920x1080) side-by-side layouts via boundingBox geometry
-- [ ] 22.1-06-PLAN.md — controls.spec.ts: speed slider + spawn rate slider round-trip through STOMP to StatsPanel (vehicle count climbs at 3x spawn rate)
+- [x] 22.1-01-PLAN.md — Install @playwright/test + @types/node, Chromium binary, playwright.config.ts with two-server webServer (backend 8086, frontend 5173), test:e2e script, e2e/ directory + README + .gitignore updates
+- [x] 22.1-02-PLAN.md — simulation.spec.ts: real-backend smoke test for four-way-signal Start -> vehicles spawn, Pause -> count freezes (no stubs)
+- [x] 22.1-03-PLAN.md — vision-components.spec.ts: stubbed /api/vision/analyze-components-bbox flow, RoadGraphPreview renders, Run Simulation navigates to /
+- [x] 22.1-04-PLAN.md — osm-bbox.spec.ts: stubbed /api/osm/fetch-roads flow, sidebar transitions to result state with correct counts
+- [x] 22.1-05-PLAN.md — responsive.spec.ts: mobile (375x667) stacked + desktop (1920x1080) side-by-side layouts via boundingBox geometry
+- [x] 22.1-06-PLAN.md — controls.spec.ts: speed slider + spawn rate slider round-trip through STOMP to StatsPanel (vehicle count climbs at 3x spawn rate)
 
 ### Phase 23: GraphHopper-based OSM parser
 
@@ -482,7 +483,7 @@ Plans:
 - [ ] 23-03-PLAN.md — Implement GraphHopperOsmService (WaySegmentParser Path B) + 5 OSM XML fixtures + 7+ unit tests
 - [ ] 23-04-PLAN.md — Wire POST /api/osm/fetch-roads-gh in OsmController + 3 WebMvc tests + OsmPipelineComparisonTest (@SpringBootTest, disabled-by-default)
 - [ ] 23-05-PLAN.md — Frontend: Fetch roads (GraphHopper) button in MapSidebar + MapPage handler + origin-labelled result headline + Vitest tests
-- [ ] 23-06-PLAN.md — Playwright spec osm-bbox-gh.spec.ts mirroring Phase 22.1 osm-bbox.spec.ts
+- [x] 23-06-PLAN.md — Playwright spec osm-bbox-gh.spec.ts mirroring Phase 22.1 osm-bbox.spec.ts (completed 2026-04-25)
 - [ ] 23-07-PLAN.md — Docs: backend/docs/osm-converters.md + delete Wave-0 spike + final full-suite gate
 
 ### Phase 24: osm2streets integration
