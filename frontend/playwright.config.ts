@@ -43,11 +43,28 @@ export default defineConfig({
       stderr: 'pipe',
     },
     {
-      // Phase 24.1 Plan 03: backend started with --osm.overpass.urls=http://localhost:18086 so
-      // the real-backend e2e spec's call to /api/osm/fetch-roads-o2s hits the local fixture
-      // server instead of overpass-api.de. The override syntax was confirmed in Plan 03's Task 1
-      // spike — see 24.1-03-SPIKE-NOTES.md.
-      command: 'cd ../backend && mvn spring-boot:run -q -Dspring-boot.run.arguments=--osm.overpass.urls=http://localhost:18086',
+      // Phase 24.1 Plan 03: backend started with two property overrides via JVM system
+      // properties (the `-Dspring-boot.run.jvmArguments=...` form, NOT `spring-boot.run.arguments`).
+      //
+      // Why `jvmArguments` and not `arguments`:
+      //   `spring-boot.run.arguments` is a COMMA-separated list. Our first override
+      //   (`osm.overpass.urls=http://localhost:18086`) doesn't survive that split because the
+      //   plugin re-joins the tail values into the property's own list, producing
+      //   `mirrors=[http://localhost:18086, --osm2streets.binary-path=...]` instead of two
+      //   separate property bindings (verified during the Plan 03 Task 5 deviation).
+      //   `jvmArguments` is space-separated and passes each `-D...=...` directly to the JVM
+      //   as an independent system property, which Spring's `@Value` reads cleanly.
+      //
+      // Overrides:
+      //   1. -Dosm.overpass.urls=http://localhost:18086 — redirects OverpassXmlFetcher's outbound
+      //      HTTP from overpass-api.de to the local fixture server (Plan 03 Task 1 spike confirmed
+      //      the `--osm.overpass.urls=...` form worked alone; the equivalent `-D` form is what
+      //      we use here so it composes cleanly with the second override).
+      //   2. -Dosm2streets.binary-path=bin/osm2streets-cli-linux-x64 — when mvn spring-boot:run
+      //      starts with cwd=backend/, the production-default `backend/bin/...` path resolves to
+      //      `backend/backend/bin/...` and the CLI subprocess fails with ENOENT. The cwd-relative
+      //      `bin/...` form matches what OsmPipelineSmokeIT (Plan 02) uses via @TestPropertySource.
+      command: "cd ../backend && mvn spring-boot:run -q '-Dspring-boot.run.jvmArguments=-Dosm.overpass.urls=http://localhost:18086 -Dosm2streets.binary-path=bin/osm2streets-cli-linux-x64'",
       url: 'http://localhost:8086/api/simulation/status',
       timeout: 120_000,
       reuseExistingServer: !process.env.CI,
