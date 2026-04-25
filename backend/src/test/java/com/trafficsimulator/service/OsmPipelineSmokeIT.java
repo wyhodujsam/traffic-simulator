@@ -16,6 +16,7 @@ import java.util.Objects;
 import java.util.regex.Pattern;
 
 import org.hamcrest.CoreMatchers;
+import org.junit.jupiter.api.Assumptions;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.condition.EnabledOnOs;
@@ -77,6 +78,18 @@ import com.trafficsimulator.dto.BboxRequest;
  * mock server to that cached builder. The production {@code OsmClientConfig} produces a
  * {@code RestClient} from a generic builder + {@code SimpleClientHttpRequestFactory}; our
  * {@code @Primary} test bean overrides that one for the duration of this @SpringBootTest.
+ *
+ * <p><b>Phase 24.2 augmentation:</b> the {@code osm2streets.binary-path} property is NOT
+ * overridden in {@link TestPropertySource}. The test runs against the production default
+ * from {@code application.properties} ({@code backend/bin/osm2streets-cli-linux-x64}) and
+ * therefore exercises the smart-resolution logic in
+ * {@link com.trafficsimulator.config.Osm2StreetsConfig#getBinaryPath()}. If that resolver
+ * is reverted, the surefire JVM (cwd={@code backend/}) ends up trying to spawn
+ * {@code backend/backend/bin/osm2streets-cli-linux-x64} and the test FAILS with an
+ * {@link Osm2StreetsService.Osm2StreetsCliException} — that's the regression net for
+ * 24.2-CONTEXT.md AC#4. The {@code assumeBinaryAvailable()} pre-test guard intentionally
+ * probes the binary's existence INDEPENDENTLY of the resolver (via a local .git walk-up)
+ * so a resolver regression produces a real FAIL, not a silent skip.
  */
 @SpringBootTest
 @TestPropertySource(
@@ -85,12 +98,15 @@ import com.trafficsimulator.dto.BboxRequest;
             // Allow our @TestConfig overpassRestClient bean to override the production
             // OsmClientConfig.overpassRestClient bean — Spring Boot disables this by default
             // since 2.1, so we opt in explicitly for this @SpringBootTest only.
-            "spring.main.allow-bean-definition-overriding=true",
-            // Maven runs the surefire JVM with cwd=backend/, but the production-default
-            // osm2streets.binary-path is "backend/bin/osm2streets-cli-linux-x64" (relative to
-            // the repo root, used when the JAR is run from the project root). When tests run,
-            // the cwd is one level deeper, so we override to the cwd-relative path here.
-            "osm2streets.binary-path=bin/osm2streets-cli-linux-x64"
+            "spring.main.allow-bean-definition-overriding=true"
+            // Phase 24.2: osm2streets.binary-path is intentionally NOT overridden here.
+            // The production default in application.properties is
+            // "backend/bin/osm2streets-cli-linux-x64" (project-root-relative), and Plan 24.2-01
+            // makes Osm2StreetsConfig.getBinaryPath() smart-resolve that against the project
+            // root (via .git marker walk-up) regardless of cwd. Removing the override turns
+            // this test into a regression net for the resolver (24.2-CONTEXT.md AC#4): if
+            // the smart-resolution code is reverted, the surefire JVM (cwd=backend/) tries
+            // to spawn "backend/backend/bin/..." → ENOENT → Osm2StreetsCliException → test FAILS.
         })
 @EnabledOnOs(OS.LINUX)
 class OsmPipelineSmokeIT {
@@ -213,6 +229,50 @@ class OsmPipelineSmokeIT {
     }
 
     /**
+     * Pre-test guard for the real-binary smoke tests. Skips (with a clear
+     * message) when the osm2streets-cli binary is not present on disk —
+     * typical on fresh clones / CI environments without Phase 24-01's artifact.
+     *
+     * <p><b>Critical (BLOCKER #3 from Plan 24.2-02 plan-checker iter-1):</b>
+     * this guard MUST probe the binary's existence using a path computed
+     * INDEPENDENTLY of the resolver under test
+     * ({@link com.trafficsimulator.config.Osm2StreetsConfig#getBinaryPath()}).
+     * If the guard called {@code osm2StreetsConfig.getBinaryPath()} instead,
+     * a regression of the resolver would cause this assumption to evaluate
+     * false → the test would SKIP rather than FAIL → AC#4 from 24.2-CONTEXT.md
+     * would be violated (the test would no longer be a regression net).
+     *
+     * <p>Strategy: walk up from the JVM's user.dir looking for {@code .git}
+     * (the canonical project-root marker), then resolve the canonical binary
+     * path {@code backend/bin/osm2streets-cli-linux-x64} against that root.
+     * The walk-up logic is intentionally a copy of the resolver's algorithm
+     * — but EXECUTED HERE, not delegated to it. This way the guard reflects
+     * "is the file there?" and ignores "did the resolver find it?".
+     */
+    private void assumeBinaryAvailable() {
+        Path probe = Path.of(System.getProperty("user.dir")).toAbsolutePath();
+        Path projectRoot = null;
+        while (probe != null) {
+            if (Files.isDirectory(probe.resolve(".git"))) {
+                projectRoot = probe;
+                break;
+            }
+            probe = probe.getParent();
+        }
+        Assumptions.assumeTrue(
+                projectRoot != null,
+                "Could not locate project root (.git marker missing in any "
+                        + "ancestor of user.dir=" + System.getProperty("user.dir")
+                        + ") — skipping live-binary smoke");
+        Path binary = projectRoot.resolve("backend").resolve("bin").resolve("osm2streets-cli-linux-x64");
+        Assumptions.assumeTrue(
+                Files.isExecutable(binary),
+                "osm2streets-cli binary missing or not executable at "
+                        + binary
+                        + " — skipping live-binary smoke (build Plan 24-01 artifact or restore the file)");
+    }
+
+    /**
      * Asserts the captured Overpass query body has the corrected shape. Called from each
      * service's @Test method AND from the dedicated regression-guard test.
      */
@@ -236,6 +296,7 @@ class OsmPipelineSmokeIT {
 
     @Test
     void osm2StreetsService_fetchAndConvert_realBinary_returnsAtLeastOneRoad() {
+        assumeBinaryAvailable();
         mockServer
                 .expect(requestTo(CoreMatchers.endsWith("/api/interpreter")))
                 .andExpect(method(HttpMethod.POST))
@@ -313,6 +374,7 @@ class OsmPipelineSmokeIT {
      */
     @Test
     void bothServicesEmitRecursionInsideUnionAndSingleOutBodyQt_regressionGuard() {
+        assumeBinaryAvailable();
         // Expect TWO POSTs (one per service) — both captured.
         mockServer
                 .expect(requestTo(CoreMatchers.endsWith("/api/interpreter")))
