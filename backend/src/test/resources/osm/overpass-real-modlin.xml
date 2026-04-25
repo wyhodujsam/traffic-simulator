@@ -1,13 +1,16 @@
 <?xml version="1.0" encoding="UTF-8"?>
-<!--
-  Phase 24.1 fixture — frozen Overpass XML response for `OsmPipelineSmokeIT`.
-  Provenance: hand-built to mirror the shape of an Overpass response to the FIXED query
-    (way["highway"~"..."](52.431,20.65,52.438,20.662);>;);out body qt;
-  on the Modlin / Nowy Dwór Mazowiecki bbox documented in CONTEXT.md.
-  Element ordering: nodes-before-ways, matching the bug fix delivered in Plan 24.1-01.
-  DO NOT regenerate without re-pinning every assertion below — the test uses substring/count matching.
--->
 <osm version="0.6" generator="Overpass API">
+  <!--
+    Phase 24.1 fixture — frozen Overpass XML response for `OsmPipelineSmokeIT`.
+    Provenance: hand-built to mirror the shape of an Overpass response to the FIXED query
+      (way["highway"~"..."](52.431,20.65,52.438,20.662);>;);out body qt;
+    on the Modlin / Nowy Dwór Mazowiecki bbox documented in CONTEXT.md.
+    Element ordering: nodes-before-ways, matching the bug fix delivered in Plan 24.1-01.
+    Comment placed INSIDE <osm> root (NOT before it) because GraphHopper's
+    `OSMInputFile.openXMLStream` calls `XMLStreamReader.next()` exactly once and expects the
+    first event to be START_ELEMENT "osm" — a leading XML comment fails that check.
+    DO NOT regenerate without re-pinning every assertion below — the test uses substring/count matching.
+  -->
   <bounds minlat="52.431" minlon="20.65" maxlat="52.438" maxlon="20.662"/>
   <node id="1001" lat="52.4315" lon="20.6510"/>
   <node id="1002" lat="52.4330" lon="20.6535"/>
