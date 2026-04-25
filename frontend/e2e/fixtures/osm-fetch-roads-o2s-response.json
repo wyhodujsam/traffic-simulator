@@ -1,0 +1,41 @@
+{
+  "id": "stub-osm-fetch-o2s",
+  "name": "Stubbed osm2streets Fetch Result",
+  "description": "Canned MapConfig for Phase 24 Playwright spec — exercises optional lanes[] enrichment on one road.",
+  "nodes": [
+    { "id": "n_w",  "type": "ENTRY",        "x": 0.0,   "y": 100.0 },
+    { "id": "n_c1", "type": "INTERSECTION", "x": 150.0, "y": 100.0 },
+    { "id": "n_c2", "type": "INTERSECTION", "x": 300.0, "y": 100.0 },
+    { "id": "n_e",  "type": "EXIT",         "x": 450.0, "y": 100.0 }
+  ],
+  "roads": [
+    {
+      "id": "r_1",
+      "name": "Seg1",
+      "fromNodeId": "n_w",
+      "toNodeId": "n_c1",
+      "length": 150.0,
+      "speedLimit": 13.9,
+      "laneCount": 2,
+      "lanes": [
+        { "type": "sidewalk", "width": 1.5, "direction": "both" },
+        { "type": "driving", "width": 3.5, "direction": "forward" },
+        { "type": "driving", "width": 3.5, "direction": "backward" },
+        { "type": "sidewalk", "width": 1.5, "direction": "both" }
+      ]
+    },
+    { "id": "r_2", "name": "Seg2", "fromNodeId": "n_c1", "toNodeId": "n_c2", "length": 150.0, "speedLimit": 13.9, "laneCount": 2 },
+    { "id": "r_3", "name": "Seg3", "fromNodeId": "n_c2", "toNodeId": "n_e",  "length": 150.0, "speedLimit": 13.9, "laneCount": 2 }
+  ],
+  "intersections": [
+    { "nodeId": "n_c1", "type": "PRIORITY", "intersectionSize": 20 },
+    { "nodeId": "n_c2", "type": "PRIORITY", "intersectionSize": 20 }
+  ],
+  "spawnPoints": [
+    { "roadId": "r_1", "laneIndex": 0, "position": 0.0 }
+  ],
+  "despawnPoints": [
+    { "roadId": "r_3", "laneIndex": 0, "position": 150.0 }
+  ],
+  "defaultSpawnRate": 0.5
+}

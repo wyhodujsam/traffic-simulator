@@ -86,6 +86,34 @@ describe('MapSidebar idle actions', () => {
     );
     expect(spy).toHaveBeenCalledTimes(1);
   });
+
+  it('renders Fetch roads (osm2streets) button in idle state', () => {
+    render(
+      <MapSidebar
+        bbox={bbox}
+        state="idle"
+        onFetchRoadsO2s={() => {}}
+      />
+    );
+    expect(
+      screen.getByRole('button', { name: /^Fetch roads \(osm2streets\)$/ })
+    ).toBeInTheDocument();
+  });
+
+  it('clicking Fetch roads (osm2streets) calls onFetchRoadsO2s', () => {
+    const spy = vi.fn();
+    render(
+      <MapSidebar
+        bbox={bbox}
+        state="idle"
+        onFetchRoadsO2s={spy}
+      />
+    );
+    fireEvent.click(
+      screen.getByRole('button', { name: /^Fetch roads \(osm2streets\)$/ })
+    );
+    expect(spy).toHaveBeenCalledTimes(1);
+  });
 });
 
 describe('MapSidebar result-state origin', () => {
@@ -116,6 +144,21 @@ describe('MapSidebar result-state origin', () => {
     // (e.g. "GraphHopper diff", "GraphHopper warnings"). We want the heading match, not any occurrence.
     expect(screen.getByText('GraphHopper', { exact: true })).toBeInTheDocument();
     expect(screen.getByText('5 roads, 1 intersections')).toBeInTheDocument();
+  });
+
+  it('shows osm2streets heading when resultOrigin=osm2streets', () => {
+    render(
+      <MapSidebar
+        bbox={bbox}
+        state="result"
+        result={{ roadCount: 4, intersectionCount: 3 }}
+        resultOrigin="osm2streets"
+      />
+    );
+    // { exact: true } prevents a false positive if later copy contains "osm2streets" as a substring
+    // (e.g. "osm2streets warnings", "osm2streets diff"). We want the heading match, not any occurrence.
+    expect(screen.getByText('osm2streets', { exact: true })).toBeInTheDocument();
+    expect(screen.getByText('4 roads, 3 intersections')).toBeInTheDocument();
   });
 
   it('falls back to Roads loaded heading when resultOrigin is absent', () => {

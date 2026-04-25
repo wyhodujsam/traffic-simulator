@@ -488,14 +488,20 @@ Plans:
 
 ### Phase 24: osm2streets integration
 
-**Goal:** Integrate A/B Street's osm2streets (Rust/WASM) for lane-level street network with markings, turn lanes, and intersection shapes. New `/api/osm/fetch-roads-o2s` endpoint for three-way A/B comparison against Phase 18 and Phase 23.
+**Goal:** Integrate A/B Street's osm2streets (Rust) via a Path-B subprocess wrapper (`tools/osm2streets-cli` → static musl Linux-x64 binary under `backend/bin/`). Translate StreetNetwork JSON into our MapConfig, surface per-lane metadata on `RoadConfig.lanes[]` (optional, non-null-only), expose via new `POST /api/osm/fetch-roads-o2s` endpoint. Three-way A/B/C coexistence with Phase 18 + Phase 23 — both legacy endpoints remain byte-identical.
 
-**Requirements**: TBD
-**Depends on:** Phase 18
-**Plans:** 0 plans
+**Requirements**: N/A (no req_ids mapped; scope authoritative in 24-CONTEXT.md + 24-RESEARCH.md)
+**Depends on:** Phase 18, Phase 23
+**Plans:** 7 plans
 
 Plans:
-- [ ] TBD (run /gsd:plan-phase 24 to break down)
+- [ ] 24-01-PLAN.md — Rust wrapper CLI (tools/osm2streets-cli) + static musl binary + 6 canned StreetNetwork JSON fixtures + 6th bike-lane OSM fixture; record actual JSON shape in SUMMARY.md (Wave 1)
+- [ ] 24-02-PLAN.md — MapConfig.LaneConfig record + optional RoadConfig.lanes field (@JsonInclude NON_NULL) + MapValidator positive test + Phase 18/23 null-lanes regression tests (Wave 1)
+- [ ] 24-03-PLAN.md — Osm2StreetsConfig @ConfigurationProperties + Osm2StreetsService skeleton (@Service @Lazy implements OsmConverter) + executeCli (ProcessBuilder, timeout, deadlock-free) + 8 unit tests (Wave 2)
+- [ ] 24-04-PLAN.md — Extract OverpassXmlFetcher shared helper + StreetNetworkMapper (package-private translation) + wire Osm2StreetsService.fetchAndConvert end-to-end + 14 mapper + service tests (Wave 3)
+- [ ] 24-05-PLAN.md — OsmController POST /api/osm/fetch-roads-o2s + 504 timeout handler + 503 CLI-error handler + 4 WebMvc tests + Phase 18/23 byte-identity regression + A/B/C OsmPipelineComparisonTest extension (Wave 4)
+- [ ] 24-06-PLAN.md — Frontend third button "Fetch roads (osm2streets)" + handleFetchRoadsO2s + resultOrigin extension + osm-bbox-o2s.spec.ts Playwright spec + canned lanes-populated fixture (Wave 4)
+- [ ] 24-07-PLAN.md — Docs: backend/docs/osm-converters.md Phase 24 section + lanes[] contract + roundabout gap + binary provenance cross-ref + full-suite close gate (checkpoint) (Wave 5)
 
 ### Phase 25: Traffic flow visualization
 

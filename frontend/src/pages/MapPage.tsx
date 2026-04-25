@@ -21,8 +21,8 @@ export function MapPage() {
   const [fetchError, setFetchError] = useState<string | null>(null);
   const [mapConfig, setMapConfig] = useState<MapConfigData | null>(null);
   const [simulationLoading, setSimulationLoading] = useState(false);
-  const [pipelineMode, setPipelineMode] = useState<'idle' | 'upload' | 'bbox' | 'components' | 'gh'>('idle');
-  const [resultOrigin, setResultOrigin] = useState<'Overpass' | 'GraphHopper' | null>(null);
+  const [pipelineMode, setPipelineMode] = useState<'idle' | 'upload' | 'bbox' | 'components' | 'gh' | 'o2s'>('idle');
+  const [resultOrigin, setResultOrigin] = useState<'Overpass' | 'GraphHopper' | 'osm2streets' | null>(null);
 
   const mapViewRef = useRef<{ center: [number, number]; zoom: number }>({
     center: [52.5089, 21.0395],
@@ -102,6 +102,43 @@ export function MapPage() {
       setSidebarState('result');
     } catch (e: unknown) {
       const message = e instanceof Error ? e.message : 'Failed to fetch roads (GraphHopper)';
+      setFetchError(message);
+      setSidebarState('error');
+    }
+  }, [bbox]);
+
+  const handleFetchRoadsO2s = useCallback(async () => {
+    if (!bbox) return;
+    setPipelineMode('o2s');
+    setResultOrigin(null);
+    setSidebarState('loading');
+    setFetchError(null);
+    setFetchResult(null);
+    try {
+      const response = await fetch('/api/osm/fetch-roads-o2s', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          south: bbox.south,
+          west: bbox.west,
+          north: bbox.north,
+          east: bbox.east,
+        }),
+      });
+      if (!response.ok) {
+        const err = await response.json().catch(() => ({ error: 'Unknown error' }));
+        throw new Error((err as { error?: string }).error ?? `HTTP ${response.status}`);
+      }
+      const config = await response.json() as MapConfigData;
+      setMapConfig(config);
+      setFetchResult({
+        roadCount: config.roads?.length ?? 0,
+        intersectionCount: config.intersections?.length ?? 0,
+      });
+      setResultOrigin('osm2streets');
+      setSidebarState('result');
+    } catch (e: unknown) {
+      const message = e instanceof Error ? e.message : 'Failed to fetch roads (osm2streets)';
       setFetchError(message);
       setSidebarState('error');
     }
@@ -313,6 +350,7 @@ export function MapPage() {
           state={sidebarState}
           onFetchRoads={handleFetchRoads}
           onFetchRoadsGh={handleFetchRoadsGh}
+          onFetchRoadsO2s={handleFetchRoadsO2s}
           onUploadImage={handleUploadImage}
           onAnalyzeBbox={handleAnalyzeBbox}
           onAnalyzeComponents={handleAnalyzeComponents}
@@ -328,6 +366,7 @@ export function MapPage() {
             pipelineMode === 'bbox' ? 'Analyzing bbox (free-form)...' :
             pipelineMode === 'components' ? 'Analyzing components via Claude vision...' :
             pipelineMode === 'gh' ? 'Fetching road data (GraphHopper)...' :
+            pipelineMode === 'o2s' ? 'Fetching roads via osm2streets...' :
             'Fetching road data...'
           }
         />

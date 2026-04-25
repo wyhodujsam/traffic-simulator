@@ -1,93 +1,116 @@
 package com.trafficsimulator.service;
 
 import static org.assertj.core.api.Assertions.assertThat;
-import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
-import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
+
+import java.util.List;
+import java.util.Set;
+import java.util.stream.Collectors;
 
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.condition.EnabledIfSystemProperty;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.boot.test.autoconfigure.web.servlet.AutoConfigureMockMvc;
 import org.springframework.boot.test.context.SpringBootTest;
-import org.springframework.http.MediaType;
-import org.springframework.test.web.servlet.MockMvc;
-import org.springframework.test.web.servlet.MvcResult;
 
-import com.fasterxml.jackson.databind.ObjectMapper;
 import com.trafficsimulator.config.MapConfig;
 import com.trafficsimulator.config.MapValidator;
+import com.trafficsimulator.dto.BboxRequest;
 
 import lombok.extern.slf4j.Slf4j;
 
 /**
- * A/B comparison test: drives BOTH {@code /api/osm/fetch-roads} (Phase 18 Overpass converter) and
- * {@code /api/osm/fetch-roads-gh} (Phase 23 GraphHopper converter) with the same canned bbox,
- * asserts each output passes {@link MapValidator}, and logs a diff of roads / intersections /
- * converter name without failing on divergence.
+ * A/B/C comparison harness: drives ALL registered {@link OsmConverter} beans with the same canned
+ * bbox, asserts each output passes {@link MapValidator}, and logs a side-by-side diff of roads /
+ * intersections / converter name without failing on divergence.
  *
- * <p><b>Disabled by default.</b> Requires a live Overpass API round-trip — kept off CI via the
- * {@code osm.online} system property gate. Run manually with:
+ * <p>Phase 18 (Overpass), Phase 23 (GraphHopper), and Phase 24 (osm2streets) each register as a
+ * distinct {@code @Service implements OsmConverter} bean; Spring autowires all three into the
+ * {@code List<OsmConverter>} field below. No hard-coded per-converter injection — adding a 4th
+ * converter in a future phase only requires a new {@code @Service} class.
+ *
+ * <p><b>Two tests live here:</b>
+ *
+ * <ul>
+ *   <li>{@link #allThreeConvertersAreRegistered()} — OFFLINE, runs on every CI pass. Asserts
+ *       Spring wired exactly the 3 expected converter names (Overpass + GraphHopper + osm2streets).
+ *       This is the contract gate — a missing or renamed converter trips this immediately.
+ *   <li>{@link #compareAllConverters_sameBbox_logDiff()} — ONLINE, gated by
+ *       {@code -Dosm.online=on}. Hits the live Overpass API + (for Phase 24) the local
+ *       osm2streets-cli binary. Logs counts side-by-side; never asserts equality — divergence is
+ *       the whole point of A/B/C.
+ * </ul>
+ *
+ * <p>Run the online comparison manually:
  *
  * <pre>
  *   mvn test -pl backend -Dtest=OsmPipelineComparisonTest -Dosm.online=on
  * </pre>
- *
- * <p>Why we keep this alongside the fixture-based {@link GraphHopperOsmServiceTest}: the fixture
- * tests lock in per-topology behaviour against hand-rolled OSM XML. This comparison test catches
- * real-world divergence between the two {@link OsmConverter} implementations on genuine Overpass
- * data — divergence that by design is NOT asserted as equality.
  */
 @SpringBootTest
-@AutoConfigureMockMvc
-@EnabledIfSystemProperty(named = "osm.online", matches = "on|true")
 @Slf4j
 class OsmPipelineComparisonTest {
 
-    private static final String BBOX_JSON =
-            """
-            {"south":52.2197,"west":21.0022,"north":52.2247,"east":21.0072}""";
+    /**
+     * Warsaw-Centrum bbox (small — keeps the Overpass round-trip + osm2streets CLI fast for manual
+     * smoke tests).
+     */
+    private static final BboxRequest BBOX =
+            new BboxRequest(52.2295, 21.0122, 52.2305, 21.0132);
 
-    @Autowired private MockMvc mvc;
-    @Autowired private ObjectMapper objectMapper;
+    /**
+     * Spring autowires ALL registered {@link OsmConverter} beans into this list. Phase 18
+     * ({@link OsmPipelineService}), Phase 23 ({@link GraphHopperOsmService}), and Phase 24
+     * ({@link Osm2StreetsService}) each contribute one bean.
+     */
+    @Autowired private List<OsmConverter> converters;
+
     @Autowired private MapValidator mapValidator;
 
-    // Both OsmConverter impls wired via concrete types — ensures structural grep for
-    // "OsmConverter" finds two context-relevant references AND that both beans are present.
-    @Autowired private OsmPipelineService overpassConverter; // OsmConverter impl #1 (Phase 18)
-    @Autowired private GraphHopperOsmService graphHopperConverter; // OsmConverter impl #2 (Phase 23)
-
+    /**
+     * OFFLINE contract test — runs on every CI pass. Ensures Spring wired the expected three
+     * converters by name. Catches regressions where a converter bean was accidentally demoted from
+     * {@code @Service} or renamed.
+     */
     @Test
-    void bothConverters_sameBbox_produceValidatorCleanConfigs_logDiff() throws Exception {
-        // Sanity: both beans satisfy the OsmConverter contract (per Plan 23-02).
-        assertThat((OsmConverter) overpassConverter).isNotNull();
-        assertThat((OsmConverter) graphHopperConverter).isNotNull();
+    void allThreeConvertersAreRegistered() {
+        assertThat(converters)
+                .as("three converters must be registered: Overpass + GraphHopper + osm2streets")
+                .hasSize(3);
 
-        MapConfig phase18 = callEndpoint("/api/osm/fetch-roads");
-        MapConfig phase23 = callEndpoint("/api/osm/fetch-roads-gh");
-
-        assertThat(mapValidator.validate(phase18)).as("Phase 18 validator errors").isEmpty();
-        assertThat(mapValidator.validate(phase23)).as("Phase 23 validator errors").isEmpty();
-
-        log.info(
-                "A/B diff — {}: {} roads / {} intersections; {}: {} roads / {} intersections",
-                overpassConverter.converterName(),
-                phase18.getRoads() == null ? 0 : phase18.getRoads().size(),
-                phase18.getIntersections() == null ? 0 : phase18.getIntersections().size(),
-                graphHopperConverter.converterName(),
-                phase23.getRoads() == null ? 0 : phase23.getRoads().size(),
-                phase23.getIntersections() == null ? 0 : phase23.getIntersections().size());
-
-        // No equality assertion — divergence is the whole point of the A/B comparison.
+        Set<String> names =
+                converters.stream()
+                        .map(OsmConverter::converterName)
+                        .collect(Collectors.toSet());
+        assertThat(names)
+                .containsExactlyInAnyOrder("Overpass", "GraphHopper", "osm2streets");
     }
 
-    private MapConfig callEndpoint(String path) throws Exception {
-        MvcResult res =
-                mvc.perform(
-                                post(path)
-                                        .contentType(MediaType.APPLICATION_JSON)
-                                        .content(BBOX_JSON))
-                        .andExpect(status().isOk())
-                        .andReturn();
-        return objectMapper.readValue(res.getResponse().getContentAsString(), MapConfig.class);
+    /**
+     * ONLINE A/B/C comparison — iterates the full converter list, validates each output, and logs
+     * a side-by-side diff. Gated by {@code -Dosm.online=on}; skipped on CI by default.
+     */
+    @Test
+    @EnabledIfSystemProperty(named = "osm.online", matches = "on|true")
+    void compareAllConverters_sameBbox_logDiff() {
+        for (OsmConverter c : converters) {
+            if (!c.isAvailable()) {
+                log.info("{}: SKIPPED (not available)", c.converterName());
+                continue;
+            }
+            try {
+                MapConfig cfg = c.fetchAndConvert(BBOX);
+                assertThat(mapValidator.validate(cfg))
+                        .as("%s validator errors", c.converterName())
+                        .isEmpty();
+                log.info(
+                        "{}: {} roads, {} intersections",
+                        c.converterName(),
+                        cfg.getRoads() == null ? 0 : cfg.getRoads().size(),
+                        cfg.getIntersections() == null ? 0 : cfg.getIntersections().size());
+            } catch (Exception e) {
+                // Never fail on divergence / per-converter error; the online comparison is
+                // deliberately best-effort so one fragile converter doesn't mask the others.
+                log.warn("{}: FAILED - {}", c.converterName(), e.getMessage());
+            }
+        }
     }
 }

@@ -2,8 +2,6 @@ package com.trafficsimulator.service;
 
 import java.io.File;
 import java.io.IOException;
-import java.net.URLEncoder;
-import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.ArrayList;
@@ -16,12 +14,8 @@ import java.util.Set;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
-import org.springframework.beans.factory.annotation.Value;
 import org.springframework.context.annotation.Lazy;
-import org.springframework.http.MediaType;
 import org.springframework.stereotype.Service;
-import org.springframework.web.client.RestClient;
-import org.springframework.web.client.RestClientException;
 
 import com.graphhopper.reader.ReaderWay;
 import com.graphhopper.reader.osm.WaySegmentParser;
@@ -83,11 +77,8 @@ public class GraphHopperOsmService implements OsmConverter {
     private static final String ROUNDABOUT_VALUE = "roundabout";
     private static final String TRAFFIC_SIGNALS_VALUE = "traffic_signals";
 
-    private final RestClient overpassRestClient;
+    private final OverpassXmlFetcher overpassXmlFetcher;
     private final MapValidator mapValidator;
-
-    @Value("${osm.overpass.urls:https://overpass-api.de}")
-    private List<String> overpassMirrors;
 
     @Override
     public String converterName() {
@@ -119,7 +110,7 @@ public class GraphHopperOsmService implements OsmConverter {
         Path tempDir = null;
         try {
             tempDir = Files.createTempDirectory("gh-osm-");
-            Path osmFile = fetchOverpassXmlToTempFile(bbox, tempDir);
+            Path osmFile = overpassXmlFetcher.fetchXmlToTempFile(bbox, tempDir);
             return fetchAndConvert(osmFile.toFile(), bbox);
         } catch (IOException e) {
             throw new IllegalStateException("OSM fetch/IO failed: " + e.getMessage(), e);
@@ -150,56 +141,8 @@ public class GraphHopperOsmService implements OsmConverter {
     }
 
     // -------------------------------------------------------------------------
-    // Overpass fetch (mirrors Phase 18 pattern, XML variant)
+    // Overpass fetch — delegated to OverpassXmlFetcher (Phase 24 Plan 24-04 refactor).
     // -------------------------------------------------------------------------
-
-    private Path fetchOverpassXmlToTempFile(BboxRequest bbox, Path tempDir) throws IOException {
-        String query = buildOverpassXmlQuery(bbox);
-        String encoded = "data=" + URLEncoder.encode(query, StandardCharsets.UTF_8);
-
-        log.info("Fetching OSM data (XML) for bbox: {} (mirrors={})", bbox, overpassMirrors);
-        String xml = fetchFromMirrors(encoded);
-
-        Path osmFile = tempDir.resolve("bbox.osm");
-        Files.writeString(osmFile, xml, StandardCharsets.UTF_8);
-        return osmFile;
-    }
-
-    private String buildOverpassXmlQuery(BboxRequest bbox) {
-        return """
-                [out:xml][timeout:25];
-                (
-                  way["highway"~"^(motorway|trunk|primary|secondary|tertiary|unclassified|residential|living_street)$"](%f,%f,%f,%f);
-                );
-                out body;
-                >;
-                out skel qt;\
-                """
-                .formatted(bbox.south(), bbox.west(), bbox.north(), bbox.east());
-    }
-
-    private String fetchFromMirrors(String encodedBody) {
-        RestClientException lastError = null;
-        for (String baseUrl : overpassMirrors) {
-            String url = baseUrl.replaceAll("/+$", "") + "/api/interpreter";
-            try {
-                log.info("Overpass attempt: {}", url);
-                return overpassRestClient
-                        .post()
-                        .uri(url)
-                        .contentType(MediaType.APPLICATION_FORM_URLENCODED)
-                        .body(encodedBody)
-                        .retrieve()
-                        .body(String.class);
-            } catch (RestClientException e) {
-                log.warn("Overpass mirror {} failed: {}", baseUrl, e.getMessage());
-                lastError = e;
-            }
-        }
-        throw new RestClientException(
-                "All Overpass mirrors failed (" + overpassMirrors.size() + " tried)",
-                lastError != null ? lastError : new IllegalStateException("no mirrors configured"));
-    }
 
     // -------------------------------------------------------------------------
     // Parser configuration

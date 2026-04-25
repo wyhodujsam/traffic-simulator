@@ -35,8 +35,11 @@ class GraphHopperOsmServiceTest {
     private final BboxRequest bbox = new BboxRequest(52.2180, 20.9980, 52.2240, 21.0050);
 
     private GraphHopperOsmService newService() {
-        // RestClient is unused on the File overload, but the constructor requires one.
-        return new GraphHopperOsmService(RestClient.create(), validator);
+        // OverpassXmlFetcher is unused on the File overload, but the constructor requires one.
+        // Pass a real fetcher backed by a throwaway RestClient + empty mirrors list — the File
+        // overload never exercises the HTTP path so this instance is only a placeholder.
+        OverpassXmlFetcher fetcher = new OverpassXmlFetcher(RestClient.create(), List.of());
+        return new GraphHopperOsmService(fetcher, validator);
     }
 
     private File fixture(String name) {
@@ -197,7 +200,23 @@ class GraphHopperOsmServiceTest {
     }
 
     // ---------------------------------------------------------------------
-    // 7. Lane clamp: highway=motorway + lanes=6 must yield laneCount == 4
+    // 7. Phase 24 regression: Phase 23 must never populate RoadConfig.lanes
+    // ---------------------------------------------------------------------
+
+    @Test
+    void lanesFieldIsNullForPhase23() {
+        GraphHopperOsmService service = newService();
+
+        MapConfig cfg = service.fetchAndConvert(fixture("straight.osm"), bbox);
+
+        assertThat(cfg.getRoads()).isNotEmpty();
+        assertThat(cfg.getRoads())
+                .as("Phase 23 must never populate lanes[] — it's osm2streets-only")
+                .allSatisfy(r -> assertThat(r.getLanes()).isNull());
+    }
+
+    // ---------------------------------------------------------------------
+    // 8. Lane clamp: highway=motorway + lanes=6 must yield laneCount == 4
     // ---------------------------------------------------------------------
 
     @Test
