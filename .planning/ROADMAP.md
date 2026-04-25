@@ -509,12 +509,12 @@ Plans:
 
 **Requirements**: N/A (inserted hotfix; scope authoritative in 24.1-CONTEXT.md)
 **Depends on:** Phase 23, Phase 24
-**Plans:** 3 plans
+**Plans:** 4/3 plans complete
 
 Plans:
-- [ ] 24.1-01-PLAN.md — RED unit test + GREEN fix in OverpassXmlFetcher.buildOverpassXmlQuery (Wave 1, autonomous)
-- [ ] 24.1-02-PLAN.md — OsmPipelineSmokeIT @SpringBootTest exercising real Osm2StreetsService + GraphHopperOsmService end-to-end against canned Overpass XML via MockRestServiceServer (Wave 2, autonomous)
-- [ ] 24.1-03-PLAN.md — Playwright real-backend e2e with local Overpass fixture HTTP server + Spring property override (Wave 3, includes deferral checkpoint per CONTEXT.md Risks)
+- [x] 24.1-01-PLAN.md — RED unit test + GREEN fix in OverpassXmlFetcher.buildOverpassXmlQuery (Wave 1, autonomous)
+- [x] 24.1-02-PLAN.md — OsmPipelineSmokeIT @SpringBootTest exercising real Osm2StreetsService + GraphHopperOsmService end-to-end against canned Overpass XML via MockRestServiceServer (Wave 2, autonomous)
+- [x] 24.1-03-PLAN.md — Playwright real-backend e2e with local Overpass fixture HTTP server + Spring property override (Wave 3, includes deferral checkpoint per CONTEXT.md Risks)
 
 ### Phase 25: Traffic flow visualization
 

@@ -2,23 +2,23 @@
 gsd_state_version: 1.0
 milestone: v2.0
 milestone_name: — Map Screenshot to Simulation
-current_phase: 23
-current_plan: 1
-status: Ready to execute
-last_updated: "2026-04-23T09:08:16.953Z"
+current_phase: 24.1
+current_plan: 3
+status: Phase 24.1 complete — ready to pick up Phase 23/24/25
+last_updated: "2026-04-25T17:25:02.390Z"
 progress:
-  total_phases: 26
-  completed_phases: 21
-  total_plans: 100
-  completed_plans: 94
-  percent: 94
+  total_phases: 27
+  completed_phases: 23
+  total_plans: 103
+  completed_plans: 105
+  percent: 100
 ---
 
 # Project State
 
 **Project:** Traffic Simulator
 **Milestone:** v2.0 — Map Screenshot to Simulation
-**Current Phase:** 23
+**Current Phase:** 24.1
 **Last Updated:** 2026-04-12
 
 ## Project Reference
@@ -26,7 +26,7 @@ progress:
 See: .planning/PROJECT.md (updated 2026-04-12)
 
 **Core value:** Wierna symulacja fizyki ruchu drogowego
-**Current focus:** Phase 23 — GraphHopper-based OSM parser
+**Current focus:** Phase 24.1 — overpass-xml-element-ordering-fix
 
 ## Phase Status
 
@@ -63,16 +63,16 @@ See: .planning/PROJECT.md (updated 2026-04-12)
 | 22 | Extend Component Library (VIADUCT + HIGHWAY_EXIT_RAMP) | ✓ Complete (3/3 plans done) |
 | 23 | GraphHopper-based OSM parser | ○ Not started |
 | 24 | osm2streets integration | ○ Not started |
+| 24.1 | Overpass XML element ordering fix (Phase 23/24 hotfix) | ✓ Complete (3/3 plans done) |
 | 25 | Traffic flow visualization | ○ Not started |
 
 ## Current Position
 
-Phase: 23 (GraphHopper-based OSM parser) — EXECUTING
-Plan: 1 of 8
+Phase: 24.1 (overpass-xml-element-ordering-fix) — COMPLETE (3/3 plans)
 **Active phase:** — (between phases; ready to pick up 23/24/25)
-**Current plan:** Not started
-**Completed:** Phase 22 Plan 03 — VisionComparisonHarness parametrised over viaduct + highway-exit-ramp fixtures. All 308 backend + 51 frontend tests green.
-**Integration point:** Full component-library vision pipeline ships end-to-end with 6 component types (ROUNDABOUT_4ARM, SIGNAL_4WAY, T_INTERSECTION, STRAIGHT_SEGMENT, VIADUCT, HIGHWAY_EXIT_RAMP). Phase 20 free-form pipeline coexists; harness runs both for A/B comparison.
+**Current plan:** —
+**Completed:** Phase 24.1 Plan 03 — Real-backend Playwright e2e (`osm-bbox-real-backend.spec.ts` 1/1 in 14.4s; full e2e 9/9) + live Modlin manual smoke verifying all three OSM endpoints end-to-end (Phase 18: 18 roads, Phase 23: 20 roads, Phase 24: 10 roads with populated `lanes[]` metadata). All 6 CONTEXT.md acceptance criteria CLOSED.
+**Integration point:** Phase 23/24 Overpass element-ordering bug class is fixed at four layers (unit query-shape + integration captured-body + integration service-behavior + e2e real-backend UI + live Modlin smoke). Pre-existing Phase 24 osm2streets binary-path resolution bug surfaced again at the live smoke (logged in Phase 24 deferred-items; recommended Phase 24.2 follow-up).
 
 ## Key Decisions (v2.0)
 
