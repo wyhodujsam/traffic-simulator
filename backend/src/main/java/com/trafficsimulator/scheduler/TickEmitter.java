@@ -127,8 +127,8 @@ public class TickEmitter {
         // 4. Intersection transfers (after physics, before despawn)
         intersectionManager.processTransfers(network, tick);
 
-        // 5. Despawn (only EXIT-node roads)
-        vehicleSpawner.despawnVehicles(network);
+        // 5. Despawn (only EXIT-node roads). Pass current tick for tick-keyed throughput window.
+        vehicleSpawner.despawnVehicles(network, tick);
     }
 
     private void logTickMetrics(long tick, long tickStart, SimulationStateDto state) {

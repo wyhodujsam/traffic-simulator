@@ -33,9 +33,19 @@ public class VehicleSpawner implements IVehicleSpawner {
     private static final double T_BASE = 1.5; // seconds
     private static final double DEFAULT_VEHICLE_LENGTH = 4.5; // metres
     private static final double MIN_SAFE_GAP = S0 + DEFAULT_VEHICLE_LENGTH; // 6.5m
-    private static final long THROUGHPUT_WINDOW_MS = 60_000;
 
-    private final Deque<Long> despawnTimestamps = new ArrayDeque<>();
+    /**
+     * Tick frequency assumed by the rolling throughput window. Matches {@code
+     * @Scheduled(fixedRate = 50)} on TickEmitter — 20 ticks per simulated second. Used to convert
+     * the existing 60-second window semantics to a tick-keyed cutoff for determinism (Phase 25
+     * Plan 01, DET-01 precondition).
+     */
+    private static final int TICKS_PER_SEC = 20;
+
+    /** 60-second rolling window expressed in ticks (= 1200 ticks @ 20Hz). */
+    private static final long THROUGHPUT_WINDOW_TICKS = 60L * TICKS_PER_SEC;
+
+    private final Deque<Long> despawnTicks = new ArrayDeque<>();
     private double spawnAccumulator;
 
     @Getter @Setter private double vehiclesPerSecond = 1.0;
@@ -145,9 +155,12 @@ public class VehicleSpawner implements IVehicleSpawner {
      * Despawns vehicles that have reached or passed the end of their lane. Only despawns on roads
      * ending at EXIT nodes (roads with despawn points). Called at the end of each tick after
      * physics update.
+     *
+     * @param currentTick the current simulation tick number; recorded against each despawn so the
+     *     rolling throughput window stays simulation-relative (deterministic across runs).
      */
     @Override
-    public void despawnVehicles(RoadNetwork network) {
+    public void despawnVehicles(RoadNetwork network, long currentTick) {
         // Build set of road IDs that are exit roads (have despawn points)
         Set<String> exitRoadIds =
                 network.getDespawnPoints().stream()
@@ -162,7 +175,7 @@ public class VehicleSpawner implements IVehicleSpawner {
                 lane.removeVehiclesIf(
                         v -> {
                             if (v.getPosition() >= lane.getLength()) {
-                                despawnTimestamps.addLast(System.currentTimeMillis());
+                                despawnTicks.addLast(currentTick);
                                 log.debug(
                                         "Vehicle {} despawned at position {} (lane length {})",
                                         v.getId(),
@@ -177,22 +190,28 @@ public class VehicleSpawner implements IVehicleSpawner {
     }
 
     /**
-     * Returns vehicles despawned in the last 60 seconds. Evicts stale entries older than the
-     * window.
+     * Returns vehicles despawned in the last 60 simulated seconds (= {@code
+     * THROUGHPUT_WINDOW_TICKS} ticks at 20 Hz). Evicts stale entries strictly older than the
+     * cutoff (entries equal to the cutoff tick are retained).
+     *
+     * <p>Tick-keyed instead of wall-clock keyed so two runs of the same seed produce the same
+     * throughput readings — DET-01 precondition (Phase 25 Plan 01).
+     *
+     * @param currentTick the simulation's current tick number
      */
     @Override
-    public int getThroughput() {
-        long cutoff = System.currentTimeMillis() - THROUGHPUT_WINDOW_MS;
-        while (!despawnTimestamps.isEmpty() && despawnTimestamps.peekFirst() < cutoff) {
-            despawnTimestamps.pollFirst();
+    public int getThroughput(long currentTick) {
+        long cutoff = currentTick - THROUGHPUT_WINDOW_TICKS;
+        while (!despawnTicks.isEmpty() && despawnTicks.peekFirst() < cutoff) {
+            despawnTicks.pollFirst();
         }
-        return despawnTimestamps.size();
+        return despawnTicks.size();
     }
 
     @Override
     public void reset() {
         spawnAccumulator = 0.0;
         spawnPointIndex = 0;
-        despawnTimestamps.clear();
+        despawnTicks.clear();
     }
 }

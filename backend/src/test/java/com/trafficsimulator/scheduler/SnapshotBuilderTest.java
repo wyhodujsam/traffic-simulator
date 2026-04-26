@@ -2,6 +2,7 @@ package com.trafficsimulator.scheduler;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.within;
+import static org.mockito.ArgumentMatchers.anyLong;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
 
@@ -38,7 +39,7 @@ class SnapshotBuilderTest {
     void setUp() {
         snapshotBuilder = new SnapshotBuilder();
         vehicleSpawner = mock(IVehicleSpawner.class);
-        when(vehicleSpawner.getThroughput()).thenReturn(0);
+        when(vehicleSpawner.getThroughput(anyLong())).thenReturn(0);
     }
 
     @Test

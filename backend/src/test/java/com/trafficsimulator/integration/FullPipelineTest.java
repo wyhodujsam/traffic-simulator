@@ -50,7 +50,7 @@ class FullPipelineTest {
                     .forEach(v -> v.updatePhysics(801.0, v.getSpeed(), v.getAcceleration()));
         }
 
-        spawner.despawnVehicles(network);
+        spawner.despawnVehicles(network, 20L);
 
         int afterDespawn =
                 road.getLanes().stream().mapToInt(lane -> lane.getVehiclesView().size()).sum();

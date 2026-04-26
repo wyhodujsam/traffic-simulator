@@ -90,7 +90,7 @@ public class SimulationSteps {
 
             laneChangeEngine.tick(network, currentTick);
             intersectionManager.processTransfers(network, currentTick);
-            vehicleSpawner.despawnVehicles(network);
+            vehicleSpawner.despawnVehicles(network, currentTick);
         }
     }
 

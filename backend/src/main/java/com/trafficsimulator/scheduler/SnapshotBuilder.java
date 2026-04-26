@@ -60,7 +60,7 @@ public class SnapshotBuilder {
 
         VehicleObstacleCollection collection = collectVehiclesAndObstacles(network);
         List<TrafficLightDto> trafficLights = collectTrafficLights(network);
-        StatsDto stats = computeStats(collection, vehicleSpawner);
+        StatsDto stats = computeStats(collection, vehicleSpawner, tick);
 
         return SimulationStateDto.builder()
                 .tick(tick)
@@ -171,7 +171,7 @@ public class SnapshotBuilder {
     }
 
     private StatsDto computeStats(
-            VehicleObstacleCollection collection, IVehicleSpawner vehicleSpawner) {
+            VehicleObstacleCollection collection, IVehicleSpawner vehicleSpawner, long currentTick) {
         int vehicleCount = collection.vehicleCount();
         double avgSpeed = vehicleCount > 0 ? collection.totalSpeed() / vehicleCount : 0.0;
         double density =
@@ -183,7 +183,7 @@ public class SnapshotBuilder {
                 .vehicleCount(vehicleCount)
                 .avgSpeed(avgSpeed)
                 .density(density)
-                .throughput(vehicleSpawner.getThroughput())
+                .throughput(vehicleSpawner.getThroughput(currentTick))
                 .build();
     }
 
