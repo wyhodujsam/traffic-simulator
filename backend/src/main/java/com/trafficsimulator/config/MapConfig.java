@@ -39,6 +39,66 @@ public class MapConfig {
     @JsonProperty("defaultSpawnRate")
     private double defaultSpawnRate = 1.0;
 
+    /**
+     * Optional master RNG seed (D-01). When present, takes precedence over auto-generated seed but
+     * yields to STOMP {@code Start.seed} per resolution chain {@code command > json > auto}. Read by
+     * {@link com.trafficsimulator.engine.SimulationEngine#resolveSeedAndStart(Long)} via {@link
+     * com.trafficsimulator.model.RoadNetwork#getSeed()} after MapLoader propagation.
+     */
+    @JsonProperty("seed")
+    @JsonInclude(JsonInclude.Include.NON_NULL)
+    private Long seed;
+
+    /**
+     * Optional perturbation block (D-12 — slow-leader pulse). When present, drives {@link
+     * com.trafficsimulator.engine.PerturbationManager#getActiveV0} during the configured tick
+     * window, clamping the deterministic "vehicle 0" (min spawnedAt, lex tie-break by id) to {@link
+     * PerturbationConfig#getTargetSpeed()} for {@link PerturbationConfig#getDurationTicks()} ticks.
+     */
+    @JsonProperty("perturbation")
+    @JsonInclude(JsonInclude.Include.NON_NULL)
+    private PerturbationConfig perturbation;
+
+    /**
+     * Optional list of vehicles to prime onto the road network at load time (CONTEXT.md §Q2 —
+     * replaces a separate PrimeScenario command). {@link
+     * com.trafficsimulator.engine.CommandDispatcher} iterates this list after {@code
+     * handleLoadMap}/{@code handleLoadConfig} and inserts vehicles via {@code Lane.addVehicle}.
+     * Out-of-range road/lane references are silently skipped (T-25-IV-01 mitigation).
+     */
+    @JsonProperty("initialVehicles")
+    @JsonInclude(JsonInclude.Include.NON_NULL)
+    private List<InitialVehicleConfig> initialVehicles;
+
+    /** D-12 perturbation schema. Values trusted (build artifact); see plan threat model T-25-04-A. */
+    @Data
+    @NoArgsConstructor
+    @AllArgsConstructor
+    public static class PerturbationConfig {
+        /** Tick at which perturbation begins (inclusive start). */
+        private long tick;
+
+        /** Vehicle index per D-12; 0 = "leftmost spawned vehicle" (min spawnedAt, lex tie-break). */
+        private int vehicleIndex;
+
+        /** Override desired speed (m/s) applied to the matched vehicle during the window. */
+        private double targetSpeed;
+
+        /** Duration of the override (ticks); window is [tick, tick + durationTicks). */
+        private long durationTicks;
+    }
+
+    /** Initial-vehicle schema (CONTEXT.md §Q2). Primed by CommandDispatcher after map load. */
+    @Data
+    @NoArgsConstructor
+    @AllArgsConstructor
+    public static class InitialVehicleConfig {
+        private String roadId;
+        private int laneIndex;
+        private double position;
+        private double speed;
+    }
+
     @Data
     @NoArgsConstructor
     public static class NodeConfig {

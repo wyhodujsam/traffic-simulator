@@ -85,6 +85,13 @@ public class MapLoader {
                         .despawnPoints(despawnPoints)
                         .build();
 
+        // Plan 25-03: propagate optional schema fields (D-01, D-12, CONTEXT §Q2). All three are
+        // nullable; downstream consumers (SimulationEngine.resolveSeedAndStart, PerturbationManager,
+        // CommandDispatcher.primeInitialVehicles) handle null gracefully.
+        network.setSeed(config.getSeed());
+        network.setPerturbation(config.getPerturbation());
+        network.setInitialVehicles(config.getInitialVehicles());
+
         log.info(
                 "Built road network '{}': {} roads, {} lanes total, {} spawn points",
                 network.getId(),
