@@ -33,8 +33,8 @@ public class SimulationEngine {
 
     /**
      * Master RNG algorithm name. Verified via Oracle Javadoc + jshell on Java 17.0.18 (RESEARCH.md
-     * §"Verified seedable PRNG construction"). The {@link RngBootstrapTest} guards against typos
-     * by asserting {@code RandomGeneratorFactory.of(MASTER_ALGORITHM)} resolves at every build —
+     * §"Verified seedable PRNG construction"). The {@link RngBootstrapTest} guards against typos by
+     * asserting {@code RandomGeneratorFactory.of(MASTER_ALGORITHM)} resolves at every build —
      * mitigates threat T-25-04 (RNG factory crash on first user click).
      */
     public static final String MASTER_ALGORITHM = "L64X128MixRandom";
@@ -63,6 +63,20 @@ public class SimulationEngine {
 
     /** Last error message (e.g. failed LOAD_MAP), published once then cleared */
     @Getter @Setter private volatile String lastError;
+
+    /**
+     * Phase 25 D-13: {@code true} while a {@code RUN_FOR_TICKS_FAST} worker is executing the tight
+     * loop. {@link com.trafficsimulator.scheduler.TickEmitter} early-returns when this is set,
+     * preventing the @Scheduled cadence from racing the worker (RESEARCH.md §Pitfall #5 / threat
+     * T-25-RACE).
+     */
+    @Getter @Setter private volatile boolean fastMode;
+
+    /**
+     * Phase 25 D-13: target tick at which an active {@code RUN_FOR_TICKS} or {@code
+     * RUN_FOR_TICKS_FAST} should auto-stop. {@code -1L} = no auto-stop scheduled.
+     */
+    @Getter private volatile long autoStopTick = -1L;
 
     /**
      * The seed source recorded by the last {@link #resolveSeedAndStart(Long)} call. One of {@code
@@ -98,10 +112,10 @@ public class SimulationEngine {
     private final IntersectionManager intersectionManagerConcrete;
 
     /**
-     * Phase 25 Plan 04: KPI delay window. Held by the engine so {@link
-     * #resolveSeedAndStart(Long)} can wire it into the spawner once at startup, and so {@code
-     * Stop} / map-change handlers can call {@link DelayWindow#reset()} (KPI-07 cache invalidation
-     * symmetry — the spawner clears its rolling throughput separately).
+     * Phase 25 Plan 04: KPI delay window. Held by the engine so {@link #resolveSeedAndStart(Long)}
+     * can wire it into the spawner once at startup, and so {@code Stop} / map-change handlers can
+     * call {@link DelayWindow#reset()} (KPI-07 cache invalidation symmetry — the spawner clears its
+     * rolling throughput separately).
      */
     @Getter @Nullable private final DelayWindow delayWindow;
 
@@ -118,8 +132,8 @@ public class SimulationEngine {
      * Spring-preferred constructor (annotated {@code @Autowired}). Receives the concrete {@link
      * VehicleSpawner} and {@link IntersectionManager} beans so {@link #resolveSeedAndStart(Long)}
      * can call their package-private {@code setRng} methods (D-02 / D-03 wiring), plus the {@link
-     * DelayWindow} bean which the engine fans out into the spawner on first start (Phase 25 Plan
-     * 04 D-05 wiring).
+     * DelayWindow} bean which the engine fans out into the spawner on first start (Phase 25 Plan 04
+     * D-05 wiring).
      */
     @Autowired
     public SimulationEngine(
@@ -164,7 +178,8 @@ public class SimulationEngine {
 
         log.info("[SimulationEngine] Started with seed={} source={}", resolvedSeed, source);
 
-        RandomGeneratorFactory<RandomGenerator> factory = RandomGeneratorFactory.of(MASTER_ALGORITHM);
+        RandomGeneratorFactory<RandomGenerator> factory =
+                RandomGeneratorFactory.of(MASTER_ALGORITHM);
         this.masterRng = (RandomGenerator.SplittableGenerator) factory.create(resolvedSeed);
         // FIXED ORDER per D-02 — append-only. Adding a new consumer MUST append a new
         // master.split() at the END of this list. Inserting in the middle reshuffles every
@@ -260,6 +275,28 @@ public class SimulationEngine {
 
     public void setRoadNetwork(RoadNetwork roadNetwork) {
         this.roadNetwork = roadNetwork;
+    }
+
+    /**
+     * Phase 25 D-13: schedule auto-stop at {@code currentTick + ticksFromNow}. Called by {@code
+     * CommandDispatcher} when handling RUN_FOR_TICKS / RUN_FOR_TICKS_FAST.
+     */
+    public void scheduleAutoStop(long ticksFromNow) {
+        this.autoStopTick = tickCounter.get() + ticksFromNow;
+    }
+
+    /** Phase 25 D-13: clear any scheduled auto-stop (called on Stop, on completion). */
+    public void clearAutoStop() {
+        this.autoStopTick = -1L;
+    }
+
+    /**
+     * Phase 25 D-13: returns {@code true} when an auto-stop is scheduled and the tick counter has
+     * reached or passed it. Read by {@code TickEmitter} and {@code FastSimulationRunner}.
+     */
+    public boolean isAutoStopReached() {
+        long target = autoStopTick;
+        return target >= 0L && tickCounter.get() >= target;
     }
 
     /**

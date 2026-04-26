@@ -18,6 +18,7 @@ import com.trafficsimulator.config.MapLoader;
 import com.trafficsimulator.engine.command.SimulationCommand;
 import com.trafficsimulator.engine.kpi.DelayWindow;
 import com.trafficsimulator.engine.kpi.KpiCacheInvalidator;
+import com.trafficsimulator.engine.run.IFastSimulationRunner;
 import com.trafficsimulator.model.Intersection;
 import com.trafficsimulator.model.Lane;
 import com.trafficsimulator.model.Road;
@@ -25,6 +26,7 @@ import com.trafficsimulator.model.RoadNetwork;
 import com.trafficsimulator.model.TrafficLight;
 import com.trafficsimulator.model.TrafficLightPhase;
 import com.trafficsimulator.model.Vehicle;
+import com.trafficsimulator.replay.ReplayLogger;
 
 import lombok.extern.slf4j.Slf4j;
 
@@ -42,6 +44,7 @@ public class CommandDispatcher {
     private final VehicleSpawner vehicleSpawner;
     private final ObstacleManager obstacleManager;
     private final MapLoader mapLoader;
+
     /**
      * Phase 25 KPI-07: cleared on LoadMap / LoadConfig so stale per-segment KPIs do not leak. The
      * concrete cache lives in {@code SnapshotBuilder} (scheduler layer); we depend on the
@@ -52,6 +55,14 @@ public class CommandDispatcher {
     /** Phase 25 D-05: reset on LoadMap / LoadConfig so a new map starts with no delay history. */
     @Nullable private final DelayWindow delayWindow;
 
+    /**
+     * Phase 25 D-14: started by RUN_FOR_TICKS / RUN_FOR_TICKS_FAST, closed on Stop / map change.
+     */
+    @Nullable private final ReplayLogger replayLogger;
+
+    /** Phase 25 D-13: worker-thread driver for RUN_FOR_TICKS_FAST. */
+    @Nullable private final IFastSimulationRunner fastSimulationRunner;
+
     private final Map<Class<? extends SimulationCommand>, Consumer<SimulationCommand>> handlers =
             new LinkedHashMap<>();
 
@@ -60,7 +71,7 @@ public class CommandDispatcher {
             @Nullable VehicleSpawner vehicleSpawner,
             @Nullable ObstacleManager obstacleManager,
             @Nullable MapLoader mapLoader) {
-        this(engine, vehicleSpawner, obstacleManager, mapLoader, null, null);
+        this(engine, vehicleSpawner, obstacleManager, mapLoader, null, null, null, null);
     }
 
     @Autowired
@@ -70,20 +81,23 @@ public class CommandDispatcher {
             @Nullable ObstacleManager obstacleManager,
             @Nullable MapLoader mapLoader,
             @Nullable KpiCacheInvalidator kpiCacheInvalidator,
-            @Nullable DelayWindow delayWindow) {
+            @Nullable DelayWindow delayWindow,
+            @Nullable ReplayLogger replayLogger,
+            @Nullable IFastSimulationRunner fastSimulationRunner) {
         this.engine = engine;
         this.vehicleSpawner = vehicleSpawner;
         this.obstacleManager = obstacleManager;
         this.mapLoader = mapLoader;
         this.kpiCacheInvalidator = kpiCacheInvalidator;
         this.delayWindow = delayWindow;
+        this.replayLogger = replayLogger;
+        this.fastSimulationRunner = fastSimulationRunner;
         registerHandlers();
     }
 
     private void registerHandlers() {
         handlers.put(
-                SimulationCommand.Start.class,
-                cmd -> handleStart((SimulationCommand.Start) cmd));
+                SimulationCommand.Start.class, cmd -> handleStart((SimulationCommand.Start) cmd));
         handlers.put(SimulationCommand.Stop.class, cmd -> handleStop());
         handlers.put(SimulationCommand.Pause.class, cmd -> handlePause());
         handlers.put(SimulationCommand.Resume.class, cmd -> handleResume());
@@ -114,6 +128,12 @@ public class CommandDispatcher {
         handlers.put(
                 SimulationCommand.LoadConfig.class,
                 cmd -> handleLoadConfig((SimulationCommand.LoadConfig) cmd));
+        handlers.put(
+                SimulationCommand.RunForTicks.class,
+                cmd -> handleRunForTicks((SimulationCommand.RunForTicks) cmd));
+        handlers.put(
+                SimulationCommand.RunForTicksFast.class,
+                cmd -> handleRunForTicksFast((SimulationCommand.RunForTicksFast) cmd));
     }
 
     public void dispatch(SimulationCommand cmd) {
@@ -153,6 +173,9 @@ public class CommandDispatcher {
         if (vehicleSpawner != null) {
             vehicleSpawner.reset();
         }
+        // Phase 25 D-13/D-14: clear any auto-stop and flush replay log.
+        engine.clearAutoStop();
+        closeReplayQuietly();
         log.info("Simulation stopped — state cleared");
     }
 
@@ -406,6 +429,75 @@ public class CommandDispatcher {
     }
 
     /**
+     * Phase 25 D-13: schedule a wall-clock auto-stop at {@code currentTick + ticks}. Force-enables
+     * the replay logger per D-14 (auto-enabled regardless of {@code simulator.replay.enabled} when
+     * RUN_FOR_TICKS is invoked). Engine status is set to RUNNING so the next @Scheduled tick picks
+     * up the auto-stop window.
+     */
+    private void handleRunForTicks(SimulationCommand.RunForTicks cmd) {
+        startReplayForRun();
+        engine.scheduleAutoStop(cmd.ticks());
+        if (engine.getStatus() == SimulationStatus.STOPPED) {
+            engine.resolveSeedAndStart(null);
+        }
+        engine.setStatus(SimulationStatus.RUNNING);
+        log.info("[CommandDispatcher] RUN_FOR_TICKS={} scheduled", cmd.ticks());
+    }
+
+    /**
+     * Phase 25 D-13: dispatches a {@link FastSimulationRunner} worker that runs {@code ticks} ticks
+     * as fast as the JVM permits. {@link com.trafficsimulator.scheduler.TickEmitter#emitTick()}
+     * early-returns while the worker is active (Pitfall #5 / T-25-RACE). Replay logger is
+     * force-started per D-14 so RUN_FOR_TICKS_FAST + same seed produces the same NDJSON as
+     * RUN_FOR_TICKS (DET-07).
+     */
+    private void handleRunForTicksFast(SimulationCommand.RunForTicksFast cmd) {
+        if (fastSimulationRunner == null) {
+            log.warn("FastSimulationRunner not available — ignoring RUN_FOR_TICKS_FAST");
+            return;
+        }
+        startReplayForRun();
+        if (engine.getStatus() == SimulationStatus.STOPPED) {
+            engine.resolveSeedAndStart(null);
+        }
+        engine.setStatus(SimulationStatus.RUNNING);
+        fastSimulationRunner.runFor(cmd.ticks());
+        log.info("[CommandDispatcher] RUN_FOR_TICKS_FAST={} dispatched", cmd.ticks());
+    }
+
+    /**
+     * Phase 25 D-14: force-start the replay logger for a RUN_FOR_TICKS / RUN_FOR_TICKS_FAST run.
+     * Reads seed + mapId from the engine state. No-op when the logger bean is absent (test wiring).
+     */
+    private void startReplayForRun() {
+        if (replayLogger == null) {
+            return;
+        }
+        RoadNetwork rn = engine.getRoadNetwork();
+        long seed = engine.getLastResolvedSeed();
+        // If START hasn't been called yet, fall back to the JSON seed or System.nanoTime so the
+        // header is still written.
+        if (seed == 0L) {
+            Long jsonSeed = (rn != null) ? rn.getSeed() : null;
+            seed = (jsonSeed != null) ? jsonSeed : System.nanoTime();
+        }
+        String mapId = (rn != null) ? rn.getId() : "unknown";
+        replayLogger.start(seed, "command", mapId, 0.05);
+    }
+
+    /** Phase 25 D-14: close the replay logger, swallowing IOException (T-25-IO contract). */
+    private void closeReplayQuietly() {
+        if (replayLogger == null) {
+            return;
+        }
+        try {
+            replayLogger.close();
+        } catch (IOException e) {
+            log.warn("[CommandDispatcher] Replay close failed: {}", e.getMessage());
+        }
+    }
+
+    /**
      * Plan 25-03 Q2 — prime initialVehicles from a loaded scenario onto their lanes. Out-of-range
      * road/lane references are silently skipped (T-25-IV-01 mitigation in plan threat model).
      * Vehicles are inserted via the existing {@link Lane#addVehicle} API which preserves the
@@ -420,8 +512,7 @@ public class CommandDispatcher {
         for (MapConfig.InitialVehicleConfig iv : initials) {
             Road road = network.getRoads().get(iv.getRoadId());
             if (road == null) {
-                log.debug(
-                        "Skipping initial vehicle: road '{}' not found", iv.getRoadId());
+                log.debug("Skipping initial vehicle: road '{}' not found", iv.getRoadId());
                 continue;
             }
             if (iv.getLaneIndex() < 0 || iv.getLaneIndex() >= road.getLanes().size()) {
