@@ -42,7 +42,9 @@ public class SnapshotBuilder implements KpiCacheInvalidator {
     /** Cached per-segment KPI list — refreshed every {@link #KPI_LIST_SUBSAMPLE_TICKS} ticks. */
     private List<SegmentKpiDto> lastSegmentKpis = List.of();
 
-    /** Cached per-intersection KPI list — refreshed every {@link #KPI_LIST_SUBSAMPLE_TICKS} ticks. */
+    /**
+     * Cached per-intersection KPI list — refreshed every {@link #KPI_LIST_SUBSAMPLE_TICKS} ticks.
+     */
     private List<IntersectionKpiDto> lastIntersectionKpis = List.of();
 
     /** Default constructor for tests / non-Spring callers — no KPI compute. */
@@ -50,7 +52,13 @@ public class SnapshotBuilder implements KpiCacheInvalidator {
         this(null);
     }
 
-    /** Spring-preferred constructor — receives optional {@link IKpiAggregator} via DI. */
+    /**
+     * Spring-preferred constructor — receives optional {@link IKpiAggregator} via DI.
+     * {@code @Autowired} required to disambiguate from the no-arg constructor; without it Spring
+     * defaults to the lowest-arity constructor and {@code kpiAggregator} stays null at runtime
+     * (KPI-06 regression: stats.kpi was never populated on the wire).
+     */
+    @org.springframework.beans.factory.annotation.Autowired
     public SnapshotBuilder(@Nullable IKpiAggregator kpiAggregator) {
         this.kpiAggregator = kpiAggregator;
     }
@@ -232,11 +240,11 @@ public class SnapshotBuilder implements KpiCacheInvalidator {
         KpiDto kpi = null;
         if (kpiAggregator != null) {
             kpi = kpiAggregator.computeNetworkKpi(network, currentTick, vehicleSpawner);
-            // D-08 sub-sampling: equivalent to currentTick % 5 == 0 (constant lifted for testability).
+            // D-08 sub-sampling: equivalent to currentTick % 5 == 0 (constant lifted for
+            // testability).
             if (currentTick % KPI_LIST_SUBSAMPLE_TICKS == 0) {
                 lastSegmentKpis = kpiAggregator.computeSegmentKpis(network, currentTick);
-                lastIntersectionKpis =
-                        kpiAggregator.computeIntersectionKpis(network, currentTick);
+                lastIntersectionKpis = kpiAggregator.computeIntersectionKpis(network, currentTick);
             }
         }
 

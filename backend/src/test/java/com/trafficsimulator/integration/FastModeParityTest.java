@@ -65,11 +65,19 @@ class FastModeParityTest extends Phase25IntegrationBase {
 
         Path replayPath = replayLogger.getPath();
         replayLogger.close();
-        Path renamed =
-                replayPath.resolveSibling(
-                        (fast ? "fast-" : "slow-") + UUID.randomUUID() + ".ndjson");
-        Files.move(replayPath, renamed);
-        return renamed;
+        // Move OUT OF REPLAY_DIR — the next loadScenario() wipes that directory.
+        Path stash = stashDir().resolve((fast ? "fast-" : "slow-") + UUID.randomUUID() + ".ndjson");
+        Files.move(replayPath, stash);
+        return stash;
+    }
+
+    private static Path STASH;
+
+    private static synchronized Path stashDir() throws IOException {
+        if (STASH == null) {
+            STASH = Files.createTempDirectory("phase25-fastparity-stash-");
+        }
+        return STASH;
     }
 
     private static String readBodyAfterHeader(Path p) throws IOException {

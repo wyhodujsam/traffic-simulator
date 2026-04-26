@@ -64,6 +64,11 @@ public abstract class Phase25IntegrationBase {
      * <p>Uses {@code dispatcher.dispatch} directly (not the queue) because the test owns the
      * lifecycle for these setup commands; a barrier waits for any in-flight fast worker to drain
      * before issuing a new Stop.
+     *
+     * <p>Also wipes {@link #REPLAY_DIR} so previous-run NDJSON files cannot be appended to —
+     * {@link ReplayLogger#start} opens with {@code CREATE | APPEND}, and the replay filename's
+     * timestamp granularity is one second so two runs in the same second would otherwise share a
+     * file (DET-07 byte-identity precondition).
      */
     protected void loadScenario(String mapId) throws InterruptedException {
         // Force a clean slate even if a prior test left fast-mode running
@@ -72,6 +77,22 @@ public abstract class Phase25IntegrationBase {
             while (engine.isFastMode() && System.currentTimeMillis() < deadline) {
                 Thread.sleep(20);
             }
+        }
+        try {
+            replayLogger.close();
+        } catch (IOException ignored) {
+            // best-effort
+        }
+        try (java.util.stream.Stream<Path> files = Files.list(REPLAY_DIR)) {
+            files.forEach(p -> {
+                try {
+                    Files.deleteIfExists(p);
+                } catch (IOException ignored) {
+                    // best-effort
+                }
+            });
+        } catch (IOException ignored) {
+            // dir may not exist yet; ignore
         }
         dispatcher.dispatch(new SimulationCommand.Stop());
         dispatcher.dispatch(new SimulationCommand.LoadMap(mapId));
@@ -96,8 +117,21 @@ public abstract class Phase25IntegrationBase {
         waitForFastDone(60_000L);
     }
 
-    /** Poll until {@link SimulationEngine#isFastMode()} drops, with a hard timeout. */
+    /**
+     * Poll until {@link SimulationEngine#isFastMode()} drops, with a hard timeout. Waits up to 2s
+     * for the @Async worker to FIRST set fastMode=true (so we don't see the pre-start "false" and
+     * exit immediately), then waits for it to flip back to false.
+     */
     protected void waitForFastDone(long timeoutMs) throws InterruptedException {
+        // Phase 1: wait for the worker to actually start (fastMode true)
+        long startDeadline = System.currentTimeMillis() + 2_000L;
+        while (!engine.isFastMode()
+                && engine.getStatus() != SimulationStatus.STOPPED
+                && System.currentTimeMillis() < startDeadline) {
+            Thread.sleep(5);
+        }
+        // Phase 2: wait for the worker to finish (fastMode back to false). If the worker never
+        // started (engine already STOPPED), this exits immediately, which is correct.
         long deadline = System.currentTimeMillis() + timeoutMs;
         while (engine.isFastMode() && System.currentTimeMillis() < deadline) {
             Thread.sleep(20);

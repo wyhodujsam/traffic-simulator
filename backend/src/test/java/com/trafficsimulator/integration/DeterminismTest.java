@@ -50,8 +50,8 @@ class DeterminismTest extends Phase25IntegrationBase {
 
     /**
      * Run the ring-road scenario with the supplied seed for {@code ticks} ticks via
-     * RUN_FOR_TICKS_FAST, then move the resulting NDJSON file to a unique name so the next run
-     * (which writes to the same target/replays/{seed}-{ts}.ndjson) does not collide.
+     * RUN_FOR_TICKS_FAST, then move the resulting NDJSON file out of REPLAY_DIR (so the next
+     * loadScenario's directory wipe doesn't delete it) and into the test-class temp dir.
      */
     private Path runOnce(long seed, long ticks) throws Exception {
         loadScenario("ring-road");
@@ -64,11 +64,19 @@ class DeterminismTest extends Phase25IntegrationBase {
         // Defensive close — in case the auto-stop path didn't quite finish flushing
         replayLogger.close();
 
-        Path renamed =
-                replayPath.resolveSibling(
-                        "det-" + seed + "-" + UUID.randomUUID() + ".ndjson");
-        Files.move(replayPath, renamed);
-        return renamed;
+        // Move OUT OF REPLAY_DIR — the next loadScenario() wipes that directory.
+        Path stash = stashDir().resolve("det-" + seed + "-" + UUID.randomUUID() + ".ndjson");
+        Files.move(replayPath, stash);
+        return stash;
+    }
+
+    private static Path STASH;
+
+    private static synchronized Path stashDir() throws IOException {
+        if (STASH == null) {
+            STASH = Files.createTempDirectory("phase25-determinism-stash-");
+        }
+        return STASH;
     }
 
     /** Read the file content excluding the first (header) line so timestamps don't break parity. */
