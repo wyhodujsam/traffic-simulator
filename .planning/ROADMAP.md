@@ -544,12 +544,18 @@ Plans:
 - **Space-time diagram** — rolling buffer of last N ticks × vehicle positions per road, colored by speed (free side-output of vehicle-state stream).
 - **Ring-road scenario** (`ring-road.json`) — closed loop, uniform initial speed, no spawner; perturbations generate phantom jams; clean baseline for KPI validation.
 
-**Requirements**: TBD (rescope discussion → run `/gsd-discuss-phase 25` with new scope)
+**Requirements**: DET-01..07, KPI-01..07, RING-01..04, REPLAY-01..04, UI-01..04 (26 IDs back-filled into REQUIREMENTS.md by Plan 25-01)
 **Depends on:** Phase 4 (tick loop), Phase 9 (scenarios), Phase 5 (rendering — for viz side-output)
-**Plans:** 0 plans
+**Plans:** 7 plans
 
 Plans:
-- [ ] TBD (run `/gsd-discuss-phase 25` then `/gsd-plan-phase 25` to break down)
+- [ ] 25-01-PLAN.md — Wave 0: REQ-ID back-fill into REQUIREMENTS.md + VehicleSpawner tick-keyed window refactor (DET-01 precondition) + ring-road PRIORITY-yield Wave-0 spike (DET-04, RING-02)
+- [ ] 25-02-PLAN.md — Wave 1: RNG infrastructure — MASTER_ALGORITHM constant + master/sub-RNG split + VehicleSpawner/IntersectionManager injection + Start/CommandDto seed wiring + INFO log (DET-03, DET-05)
+- [ ] 25-03-PLAN.md — Wave 1: MapConfig schema (seed/perturbation/initialVehicles) + ring-road.json (D-11) + PerturbationManager + PhysicsEngine hook (D-12) + CommandDispatcher prime (RING-01, DET-04)
+- [ ] 25-04-PLAN.md — Wave 2: KPI services (KpiAggregator, DelayWindow, QueueAnalyzer, LosClassifier) + 3 KPI DTOs + StatsDto extension + Vehicle.freeFlowSeconds + SnapshotBuilder sub-sampling (KPI-01..05, KPI-07)
+- [ ] 25-05-PLAN.md — Wave 3: ReplayLogger NDJSON + RUN_FOR_TICKS / RUN_FOR_TICKS_FAST commands + FastSimulationRunner + CommandHandler validation (T-25-02 DoS bound) + auto-stop wiring (DET-06, REPLAY-02, REPLAY-04)
+- [ ] 25-06-PLAN.md — Wave 4: Frontend KPI types mirror + Zustand diagnosticsOpen + DiagnosticsPanel (collapsed default) + Canvas helpers (space-time + fundamental diagrams) (UI-01, UI-02, UI-04)
+- [ ] 25-07-PLAN.md — Wave 4: Backend integration tests (DeterminismIT HEADLINE, RunForTicksIT, FastModeParityIT, RingRoadIT, KpiBroadcastIT, ReplayLoggerIT) + Playwright e2e diagnostics-spacetime (DET-01, DET-02, DET-06, DET-07, KPI-06, RING-02..04, REPLAY-01, REPLAY-03, UI-03)
 
 ---
 *v2.0 roadmap appended: 2026-04-10*

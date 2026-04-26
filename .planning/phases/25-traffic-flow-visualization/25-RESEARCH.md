@@ -816,19 +816,34 @@ The security posture for Phase 25 is essentially "validate input bounds, don't a
 | A8 | Existing `MapValidator` rejecting closed loops would have already broken `combined-loop.json` (which has a loop topology) — therefore loops ARE supported | Pattern 5 | Inverse-confirmed: `combined-loop.json` loads today, validator passes. Risk: zero. |
 | A9 | `RandomGeneratorFactory.of("L64X128MixRandom").create(seed)` is the right seeded constructor (not `RandomGenerator.of(name)` which is unseeded) | Code Examples | If `create(long)` is missing for some factories, fall back to `factory.create(SeedSource.bytes(seed))`. Verified existence via Oracle Javadoc for `RandomGeneratorFactory.create(long seed)` |
 
-## Open Questions
+## Open Questions (RESOLVED)
+
+All open questions below were closed during planning (Plans 01–07). Each entry shows
+the resolution and the plan/task where it was implemented.
 
 1. **Ring-road PRIORITY behaviour at zero-angle joints** — see Pitfall #2 + A1/A5. Recommendation: Wave-0 spike (5-line test, 30-minute work). Cannot be resolved by reading code alone — requires running the actual `IntersectionGeometry.isApproachFromRight` against a concrete ring geometry.
 
+   **RESOLVED:** Plan 01 Task 3 (Wave-0 PRIORITY-yield spike) builds `RingRoadPriorityYieldSpikeTest` with two variants (PRIORITY + NONE) and writes `25-WAVE0-SPIKE-RESULT.md` containing `RING-ROAD-INTERSECTION-TYPE: <PRIORITY|NONE|STRAIGHT_THROUGH_FALLBACK>` for Plan 03 to consume.
+
 2. **Does the planner want a `PrimeScenario` command, or inline initial-vehicle priming in `MapConfig`?** Both work. CONTEXT.md doesn't specify. Recommendation: extend `MapConfig` with optional `initialVehicles: [{roadId, laneIndex, position, speed}]`; let `CommandDispatcher.handleLoadMap`/`handleLoadConfig` apply them post-load. Cleaner than a special command.
+
+   **RESOLVED:** Plan 03 Task 1 adds `initialVehicles: List<InitialVehicleConfig>` to `MapConfig` (recommendation a). Plan 03 Task 2 wires `CommandDispatcher.primeInitialVehicles` after both `handleLoadMap` and `handleLoadConfig`.
 
 3. **Should `SnapshotBuilder.computeStats` return a structurally-different shape (with `KpiDto` block embedded) or should `KpiDto` ride alongside `StatsDto` at the top level of `SimulationStateDto`?** CONTEXT.md D-08 says "extend `SimulationStateDto.stats` with a `KpiDto` block + Lists" — implies *embedded inside* `StatsDto`. Recommendation: literal interpretation. Add `private KpiDto kpi; private List<SegmentKpiDto> segmentKpis; private List<IntersectionKpiDto> intersectionKpis` to `StatsDto` itself. Existing fields untouched.
 
+   **RESOLVED:** Plan 04 Task 1 + Task 3 adopt the literal D-08 interpretation. `KpiDto kpi`, `List<SegmentKpiDto> segmentKpis`, `List<IntersectionKpiDto> intersectionKpis` are added directly to `StatsDto` (existing fields untouched).
+
 4. **`RUN_FOR_TICKS` over STOMP — does it block the caller (REQUEST/REPLY) or fire-and-forget?** STOMP is fire-and-forget by default. Recommendation: fire-and-forget with auto-stop broadcast as the terminal `/topic/state` frame (with `status="STOPPED"`). Frontend listens for the status transition. Matches existing patterns (`Start`, `Stop` are fire-and-forget today).
+
+   **RESOLVED:** Byte-identity scope is NDJSON-only (see Q6); STOMP frames are out of scope for byte-identity. Plan 05 Task 3 implements fire-and-forget with terminal `status=STOPPED` broadcast in `TickEmitter` after `isAutoStopReached()`. Plan 07 `DeterminismTest` documents and asserts NDJSON-only byte-identity.
 
 5. **Naming for new test classes — `*IT.java` vs `*Test.java`?** Project doesn't seem to enforce a Surefire vs Failsafe split (only Surefire is configured). Recommendation: use `*Test.java` for everything that runs in the same suite; reserve the `IT` suffix as documentation prefix only ("integration test") — they still run in Surefire. Avoids needing to add Failsafe to the build.
 
+   **RESOLVED:** All Phase 25 tests use the `*Test.java` suffix (NOT `*IT.java`). Confirmed `backend/pom.xml` has no Failsafe plugin configured; default Surefire patterns (`*Test.java`, `Test*.java`, `*Tests.java`, `*TestCase.java`) would silently exclude `*IT.java` files. Plan 07 file names: `DeterminismTest`, `RunForTicksTest`, `FastModeParityTest`, `RingRoadTest`, `KpiBroadcastTest`, `ReplayLoggerIntegrationTest` (last one renamed to avoid clashing with the unit-level `ReplayLoggerTest` in Plan 05).
+
 6. **Should the byte-identical guarantee extend to the `/topic/state` STOMP broadcast bytes, or only the NDJSON replay log?** D-15 says "byte-identical tick stream" — interpreted strictly that's the NDJSON file content (which contains `vehicles[]` per tick). The STOMP broadcast also contains `KpiDto`, sub-sampled lists, timestamps, etc — if those are wall-clock-driven they'll differ. Recommendation: contract is **NDJSON byte-identity**, not STOMP byte-identity. Document explicitly in plan.
+
+   **RESOLVED:** Same as Q4. Byte-identity contract = NDJSON only. Documented in `DeterminismTest` Javadoc and asserted via `Files.mismatch(p1, p2) == -1L` on two NDJSON output files.
 
 ## Sources
 

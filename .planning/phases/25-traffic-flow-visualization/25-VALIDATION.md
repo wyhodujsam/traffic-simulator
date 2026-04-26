@@ -10,7 +10,7 @@ created: 2026-04-26
 # Phase 25 — Validation Strategy
 
 > Per-phase validation contract for feedback sampling during execution.
-> Sourced from RESEARCH.md §"Validation Architecture" (24 proposed REQ-IDs across 5 categories).
+> Sourced from RESEARCH.md §"Validation Architecture" (26 proposed REQ-IDs across 5 categories).
 
 ---
 
@@ -29,7 +29,7 @@ created: 2026-04-26
 | **E2E framework** | Playwright 1.59 (Chromium, fullyParallel:false) |
 | **E2E config** | `frontend/playwright.config.ts` |
 | **E2E command** | `cd frontend && npm run test:e2e` |
-| **Estimated full-phase runtime** | ~90s backend + ~25s frontend + ~60s e2e = ~3 min |
+| **Estimated full-phase runtime** | ~90s backend + ~25s frontend + ~60s e2e = ~3 min (caveat: ~5-7 minutes for the 6 new `*Test.java` integration suites including SpringBoot context boot per IT class — consider a shared `@SpringBootTest` base class if execution exceeds budget) |
 
 ---
 
@@ -50,13 +50,13 @@ created: 2026-04-26
 
 | Req ID | Behavior | Test Type | Automated Command | File Exists | Status |
 |--------|----------|-----------|-------------------|-------------|--------|
-| DET-01 | Same seed → byte-identical NDJSON over 1000 ticks on ring-road (HEADLINE) | integration | `mvn -pl backend -Dtest=DeterminismIT#sameSeedSameLog test` | ❌ W0 | ⬜ |
-| DET-02 | Different seeds → different NDJSON logs | integration | `mvn -pl backend -Dtest=DeterminismIT#differentSeedDifferentLog test` | ❌ W0 | ⬜ |
+| DET-01 | Same seed → byte-identical NDJSON over 1000 ticks on ring-road (HEADLINE) | integration | `mvn -pl backend -Dtest=DeterminismTest#sameSeedSameLog test` | ❌ W0 | ⬜ |
+| DET-02 | Different seeds → different NDJSON logs | integration | `mvn -pl backend -Dtest=DeterminismTest#differentSeedDifferentLog test` | ❌ W0 | ⬜ |
 | DET-03 | Seed precedence command > json > nanoTime; logged at INFO | unit | `mvn -pl backend -Dtest=SimulationEngineSeedTest test` | ❌ W0 | ⬜ |
 | DET-04 | All 7 existing scenario JSONs continue to load and run | integration | `mvn -pl backend -Dtest=MapLoaderScenarioTest test` | ✅ extend | ⬜ |
 | DET-05 | Sub-RNG split order is fixed (append-only) | unit | `mvn -pl backend -Dtest=SimulationEngineSplitOrderTest test` | ❌ W0 | ⬜ |
-| DET-06 | `RUN_FOR_TICKS=N` auto-stops + terminal snapshot broadcast | integration | `mvn -pl backend -Dtest=RunForTicksIT test` | ❌ W0 | ⬜ |
-| DET-07 | `RUN_FOR_TICKS_FAST=N` produces same NDJSON as `RUN_FOR_TICKS=N` (same seed) | integration | `mvn -pl backend -Dtest=FastModeParityIT test` | ❌ W0 | ⬜ |
+| DET-06 | `RUN_FOR_TICKS=N` auto-stops + terminal snapshot broadcast | integration | `mvn -pl backend -Dtest=RunForTicksTest test` | ❌ W0 | ⬜ |
+| DET-07 | `RUN_FOR_TICKS_FAST=N` produces same NDJSON as `RUN_FOR_TICKS=N` (same seed) | integration | `mvn -pl backend -Dtest=FastModeParityTest test` | ❌ W0 | ⬜ |
 
 ### KPI Suite (KPI-01..07)
 
@@ -67,7 +67,7 @@ created: 2026-04-26
 | KPI-03 | Per-segment queue length per D-06 | unit | `mvn -pl backend -Dtest=QueueAnalyzerTest test` | ❌ W0 | ⬜ |
 | KPI-04 | LOS classifier: A≤7, B≤11, C≤16, D≤22, E≤28, F>28 (D-07) | unit | `mvn -pl backend -Dtest=LosClassifierTest test` | ❌ W0 | ⬜ |
 | KPI-05 | Per-segment / per-intersection lists sub-sampled every 5 ticks (D-08) | unit | `mvn -pl backend -Dtest=SnapshotBuilderTest#subSampling test` | ✅ extend | ⬜ |
-| KPI-06 | `KpiDto` block present on `/topic/state` every tick after Start | integration | `mvn -pl backend -Dtest=KpiBroadcastIT test` | ❌ W0 | ⬜ |
+| KPI-06 | `KpiDto` block present on `/topic/state` every tick after Start | integration | `mvn -pl backend -Dtest=KpiBroadcastTest test` | ❌ W0 | ⬜ |
 | KPI-07 | Sub-sample cache cleared on `LOAD_MAP` / `LOAD_CONFIG` | unit | `mvn -pl backend -Dtest=SnapshotBuilderTest#cacheCleared test` | ✅ extend | ⬜ |
 
 ### Ring-Road Scenario (RING-01..04)
@@ -75,17 +75,17 @@ created: 2026-04-26
 | Req ID | Behavior | Test Type | Automated Command | File Exists | Status |
 |--------|----------|-----------|-------------------|-------------|--------|
 | RING-01 | `ring-road.json` loads cleanly (passes MapValidator) | unit | `mvn -pl backend -Dtest=MapLoaderScenarioTest#loadsRingRoad test` | ✅ extend | ⬜ |
-| RING-02 | 80 primed vehicles still present after 100 ticks (no PRIORITY-yield stall) | integration | `mvn -pl backend -Dtest=RingRoadIT#ringDoesNotStall test` | ❌ W0 | ⬜ |
-| RING-03 | Steady-state ring (pre-perturbation) → all segments at LOS C or D | integration | `mvn -pl backend -Dtest=RingRoadIT#steadyStateLos test` | ❌ W0 | ⬜ |
-| RING-04 | After perturbation (tick 200, vehicle 0, 5 m/s, 60 ticks) → at least one segment hits LOS F by tick 500 | integration | `mvn -pl backend -Dtest=RingRoadIT#perturbationProducesLosF test` | ❌ W0 | ⬜ |
+| RING-02 | 80 primed vehicles still present after 100 ticks (no PRIORITY-yield stall) | integration | `mvn -pl backend -Dtest=RingRoadTest#ringDoesNotStall test` | ❌ W0 | ⬜ |
+| RING-03 | Steady-state ring (pre-perturbation) → all segments at LOS C or D | integration | `mvn -pl backend -Dtest=RingRoadTest#steadyStateLos test` | ❌ W0 | ⬜ |
+| RING-04 | After perturbation (tick 200, vehicle 0, 5 m/s, 60 ticks) → at least one segment hits LOS F by tick 500 | integration | `mvn -pl backend -Dtest=RingRoadTest#perturbationProducesLosF test` | ❌ W0 | ⬜ |
 
 ### Replay Logger (REPLAY-01..04)
 
 | Req ID | Behavior | Test Type | Automated Command | File Exists | Status |
 |--------|----------|-----------|-------------------|-------------|--------|
-| REPLAY-01 | NDJSON file written to `target/replays/{seed}-{ISO8601}.ndjson` when enabled | integration | `mvn -pl backend -Dtest=ReplayLoggerIT#writesFile test` | ❌ W0 | ⬜ |
+| REPLAY-01 | NDJSON file written to `target/replays/{seed}-{ISO8601}.ndjson` when enabled | integration | `mvn -pl backend -Dtest=ReplayLoggerIntegrationTest#writesFile test` | ❌ W0 | ⬜ |
 | REPLAY-02 | Header line schema per D-14 (seed, source, mapId, tickDt) | unit | `mvn -pl backend -Dtest=ReplayLoggerTest#headerSchema test` | ❌ W0 | ⬜ |
-| REPLAY-03 | Disabled by default; auto-enabled when `RUN_FOR_TICKS` invoked | integration | `mvn -pl backend -Dtest=ReplayLoggerIT#defaultDisabled test` | ❌ W0 | ⬜ |
+| REPLAY-03 | Disabled by default; auto-enabled when `RUN_FOR_TICKS` invoked | integration | `mvn -pl backend -Dtest=ReplayLoggerIntegrationTest#defaultDisabled test` | ❌ W0 | ⬜ |
 | REPLAY-04 | `IOException` during write disables logger, no tick-loop crash | unit | `mvn -pl backend -Dtest=ReplayLoggerTest#ioErrorDisablesNotCrashes test` | ❌ W0 | ⬜ |
 
 ### Frontend Diagnostics (UI-01..04)
@@ -114,12 +114,12 @@ created: 2026-04-26
 - [ ] `backend/src/test/java/com/trafficsimulator/engine/kpi/DelayWindowTest.java` — D-05 rolling-window
 - [ ] `backend/src/test/java/com/trafficsimulator/engine/PerturbationManagerTest.java` — D-12 hook
 - [ ] `backend/src/test/java/com/trafficsimulator/replay/ReplayLoggerTest.java` — REPLAY-02, REPLAY-04
-- [ ] `backend/src/test/java/com/trafficsimulator/integration/DeterminismIT.java` — DET-01, DET-02
-- [ ] `backend/src/test/java/com/trafficsimulator/integration/RunForTicksIT.java` — DET-06
-- [ ] `backend/src/test/java/com/trafficsimulator/integration/FastModeParityIT.java` — DET-07
-- [ ] `backend/src/test/java/com/trafficsimulator/integration/RingRoadIT.java` — RING-02, RING-03, RING-04
-- [ ] `backend/src/test/java/com/trafficsimulator/integration/KpiBroadcastIT.java` — KPI-06
-- [ ] `backend/src/test/java/com/trafficsimulator/integration/ReplayLoggerIT.java` — REPLAY-01, REPLAY-03
+- [ ] `backend/src/test/java/com/trafficsimulator/integration/DeterminismTest.java` — DET-01, DET-02
+- [ ] `backend/src/test/java/com/trafficsimulator/integration/RunForTicksTest.java` — DET-06
+- [ ] `backend/src/test/java/com/trafficsimulator/integration/FastModeParityTest.java` — DET-07
+- [ ] `backend/src/test/java/com/trafficsimulator/integration/RingRoadTest.java` — RING-02, RING-03, RING-04
+- [ ] `backend/src/test/java/com/trafficsimulator/integration/KpiBroadcastTest.java` — KPI-06
+- [ ] `backend/src/test/java/com/trafficsimulator/integration/ReplayLoggerIntegrationTest.java` — REPLAY-01, REPLAY-03
 
 **Extensions to existing files:**
 
