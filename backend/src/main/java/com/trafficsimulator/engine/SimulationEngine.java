@@ -27,6 +27,14 @@ import lombok.extern.slf4j.Slf4j;
 @Slf4j
 public class SimulationEngine {
 
+    /**
+     * Master RNG algorithm name. Verified via Oracle Javadoc + jshell on Java 17.0.18 (RESEARCH.md
+     * §"Verified seedable PRNG construction"). The {@link RngBootstrapTest} guards against typos
+     * by asserting {@code RandomGeneratorFactory.of(MASTER_ALGORITHM)} resolves at every build —
+     * mitigates threat T-25-04 (RNG factory crash on first user click).
+     */
+    public static final String MASTER_ALGORITHM = "L64X128MixRandom";
+
     private final BlockingQueue<SimulationCommand> commandQueue = new LinkedBlockingQueue<>();
 
     private final ReentrantReadWriteLock networkLock = new ReentrantReadWriteLock();
