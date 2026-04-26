@@ -522,93 +522,125 @@ Plans:
 
 **Requirements**: N/A (inserted hotfix; scope authoritative in 24.2-CONTEXT.md)
 **Depends on:** Phase 24, Phase 24.1 (test infrastructure reuse)
-**Plans:** 4 plans
+**Plans:** 4/4 plans complete
 
 Plans:
-- [ ] 24.2-01-PLAN.md — Smart-resolve osm2streets binary path in Osm2StreetsConfig.getBinaryPath() (RED unit tests + GREEN fix with project-root walk-up; AC#1, #2, #3, #4 unit-level)
-- [ ] 24.2-02-PLAN.md — Drop osm2streets.binary-path override in OsmPipelineSmokeIT + mutation-style sanity check (closes AC#4 integration-level)
-- [ ] 24.2-03-PLAN.md — Drop osm2streets.binary-path JVM arg in playwright.config.ts (e2e regression via osm-bbox-real-backend.spec.ts; closes AC#7 e2e)
-- [ ] 24.2-04-PLAN.md — Repro + fix-or-document frontend "Unknown error" sidebar message (checkpoint:human-verify; closes AC#6)
+- [x] 24.2-01-PLAN.md — Smart-resolve osm2streets binary path in Osm2StreetsConfig.getBinaryPath() (RED unit tests + GREEN fix with project-root walk-up; AC#1, #2, #3, #4 unit-level)
+- [x] 24.2-02-PLAN.md — Drop osm2streets.binary-path override in OsmPipelineSmokeIT + mutation-style sanity check (closes AC#4 integration-level)
+- [x] 24.2-03-PLAN.md — Drop osm2streets.binary-path JVM arg in playwright.config.ts (e2e regression via osm-bbox-real-backend.spec.ts; closes AC#7 e2e)
+- [x] 24.2-04-PLAN.md — Repro + fix-or-document frontend "Unknown error" sidebar message (checkpoint:human-verify; closes AC#6)
 
-### Phase 25: Traffic flow visualization
+### Phase 25: Determinism + KPI foundation (RESCOPED 2026-04-26 — was "Traffic flow visualization")
 
-**Goal:** Scientific visualization for phantom-jam experiments — space-time diagram (trajectory t/x, color=speed), live fundamental diagram (flow vs density scatter), speed-colored vehicles, optional trails, ring-road scenario for Sugiyama-style self-emerging jams.
+**Goal:** Make simulation runs **deterministic** (fixed-seed RNG, scenario duration contract, replay capability) and emit a **KPI suite** (throughput, mean delay, queue length, level-of-service per segment and per intersection) so downstream phases can score network variants. Visualisation (space-time diagram, fundamental diagram, ring-road scenario) becomes a **side output** of the metrics pipeline, not the primary deliverable.
+
+**Why rescoped:** the priority shifted from "scientific visualisation" to **LLM-assisted redesign as next active milestone (v3.0)**. KPI + determinism is the foundation every subsequent v3.0 phase depends on — without them, reward signal is garbage and A/B comparisons are not honest. See "Strategic re-prioritisation 2026-04-26" below.
 
 **Scope:**
-- Space-time diagram canvas (rolling buffer of last N ticks × vehicle positions per road, color by speed).
-- Fundamental diagram component (scatter flow [veh/h] vs density [veh/km], sampled per second).
-- Vehicle rendering: color by speed (HSL red→green) with toggle.
-- Optional trails (last 2s path behind vehicle).
-- New scenario: `ring-road.json` — closed loop, uniform initial speed, no spawner; perturbations generate phantom jams.
+- **Fixed-seed RNG** — replace `Math.random` / `ThreadLocalRandom` ad-hoc usage with seeded `RandomGenerator` injected via Spring; same seed → byte-identical tick stream.
+- **Scenario duration contract** — `RUN_FOR_TICKS` command + auto-stop with terminal snapshot; replay capability writes deterministic tick log to disk.
+- **KPI suite** — per-tick rolling aggregates: throughput (vehicles exiting/min), mean delay (sec/vehicle vs free-flow time), 95th-percentile queue length, level-of-service grade (HCM-style A–F mapping), per-segment + per-intersection breakdown.
+- **Fundamental diagram** — flow vs density scatter, sampled per second (free side-output of KPI pipeline).
+- **Space-time diagram** — rolling buffer of last N ticks × vehicle positions per road, colored by speed (free side-output of vehicle-state stream).
+- **Ring-road scenario** (`ring-road.json`) — closed loop, uniform initial speed, no spawner; perturbations generate phantom jams; clean baseline for KPI validation.
 
-**Requirements**: TBD
-**Depends on:** Phase 5 (rendering), Phase 9 (scenarios)
+**Requirements**: TBD (rescope discussion → run `/gsd-discuss-phase 25` with new scope)
+**Depends on:** Phase 4 (tick loop), Phase 9 (scenarios), Phase 5 (rendering — for viz side-output)
 **Plans:** 0 plans
 
 Plans:
-- [ ] TBD (run /gsd:plan-phase 25 to break down)
+- [ ] TBD (run `/gsd-discuss-phase 25` then `/gsd-plan-phase 25` to break down)
 
 ---
 *v2.0 roadmap appended: 2026-04-10*
 *All 13 v2.0 requirements mapped across 4 phases (17–20)*
+*Phase 25 rescoped: 2026-04-26*
 
 ---
 
-## Endgame Vision (added 2026-04-25)
+## Strategic Re-prioritisation (2026-04-26)
 
-**Two business functions the simulator exists to deliver:**
-1. **Predict congestion** — load real-world road fragment from a map, set traffic intensity, and predict where jams will form (e.g. impact of closing a lane, adding a signal, narrowing a road).
-2. **LLM-assisted redesign** — assuming the simulator is faithful, an LLM iteratively modifies the network (add lane, retime signal, change topology) and uses simulation feedback to maximise throughput.
+After Phase 24.1 + 24.2 shipped (OSM ingestion functional), `/map` simulation revealed that OSM-imported networks render badly (geometry not preserved, roundabouts collapse to straight-line PRIORITY intersections, multi-point ways become straight segments). This is a **known limitation** of the current simulator domain model, not a regression.
 
-**Biggest current problem:** faithful representation of the existing road network. Until OSM-imported maps match reality closely enough, predictions are not trustworthy.
+The user prioritised **Goal 2 (LLM-assisted redesign)** over **Goal 1 (predict congestion on real cities)** — proof-of-capability on synthetic scenarios first, OSM faithful representation deferred until the LLM-redesign loop works end-to-end.
 
-### What the project already covers
-- ✅ Realistic physics: IDM car-following + MOBIL lane changes + 5 IDM safety guards
-- ✅ Intersections: signals (configurable cycles, deadlock watchdog), priority (right-of-way), roundabouts (yield + entry gating)
-- ✅ Live obstacle placement → already supports the "close a lane" scenario natively
-- ✅ JSON MapConfig + 5 predefined scenarios + combined-loop capstone
-- ✅ OSM import (3 converters in A/B/C): Phase 18 Overpass, Phase 23 GraphHopper, Phase 24 osm2streets
-- ✅ AI Vision pipeline (Phase 20 free-form + Phase 21/22 component library, 6 component types)
-- ✅ Live stats: avg speed, density, throughput, vehicle count
-- ✅ /map page → Run Simulation flow (Phase 19) + JSON export
-- ⏳ Phase 25 planned: space-time diagram + fundamental diagram + ring-road scenario (scientific viz)
+**Milestone reordering:**
 
-### Gap analysis — what's still missing (rough phases, not yet planned)
+| Was | Now | Rationale |
+|---|---|---|
+| v3.0 = Faithful representation (Goal 1 prereq) | **v4.0** (deferred) | OSM fidelity not on critical path for LLM-redesign on synthetic networks |
+| v4.0 = Predictive analysis (Goal 1 deliverable) | **v5.0** (deferred) | OD matrix + routing + real-world calibration are end-user features; orthogonal to proof-of-capability |
+| v5.0 = LLM-assisted redesign (Goal 2 deliverable) | **v3.0** ← next active | MVP on synthetic scenarios needs only determinism + KPI + CRUD API + harness |
 
-#### Milestone v3.0 — Faithful representation (unblocks Goal 1)
-*Goal: an OSM-imported simulation looks and behaves like the real intersection it represents.*
+**Critical path to v5.0 LLM-redesign MVP** — synthetic scenarios only, no OSM:
+
+```
+Phase 25 (det+KPI) → Phase 26 (CRUD API) → Phase 27 (headless batch)
+                                              ↓
+                            Phase 28 (reward fn) → Phase 29 (LLM agent harness)
+```
+
+After v3.0 ships, OSM faithful representation (now v4.0) extends the agent to real cities; predictive analysis (now v5.0) adds OD matrix + calibration for end-user predictions.
+
+---
+
+## Milestone v3.0 — LLM-assisted redesign foundation (NEXT ACTIVE)
+
+*Goal: an LLM agent proposes network edits on a synthetic scenario (e.g. Combined Loop, Phantom Jam Corridor), the simulator scores them via deterministic KPI runs, the agent iterates toward maximum throughput. End-to-end proof-of-capability — does NOT require OSM fidelity.*
+
+**Phases (5):**
+
+| # | Phase | Goal | Effort |
+|---|---|---|---|
+| 25 | Determinism + KPI foundation | Fixed-seed RNG, scenario duration contract, KPI suite (throughput, delay, queue, LoS); fundamental diagram + space-time as side outputs; ring-road scenario | 1–2 weeks |
+| 26 | Programmatic MapConfig CRUD API | High-level operations LLM can call: `addLane(roadId)`, `removeLane(roadId, idx)`, `retimeSignal(intersectionId, phases)`, `convertToSignal(intersectionId)`, `convertToPriority(intersectionId)`, `closeLane(id, idx)`, `setSpeedLimit(roadId, kph)`. Each call validated for legality (lane count ≥ 1, signal phases sum to cycle, geometry sanity) before apply. Backwards-compat: existing JSON MapConfig still loads. | 1–2 weeks |
+| 27 | Headless batch runner | Run N scenarios in parallel, faster-than-real-time (sub-step in tight loop, skip rendering), no GUI; one process per scenario; per-run KPI artifact + replay log; exit code per scenario. | 1 week |
+| 28 | Reward function + experiment tracking | Multi-objective scalar reward (throughput + mean delay + fairness across spawn points + robustness to demand perturbation); user-tunable weights; experiment log (variant tree, parent-child edit relationships, "best-so-far" pinned by reward); CSV/JSON export of runs. | 1 week |
+| 29 | LLM agent harness | Claude CLI integration (similar to Phase 20 vision pipeline ProcessBuilder pattern); propose-change → apply via Phase 26 API → run-sim via Phase 27 → score via Phase 28 → feedback loop in Claude prompt; experiment-tracking UI (read-only frontend on top of Phase 28 log); reproducible replay from any node. | 2–3 weeks |
+
+**Total: ~6–9 weeks to v3.0 MVP.**
+
+**Out of scope for v3.0** (deferred to v4.0/v5.0):
+- OSM faithful geometry (curved roads, roundabout polygon expansion)
+- OD matrix + routing (uniform demand or per-spawn-point rate is fine)
+- Real-world calibration (synthetic baseline only)
+- Manual edit mode (LLM is the editor)
+- Multi-city / multi-region (single scenario per run)
+
+---
+
+## Milestone v4.0 — Faithful representation (DEFERRED until v3.0 ships)
+
+*Goal: an OSM-imported simulation looks and behaves like the real intersection it represents. Extends v3.0 LLM-redesign to operate on real-world networks instead of synthetic scenarios.*
 
 - **Conversion quality benchmark** — A/B/C the 3 converters on a curated set of real bboxes; ground-truth metrics (lane-count match %, intersection coverage, geometry RMSE, missing signals); pick a default per road class.
 - **OSM heuristics for missing tags** — sensible defaults when `lanes=`, `maxspeed=`, `traffic_signals=` are absent; road-type → IDM parameter mapping (highway vs residential vs primary).
-- **Curved road geometry** — follow OSM polyline shape (multi-point ways, arcs); today every road is a straight segment between two nodes.
+- **Curved road geometry** — follow OSM polyline shape (multi-point ways, arcs); today every road is a straight segment between two nodes. Foundational for visual fidelity AND for downstream simulation accuracy at curves.
+- **Roundabout polygon expansion** — detect `junction=roundabout` and generate proper ROUNDABOUT intersection with circulating lane + spokes (osm2streets currently collapses all non-Signalled to PRIORITY).
 - **Extended OSM features** — one-way streets, bus/bike lanes, mid-road exit ramps, P+R nodes, turn restrictions (`restriction=no_left_turn` etc.).
-- **Manual edit mode (post-import GUI editor)** — fix conversion errors before simulating: add/remove lanes, override signal timing, mark closed lanes, adjust intersection type.
+- **Manual edit mode (post-import GUI editor)** — fix conversion errors before simulating: add/remove lanes, override signal timing, mark closed lanes, adjust intersection type. *(Note: v3.0 Phase 26's CRUD API is the underlying mechanism — manual mode is a UI on top of it.)*
 - **Conversion validation harness** — side-by-side: OSM rendered map vs simulator's render of the same bbox; visual diff for QA.
 
-#### Milestone v4.0 — Predictive analysis (delivers Goal 1)
-*Goal: user sets a real fragment + traffic demand → trustworthy congestion prediction with KPIs.*
+---
+
+## Milestone v5.0 — Predictive analysis (DEFERRED until v4.0 ships)
+
+*Goal: user sets a real fragment + traffic demand → trustworthy congestion prediction with KPIs. End-user-facing answer to Goal 1 ("predict where jams will form when I close this lane").*
 
 - **Origin-Destination matrix + routing** — vehicles currently flow reactively; need OD demand model and per-vehicle path planning (Dijkstra / A* / contraction hierarchies on the network) so demand is realistic.
 - **Configurable traffic intensity profiles** — peak hours, time-of-day curve, per-OD-cell demand; ramp-up/down, not just a constant spawner rate.
-- **Quality metrics (KPI suite)** — travel time, mean delay, queue length, level-of-service grade, throughput per segment and per intersection; rolling time-window aggregates.
-- **Scenario A/B comparison view** — baseline vs modified network side-by-side, animated together, with KPI delta table; this is the user-facing answer to "what if we close this lane?"
-- **Calibration & validation** — fit IDM/MOBIL parameters to real-world flow data (if obtainable: counters, Google traffic snapshots); confidence intervals attached to predictions.
-- **Run determinism** — fixed-seed RNG, reproducible scenarios, scenario duration contract; required for honest A/B and for v5.0.
+- **Scenario A/B comparison view** — baseline vs modified network side-by-side, animated together, with KPI delta table; user-facing answer to "what if we close this lane?". *(Note: v3.0 Phase 28's reward function + experiment tracking is the underlying mechanism — A/B view is a UI on top of it.)*
+- **Calibration & validation** — fit IDM/MOBIL parameters to real-world flow data (counters, Google traffic snapshots); confidence intervals attached to predictions.
+- **End-user CLI / API** — `predict-congestion --bbox X --demand Y --change "close lane on road R from t=300 to t=600"` returning KPI delta + visualisation.
 
-#### Milestone v5.0 — LLM-assisted redesign (delivers Goal 2)
-*Goal: an LLM agent proposes network edits, the simulator scores them, the agent iterates toward maximum throughput.*
+---
 
-- **Programmatic MapConfig API** — high-level CRUD operations the LLM can call (`addLane`, `retimeSignal`, `convertToRoundabout`, `addTurnRestriction`); each call validated for legal/physical feasibility before apply.
-- **Headless batch runner** — run N scenarios in parallel, faster-than-real-time, no GUI; the inner loop of the optimiser.
-- **Reward function** — multi-objective scalar (throughput + mean delay + fairness across OD pairs + robustness to demand perturbation); user-tunable weights.
-- **LLM agent harness** — propose-change → run-sim → score → feedback loop; experiment log; integration with Claude CLI similar to Phase 20 vision pipeline.
-- **Experiment tracking UI** — variant tree of edits, "best-so-far" pinned, reproducible replay of any node, exportable report.
-- **Constraint guardrails** — LLM cannot violate hard constraints (legal lane counts, minimum geometry, budget envelope if defined); soft constraints affect reward.
+### Order-of-operations notes (after re-prioritisation)
 
-### Order-of-operations notes
-- v3.0 and Phase 25 (viz) can run in parallel — viz consumes whatever the converters produce.
-- v4.0 routing assumes v3.0 network quality is "good enough" — a wrong network gives wrong routes.
-- v5.0 is meaningless without v4.0 KPIs (no reward signal).
-- Phase 22.1 (Playwright) and Phase 23 (GraphHopper) remain queued from v2.0 — finish before opening v3.0.
+- **v3.0 critical path** is sequential: 25 → 26 → 27 → 28 → 29. Phase 25 is the bottleneck — without determinism + KPI, reward signal is meaningless.
+- **v3.0 + v4.0 can overlap** once v3.0 Phase 28 ships (KPIs + reward function exist) — v4.0 phases that improve OSM fidelity benefit v5.0 without blocking v3.0 closure.
+- **v5.0 routing depends on v4.0 network quality** — wrong network gives wrong routes. Must finish v4.0 before opening v5.0 OD/routing work.
+- **Phase 24.1 + 24.2 (osm2streets ingestion fix)** — already shipped, unblocks /map "preview" path. Active simulation on OSM-imported maps remains "research preview" until v4.0 lands.
 
 *Endgame appended: 2026-04-25*
+*Re-prioritised under "LLM-redesign first" strategy: 2026-04-26 — v5.0 → v3.0 (next active), v3.0 → v4.0, v4.0 → v5.0; Phase 25 rescoped from viz-primary to determinism+KPI-primary.*
