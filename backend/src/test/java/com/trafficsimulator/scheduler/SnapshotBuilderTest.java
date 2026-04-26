@@ -2,8 +2,12 @@ package com.trafficsimulator.scheduler;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.within;
+import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.anyLong;
 import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.spy;
+import static org.mockito.Mockito.times;
+import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
 import java.util.ArrayList;
@@ -14,12 +18,15 @@ import java.util.Set;
 
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
+import org.springframework.test.util.ReflectionTestUtils;
 
 import com.trafficsimulator.dto.ObstacleDto;
 import com.trafficsimulator.dto.SimulationStateDto;
 import com.trafficsimulator.dto.TrafficLightDto;
 import com.trafficsimulator.dto.VehicleDto;
 import com.trafficsimulator.engine.IVehicleSpawner;
+import com.trafficsimulator.engine.kpi.DelayWindow;
+import com.trafficsimulator.engine.kpi.KpiAggregator;
 import com.trafficsimulator.model.Intersection;
 import com.trafficsimulator.model.IntersectionType;
 import com.trafficsimulator.model.Lane;
@@ -276,5 +283,90 @@ class SnapshotBuilderTest {
         assertThat(tlDto.getX()).isCloseTo(500.0, within(0.01));
         assertThat(tlDto.getY()).isCloseTo(300.0, within(0.01));
         assertThat(tlDto.getAngle()).isCloseTo(Math.atan2(300, 500), within(0.001));
+    }
+
+    // --- Phase 25 KPI sub-sampling tests (KPI-05, KPI-07) ---
+
+    private static RoadNetwork tinyNetwork() {
+        Lane lane =
+                Lane.builder()
+                        .id("r1-lane0")
+                        .laneIndex(0)
+                        .length(100)
+                        .maxSpeed(20.0)
+                        .active(true)
+                        .build();
+        Road road =
+                Road.builder()
+                        .id("r1")
+                        .name("R1")
+                        .length(100)
+                        .speedLimit(20.0)
+                        .startX(0)
+                        .startY(0)
+                        .endX(100)
+                        .endY(0)
+                        .lanes(List.of(lane))
+                        .build();
+        lane.setRoad(road);
+        Map<String, Road> roads = new LinkedHashMap<>();
+        roads.put("r1", road);
+        return RoadNetwork.builder()
+                .id("test")
+                .roads(roads)
+                .intersections(new LinkedHashMap<>())
+                .build();
+    }
+
+    @Test
+    void subSampling_recomputesEvery5thTick_KPI05() {
+        DelayWindow dw = new DelayWindow();
+        KpiAggregator real = new KpiAggregator(dw);
+        KpiAggregator spyAgg = spy(real);
+        ReflectionTestUtils.setField(snapshotBuilder, "kpiAggregator", spyAgg);
+
+        RoadNetwork net = tinyNetwork();
+
+        // Tick 5 (multiple of 5) — should compute.
+        snapshotBuilder.buildSnapshot(net, 5L, "RUNNING", vehicleSpawner, "test", null);
+        // Ticks 6..9 — should NOT compute (cached).
+        for (long t = 6L; t <= 9L; t++) {
+            snapshotBuilder.buildSnapshot(net, t, "RUNNING", vehicleSpawner, "test", null);
+        }
+        verify(spyAgg, times(1)).computeSegmentKpis(any(), anyLong());
+        verify(spyAgg, times(1)).computeIntersectionKpis(any(), anyLong());
+    }
+
+    @Test
+    void cacheClearedOnClearCache_KPI07() {
+        DelayWindow dw = new DelayWindow();
+        KpiAggregator real = new KpiAggregator(dw);
+        KpiAggregator spyAgg = spy(real);
+        ReflectionTestUtils.setField(snapshotBuilder, "kpiAggregator", spyAgg);
+
+        RoadNetwork net = tinyNetwork();
+
+        // Prime the cache at tick 5 (multiple of 5).
+        snapshotBuilder.buildSnapshot(net, 5L, "RUNNING", vehicleSpawner, "test", null);
+        verify(spyAgg, times(1)).computeSegmentKpis(any(), anyLong());
+
+        // Clear cache (simulates LOAD_MAP / LOAD_CONFIG).
+        snapshotBuilder.clearCache();
+
+        // Next buildSnapshot at a multiple of 5 (tick 10) re-computes (count rises to 2).
+        snapshotBuilder.buildSnapshot(net, 10L, "RUNNING", vehicleSpawner, "test", null);
+        verify(spyAgg, times(2)).computeSegmentKpis(any(), anyLong());
+
+        // After clearCache, calling at a non-multiple-of-5 (tick 6) returns empty (cache empty,
+        // and tick % 5 != 0 means no recompute either).
+        snapshotBuilder.clearCache();
+        SimulationStateDto stateAt6 =
+                snapshotBuilder.buildSnapshot(net, 6L, "RUNNING", vehicleSpawner, "test", null);
+        assertThat(stateAt6.getStats().getSegmentKpis())
+                .as("KPI-07: after clearCache + non-multiple-of-5 tick, segmentKpis is empty")
+                .isEmpty();
+        assertThat(stateAt6.getStats().getIntersectionKpis())
+                .as("KPI-07: after clearCache + non-multiple-of-5 tick, intersectionKpis is empty")
+                .isEmpty();
     }
 }

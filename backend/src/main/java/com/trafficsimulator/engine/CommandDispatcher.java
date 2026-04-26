@@ -9,12 +9,15 @@ import java.util.Map;
 import java.util.Set;
 import java.util.function.Consumer;
 
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.lang.Nullable;
 import org.springframework.stereotype.Component;
 
 import com.trafficsimulator.config.MapConfig;
 import com.trafficsimulator.config.MapLoader;
 import com.trafficsimulator.engine.command.SimulationCommand;
+import com.trafficsimulator.engine.kpi.DelayWindow;
+import com.trafficsimulator.engine.kpi.KpiCacheInvalidator;
 import com.trafficsimulator.model.Intersection;
 import com.trafficsimulator.model.Lane;
 import com.trafficsimulator.model.Road;
@@ -39,6 +42,15 @@ public class CommandDispatcher {
     private final VehicleSpawner vehicleSpawner;
     private final ObstacleManager obstacleManager;
     private final MapLoader mapLoader;
+    /**
+     * Phase 25 KPI-07: cleared on LoadMap / LoadConfig so stale per-segment KPIs do not leak. The
+     * concrete cache lives in {@code SnapshotBuilder} (scheduler layer); we depend on the
+     * engine-layer {@link KpiCacheInvalidator} interface so the engine doesn't import scheduler.
+     */
+    @Nullable private final KpiCacheInvalidator kpiCacheInvalidator;
+
+    /** Phase 25 D-05: reset on LoadMap / LoadConfig so a new map starts with no delay history. */
+    @Nullable private final DelayWindow delayWindow;
 
     private final Map<Class<? extends SimulationCommand>, Consumer<SimulationCommand>> handlers =
             new LinkedHashMap<>();
@@ -48,10 +60,23 @@ public class CommandDispatcher {
             @Nullable VehicleSpawner vehicleSpawner,
             @Nullable ObstacleManager obstacleManager,
             @Nullable MapLoader mapLoader) {
+        this(engine, vehicleSpawner, obstacleManager, mapLoader, null, null);
+    }
+
+    @Autowired
+    public CommandDispatcher(
+            SimulationEngine engine,
+            @Nullable VehicleSpawner vehicleSpawner,
+            @Nullable ObstacleManager obstacleManager,
+            @Nullable MapLoader mapLoader,
+            @Nullable KpiCacheInvalidator kpiCacheInvalidator,
+            @Nullable DelayWindow delayWindow) {
         this.engine = engine;
         this.vehicleSpawner = vehicleSpawner;
         this.obstacleManager = obstacleManager;
         this.mapLoader = mapLoader;
+        this.kpiCacheInvalidator = kpiCacheInvalidator;
+        this.delayWindow = delayWindow;
         registerHandlers();
     }
 
@@ -297,6 +322,13 @@ public class CommandDispatcher {
         if (vehicleSpawner != null) {
             vehicleSpawner.reset();
         }
+        // Phase 25 KPI-07 + D-05: invalidate KPI sub-sampling cache and delay window.
+        if (kpiCacheInvalidator != null) {
+            kpiCacheInvalidator.clearCache();
+        }
+        if (delayWindow != null) {
+            delayWindow.reset();
+        }
 
         try {
             MapLoader.LoadedMap loaded =
@@ -343,6 +375,13 @@ public class CommandDispatcher {
         }
         if (vehicleSpawner != null) {
             vehicleSpawner.reset();
+        }
+        // Phase 25 KPI-07 + D-05: invalidate KPI sub-sampling cache and delay window.
+        if (kpiCacheInvalidator != null) {
+            kpiCacheInvalidator.clearCache();
+        }
+        if (delayWindow != null) {
+            delayWindow.reset();
         }
 
         try {
