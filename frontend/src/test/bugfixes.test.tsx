@@ -1,7 +1,6 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest';
 import { render, screen } from '@testing-library/react';
 import App from '../App';
-import { computeCanvasSize } from '../components/SimulationCanvas';
 import { useSimulationStore } from '../store/useSimulationStore';
 import type { RoadDto } from '../types/simulation';
 
@@ -111,7 +110,7 @@ function realComputeCanvasSize(roads: RoadDto[]): { width: number; height: numbe
 describe('BUG-4: Canvas scales to available space', () => {
   it('computeCanvasSize returns correct dimensions for roads', () => {
     const roads: RoadDto[] = [
-      { id: 'r1', startX: 50, startY: 200, endX: 1050, endY: 200, length: 700, laneCount: 2 },
+      { id: 'r1', name: 'r1', speedLimit: 13.9, startX: 50, startY: 200, endX: 1050, endY: 200, length: 700, laneCount: 2, clipStart: 0, clipEnd: 0 },
     ];
     const { width, height } = realComputeCanvasSize(roads);
     expect(width).toBeGreaterThanOrEqual(1050);
@@ -126,7 +125,7 @@ describe('BUG-4: Canvas scales to available space', () => {
 
   it('phantom-jam-corridor canvas is wider than typical viewport', () => {
     const roads: RoadDto[] = [
-      { id: 'corridor', startX: 50, startY: 200, endX: 2050, endY: 200, length: 2000, laneCount: 2 },
+      { id: 'corridor', name: 'corridor', speedLimit: 13.9, startX: 50, startY: 200, endX: 2050, endY: 200, length: 2000, laneCount: 2, clipStart: 0, clipEnd: 0 },
     ];
     const { width } = realComputeCanvasSize(roads);
     expect(width).toBeGreaterThan(1920); // wider than Full HD — scaling required
@@ -137,7 +136,7 @@ describe('BUG-4: Canvas scales to available space', () => {
 describe('BUG-5: Page title', () => {
   it('index.html should have Traffic Simulator title', async () => {
     // Read the actual file content
-    const response = await fetch('/index.html').catch(() => null);
+    await fetch('/index.html').catch(() => null);
     // In test env we check the rendered header instead
     resetStore();
     render(<App />);
@@ -174,7 +173,7 @@ describe('BUG-7: PAUSED overlay', () => {
 
   it('PAUSED overlay should have position absolute and be centered', () => {
     resetStore({ status: 'PAUSED' });
-    const { container } = render(<App />);
+    render(<App />);
     const overlay = screen.getByText('PAUSED');
     expect(overlay.style.position).toBe('absolute');
     expect(overlay.style.top).toBe('50%');

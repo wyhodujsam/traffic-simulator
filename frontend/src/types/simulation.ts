@@ -29,11 +29,40 @@ export interface ObstacleDto {
   position: number;   // metres from lane start
 }
 
+// ---- Phase 25 KPI DTOs (mirror backend) ----
+
+export interface KpiDto {
+  readonly throughputVehiclesPerMin: number;
+  readonly meanDelaySeconds: number;
+  readonly p95QueueLengthMeters: number;
+  /** "A" through "F" per HCM-style LOS classification (D-07). */
+  readonly worstLos: string;
+}
+
+export interface SegmentKpiDto {
+  readonly roadId: string;
+  readonly densityPerKm: number;
+  readonly flowVehiclesPerMin: number;
+  readonly meanSpeedMps: number;
+  readonly p95QueueLengthMeters: number;
+  readonly los: string;
+}
+
+export interface IntersectionKpiDto {
+  readonly intersectionId: string;
+  readonly inboundQueueLengthMeters: number;
+  readonly worstLos: string;
+}
+
 export interface StatsDto {
   vehicleCount: number;
   avgSpeed: number;      // m/s
   density: number;       // vehicles/km
   throughput: number;    // vehicles despawned in last 60s
+  // Phase 25 D-08 — optional because backend may not always populate (e.g., before first KPI tick)
+  kpi?: KpiDto;
+  segmentKpis?: SegmentKpiDto[];
+  intersectionKpis?: IntersectionKpiDto[];
 }
 
 export interface IntersectionDto {

@@ -13,6 +13,8 @@ const STRAIGHT_ROAD: RoadDto = {
   startY: 300,
   endX: 850,
   endY: 300,
+  clipStart: 0,
+  clipEnd: 0,
 };
 
 describe('computeCanvasSize', () => {
@@ -62,6 +64,8 @@ describe('computeCanvasSize', () => {
       startY: 100,
       endX: 400,
       endY: 500,
+      clipStart: 0,
+      clipEnd: 0,
     };
     const { width, height } = computeCanvasSize([STRAIGHT_ROAD, road2]);
     expect(width).toBeGreaterThanOrEqual(850 + CANVAS_PADDING);
@@ -80,6 +84,8 @@ describe('computeCanvasSize', () => {
       startY: 0,
       endX: 200,
       endY: 0,
+      clipStart: 0,
+      clipEnd: 0,
     };
     const { width, height } = computeCanvasSize([road]);
     expect(width).toBeGreaterThanOrEqual(200 + CANVAS_PADDING);
