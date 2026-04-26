@@ -3,15 +3,15 @@ gsd_state_version: 1.0
 milestone: v2.0
 milestone_name: — Map Screenshot to Simulation
 current_phase: 25
-current_plan: 1
-status: Executing Phase 25
-last_updated: "2026-04-26T08:34:48.503Z"
+current_plan: 7
+status: Phase 25 complete (verified PASSED WITH FLAGS)
+last_updated: "2026-04-26T18:00:00.000Z"
 progress:
   total_phases: 28
-  completed_phases: 24
+  completed_phases: 25
   total_plans: 114
-  completed_plans: 109
-  percent: 96
+  completed_plans: 116
+  percent: 100
 ---
 
 # Project State
@@ -64,7 +64,7 @@ See: .planning/PROJECT.md (updated 2026-04-12)
 | 23 | GraphHopper-based OSM parser | ○ Not started |
 | 24 | osm2streets integration | ○ Not started |
 | 24.1 | Overpass XML element ordering fix (Phase 23/24 hotfix) | ✓ Complete (3/3 plans done) |
-| 25 | Traffic flow visualization | ○ Not started |
+| 25 | Determinism + KPI foundation (rescoped 2026-04-26) | ✓ Complete (7/7 plans done; verified PASSED WITH FLAGS) |
 
 ## Current Position
 

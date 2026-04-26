@@ -546,16 +546,18 @@ Plans:
 
 **Requirements**: DET-01..07, KPI-01..07, RING-01..04, REPLAY-01..04, UI-01..04 (26 IDs back-filled into REQUIREMENTS.md by Plan 25-01)
 **Depends on:** Phase 4 (tick loop), Phase 9 (scenarios), Phase 5 (rendering — for viz side-output)
-**Plans:** 7 plans
+**Plans:** 7/7 plans complete (verified 2026-04-26 — see 25-VERIFICATION.md, PASSED WITH FLAGS)
 
 Plans:
-- [ ] 25-01-PLAN.md — Wave 0: REQ-ID back-fill into REQUIREMENTS.md + VehicleSpawner tick-keyed window refactor (DET-01 precondition) + ring-road PRIORITY-yield Wave-0 spike (DET-04, RING-02)
-- [ ] 25-02-PLAN.md — Wave 1: RNG infrastructure — MASTER_ALGORITHM constant + master/sub-RNG split + VehicleSpawner/IntersectionManager injection + Start/CommandDto seed wiring + INFO log (DET-03, DET-05)
-- [ ] 25-03-PLAN.md — Wave 1: MapConfig schema (seed/perturbation/initialVehicles) + ring-road.json (D-11) + PerturbationManager + PhysicsEngine hook (D-12) + CommandDispatcher prime (RING-01, DET-04)
-- [ ] 25-04-PLAN.md — Wave 2: KPI services (KpiAggregator, DelayWindow, QueueAnalyzer, LosClassifier) + 3 KPI DTOs + StatsDto extension + Vehicle.freeFlowSeconds + SnapshotBuilder sub-sampling (KPI-01..05, KPI-07)
-- [ ] 25-05-PLAN.md — Wave 3: ReplayLogger NDJSON + RUN_FOR_TICKS / RUN_FOR_TICKS_FAST commands + FastSimulationRunner + CommandHandler validation (T-25-02 DoS bound) + auto-stop wiring (DET-06, REPLAY-02, REPLAY-04)
-- [ ] 25-06-PLAN.md — Wave 4: Frontend KPI types mirror + Zustand diagnosticsOpen + DiagnosticsPanel (collapsed default) + Canvas helpers (space-time + fundamental diagrams) (UI-01, UI-02, UI-04)
-- [ ] 25-07-PLAN.md — Wave 4: Backend integration tests (DeterminismIT HEADLINE, RunForTicksIT, FastModeParityIT, RingRoadIT, KpiBroadcastIT, ReplayLoggerIT) + Playwright e2e diagnostics-spacetime (DET-01, DET-02, DET-06, DET-07, KPI-06, RING-02..04, REPLAY-01, REPLAY-03, UI-03)
+- [x] 25-01-PLAN.md — Wave 0: REQ-ID back-fill (26 IDs) + VehicleSpawner tick-keyed window refactor + ring-road PRIORITY-yield spike (Q1 RESOLVED → PRIORITY)
+- [x] 25-02-PLAN.md — Wave 1: RNG infrastructure — `L64X128MixRandom` master + sub-RNG split via SplittableGenerator + Spring injection + INFO log (DET-03, DET-05)
+- [x] 25-03-PLAN.md — Wave 1: MapConfig schema (seed/perturbation/initialVehicles) + ring-road.json (D-11) + PerturbationManager + PhysicsEngine hook (D-12) + CommandDispatcher prime (RING-01, DET-04)
+- [x] 25-04-PLAN.md — Wave 2: KPI services (KpiAggregator, DelayWindow, QueueAnalyzer, LosClassifier) + 3 KPI DTOs + StatsDto extension + Vehicle.freeFlowSeconds + SnapshotBuilder sub-sampling (KPI-01..05, KPI-07)
+- [x] 25-05-PLAN.md — Wave 3: ReplayLogger NDJSON + RUN_FOR_TICKS / RUN_FOR_TICKS_FAST + FastSimulationRunner @Async + CommandHandler T-25-02 DoS bound + auto-stop (REPLAY-02, REPLAY-04)
+- [x] 25-06-PLAN.md — Wave 4: Frontend KPI types mirror + Zustand diagnosticsOpen + DiagnosticsPanel (collapsed default, zero-cost when collapsed) + raw Canvas diagrams (UI-01, UI-02, UI-04)
+- [x] 25-07-PLAN.md — Wave 4: 6 backend `*Test.java` integration suites (DeterminismTest HEADLINE byte-identity, RunForTicksTest, FastModeParityTest, RingRoadTest, KpiBroadcastTest, ReplayLoggerIntegrationTest) + Playwright phantom-jam visual proof (DET-01, DET-02, DET-06, DET-07, KPI-06, RING-02..04, REPLAY-01, REPLAY-03, UI-03)
+
+**Verification (PASSED WITH FLAGS):** 462 backend tests + 66 frontend tests + 9 Playwright e2e green. DET-01 byte-identical NDJSON contract HOLDS. 26/26 REQ-IDs verified. Two documented relaxations (RING-04 LOS bound F→{E,F} per D-11 2-lane choice; UI-03 visual threshold per per-tick-dot rendering). One partial: D-03 setter injection vs constructor injection — functionally equivalent for determinism.
 
 ---
 *v2.0 roadmap appended: 2026-04-10*
@@ -598,7 +600,7 @@ After v3.0 ships, OSM faithful representation (now v4.0) extends the agent to re
 
 | # | Phase | Goal | Effort |
 |---|---|---|---|
-| 25 | Determinism + KPI foundation | Fixed-seed RNG, scenario duration contract, KPI suite (throughput, delay, queue, LoS); fundamental diagram + space-time as side outputs; ring-road scenario | 1–2 weeks |
+| 25 | Determinism + KPI foundation ✓ | Fixed-seed RNG, scenario duration contract, KPI suite (throughput, delay, queue, LoS); fundamental diagram + space-time as side outputs; ring-road scenario | ✓ Complete (7/7 plans) |
 | 26 | Programmatic MapConfig CRUD API | High-level operations LLM can call: `addLane(roadId)`, `removeLane(roadId, idx)`, `retimeSignal(intersectionId, phases)`, `convertToSignal(intersectionId)`, `convertToPriority(intersectionId)`, `closeLane(id, idx)`, `setSpeedLimit(roadId, kph)`. Each call validated for legality (lane count ≥ 1, signal phases sum to cycle, geometry sanity) before apply. Backwards-compat: existing JSON MapConfig still loads. | 1–2 weeks |
 | 27 | Headless batch runner | Run N scenarios in parallel, faster-than-real-time (sub-step in tight loop, skip rendering), no GUI; one process per scenario; per-run KPI artifact + replay log; exit code per scenario. | 1 week |
 | 28 | Reward function + experiment tracking | Multi-objective scalar reward (throughput + mean delay + fairness across spawn points + robustness to demand perturbation); user-tunable weights; experiment log (variant tree, parent-child edit relationships, "best-so-far" pinned by reward); CSV/JSON export of runs. | 1 week |
