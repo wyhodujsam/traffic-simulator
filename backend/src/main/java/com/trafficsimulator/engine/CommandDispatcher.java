@@ -12,6 +12,7 @@ import java.util.function.Consumer;
 import org.springframework.lang.Nullable;
 import org.springframework.stereotype.Component;
 
+import com.trafficsimulator.config.MapConfig;
 import com.trafficsimulator.config.MapLoader;
 import com.trafficsimulator.engine.command.SimulationCommand;
 import com.trafficsimulator.model.Intersection;
@@ -315,6 +316,8 @@ public class CommandDispatcher {
                     }
                 }
             }
+            // Plan 25-03 Q2: prime any initialVehicles defined in the JSON onto their lanes
+            primeInitialVehicles(loaded.network());
             log.info(
                     "Map loaded: {} (spawn rate: {} veh/s)",
                     cmd.mapId(),
@@ -350,6 +353,8 @@ public class CommandDispatcher {
                 vehicleSpawner.setVehiclesPerSecond(loaded.defaultSpawnRate());
             }
             engine.setLastError(null);
+            // Plan 25-03 Q2: prime any initialVehicles defined in the JSON onto their lanes
+            primeInitialVehicles(loaded.network());
             log.info(
                     "Map loaded from config: {} (spawn rate: {} veh/s)",
                     cmd.config().getId(),
@@ -359,5 +364,53 @@ public class CommandDispatcher {
             engine.setLastError(
                     "Failed to load config '" + cmd.config().getId() + "': " + e.getMessage());
         }
+    }
+
+    /**
+     * Plan 25-03 Q2 — prime initialVehicles from a loaded scenario onto their lanes. Out-of-range
+     * road/lane references are silently skipped (T-25-IV-01 mitigation in plan threat model).
+     * Vehicles are inserted via the existing {@link Lane#addVehicle} API which preserves the
+     * sorted-by-position invariant.
+     */
+    private void primeInitialVehicles(RoadNetwork network) {
+        List<MapConfig.InitialVehicleConfig> initials = network.getInitialVehicles();
+        if (initials == null || initials.isEmpty()) {
+            return;
+        }
+        int primed = 0;
+        for (MapConfig.InitialVehicleConfig iv : initials) {
+            Road road = network.getRoads().get(iv.getRoadId());
+            if (road == null) {
+                log.debug(
+                        "Skipping initial vehicle: road '{}' not found", iv.getRoadId());
+                continue;
+            }
+            if (iv.getLaneIndex() < 0 || iv.getLaneIndex() >= road.getLanes().size()) {
+                log.debug(
+                        "Skipping initial vehicle: laneIndex {} out of range on road '{}'",
+                        iv.getLaneIndex(),
+                        iv.getRoadId());
+                continue;
+            }
+            Lane lane = road.getLanes().get(iv.getLaneIndex());
+            Vehicle v =
+                    Vehicle.builder()
+                            .id(java.util.UUID.randomUUID().toString())
+                            .position(iv.getPosition())
+                            .speed(iv.getSpeed())
+                            .acceleration(0.0)
+                            .lane(lane)
+                            .length(4.5)
+                            .v0(road.getSpeedLimit())
+                            .aMax(1.4)
+                            .b(2.0)
+                            .s0(2.0)
+                            .timeHeadway(1.5)
+                            .spawnedAt(0L)
+                            .build();
+            lane.addVehicle(v);
+            primed++;
+        }
+        log.info("[CommandDispatcher] Primed {} initial vehicles", primed);
     }
 }

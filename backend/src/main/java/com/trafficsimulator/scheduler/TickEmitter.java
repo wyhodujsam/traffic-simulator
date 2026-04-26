@@ -8,6 +8,7 @@ import org.springframework.stereotype.Component;
 import com.trafficsimulator.dto.SimulationStateDto;
 import com.trafficsimulator.engine.IIntersectionManager;
 import com.trafficsimulator.engine.ILaneChangeEngine;
+import com.trafficsimulator.engine.IPerturbationManager;
 import com.trafficsimulator.engine.IPhysicsEngine;
 import com.trafficsimulator.engine.ITrafficLightController;
 import com.trafficsimulator.engine.IVehicleSpawner;
@@ -40,6 +41,7 @@ public class TickEmitter {
     private final ILaneChangeEngine laneChangeEngine;
     private final ITrafficLightController trafficLightController;
     private final IIntersectionManager intersectionManager;
+    private final IPerturbationManager perturbationManager;
     private final SnapshotBuilder snapshotBuilder;
 
     @Scheduled(fixedRate = 50)
@@ -116,7 +118,7 @@ public class TickEmitter {
             for (Road road : network.getRoads().values()) {
                 for (Lane lane : road.getLanes()) {
                     double stopLine = stopLines.getOrDefault(lane.getId(), -1.0);
-                    physicsEngine.tick(lane, stepDt, stopLine);
+                    physicsEngine.tick(lane, stepDt, stopLine, perturbationManager, tick);
                 }
             }
         }
