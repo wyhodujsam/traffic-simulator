@@ -20,7 +20,7 @@ class SimulationEngineSplitOrderTest {
 
     @BeforeEach
     void setUp() {
-        engine = new SimulationEngine(null, null, new VehicleSpawner(), new IntersectionManager());
+        engine = new SimulationEngine(null, null, new VehicleSpawner(), new IntersectionManager(), null);
     }
 
     @Test

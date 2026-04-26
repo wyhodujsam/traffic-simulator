@@ -11,6 +11,7 @@ import java.util.stream.Collectors;
 
 import org.springframework.stereotype.Component;
 
+import com.trafficsimulator.engine.kpi.DelayWindow;
 import com.trafficsimulator.model.DespawnPoint;
 import com.trafficsimulator.model.Lane;
 import com.trafficsimulator.model.Road;
@@ -61,6 +62,20 @@ public class VehicleSpawner implements IVehicleSpawner {
      */
     private RandomGenerator idmNoiseRng =
             RandomGeneratorFactory.of(SimulationEngine.MASTER_ALGORITHM).create(System.nanoTime());
+
+    /**
+     * Tick duration in seconds (= 1 / TICKS_PER_SEC). Used to convert the despawn tick-delta into
+     * seconds when recording delay samples per CONTEXT.md §D-05. Mirrors {@link
+     * com.trafficsimulator.scheduler.TickEmitter}'s {@code @Scheduled(fixedRate = 50)}.
+     */
+    private static final double TICK_DT_SECONDS = 1.0 / TICKS_PER_SEC;
+
+    /**
+     * Optional delay window — D-05 sink. Wired by Spring (setter injection); null in legacy unit
+     * tests that do not exercise KPI behaviour. When present, every despawned vehicle records a
+     * {@code (despawnTick, delaySeconds)} sample.
+     */
+    @Setter private DelayWindow delayWindow;
 
     /**
      * Replaces the current IDM-noise RNG. Called by {@link SimulationEngine} on every {@code
@@ -145,6 +160,11 @@ public class VehicleSpawner implements IVehicleSpawner {
     private Vehicle createVehicle(Lane lane, double position, long currentTick) {
         // Spawn at 50% of lane max speed to avoid immediate braking cascade at entry
         double initialSpeed = 0.5 * lane.getMaxSpeed();
+        // D-05a: seed free-flow time with the current road's contribution so the first leg counts.
+        // Use lane.getMaxSpeed (= road.speedLimit copied at load time) to avoid reaching back to
+        // Lane#getRoad which is excluded from equality and may be null in fixture tests.
+        double initialFreeFlowSeconds =
+                lane.getLength() / Math.max(0.1, lane.getMaxSpeed());
         return Vehicle.builder()
                 .id(UUID.randomUUID().toString())
                 .position(position)
@@ -158,6 +178,7 @@ public class VehicleSpawner implements IVehicleSpawner {
                 .s0(S0)
                 .timeHeadway(vary(T_BASE))
                 .spawnedAt(currentTick)
+                .freeFlowSeconds(initialFreeFlowSeconds)
                 .build();
     }
 
@@ -195,6 +216,14 @@ public class VehicleSpawner implements IVehicleSpawner {
                         v -> {
                             if (v.getPosition() >= lane.getLength()) {
                                 despawnTicks.addLast(currentTick);
+                                // D-05: record (despawnTick, delaySeconds) so KpiAggregator can read mean delay.
+                                if (delayWindow != null) {
+                                    double actualSeconds =
+                                            (currentTick - v.getSpawnedAt()) * TICK_DT_SECONDS;
+                                    double delaySeconds =
+                                            Math.max(0.0, actualSeconds - v.getFreeFlowSeconds());
+                                    delayWindow.recordDespawn(currentTick, delaySeconds);
+                                }
                                 log.debug(
                                         "Vehicle {} despawned at position {} (lane length {})",
                                         v.getId(),

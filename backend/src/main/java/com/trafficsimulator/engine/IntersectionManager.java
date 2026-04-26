@@ -398,6 +398,9 @@ public class IntersectionManager implements IIntersectionManager {
         victim.setLane(targetLane); // transfer = special case, not a lane change
         victim.completeLaneChange();
         targetLane.addVehicle(victim);
+        // D-05a: deadlock resolver still represents a road hand-off — accumulate free-flow time
+        // for the road just entered so KPI delay accounting stays consistent.
+        victim.addFreeFlowSeconds(outRoad.getLength() / Math.max(0.1, outRoad.getSpeedLimit()));
     }
 
     /**
@@ -489,6 +492,9 @@ public class IntersectionManager implements IIntersectionManager {
         v.completeLaneChange();
         targetLane.addVehicle(v);
         lastPlacedPosition.put(targetLane.getId(), effectivePosition);
+        // D-05a: accumulate the new road's free-flow time at hand-off. Read from outRoad (we have
+        // it here) — speedLimit guarded against zero just in case (matches VehicleSpawner pattern).
+        v.addFreeFlowSeconds(outRoad.getLength() / Math.max(0.1, outRoad.getSpeedLimit()));
 
         log.debug(
                 "Vehicle {} transferred through intersection {} from {} to {} at pos {}",

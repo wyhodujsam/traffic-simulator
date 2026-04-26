@@ -30,7 +30,7 @@ class SimulationEngineSeedTest {
     void setUp() {
         spawner = new VehicleSpawner();
         ixtnMgr = new IntersectionManager();
-        engine = new SimulationEngine(null, null, spawner, ixtnMgr);
+        engine = new SimulationEngine(null, null, spawner, ixtnMgr, null);
     }
 
     @Test

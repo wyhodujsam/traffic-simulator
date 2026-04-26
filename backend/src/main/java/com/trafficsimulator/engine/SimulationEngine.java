@@ -17,6 +17,7 @@ import org.springframework.stereotype.Component;
 
 import com.trafficsimulator.config.MapLoader;
 import com.trafficsimulator.engine.command.SimulationCommand;
+import com.trafficsimulator.engine.kpi.DelayWindow;
 import com.trafficsimulator.model.Lane;
 import com.trafficsimulator.model.Road;
 import com.trafficsimulator.model.RoadNetwork;
@@ -97,29 +98,41 @@ public class SimulationEngine {
     private final IntersectionManager intersectionManagerConcrete;
 
     /**
+     * Phase 25 Plan 04: KPI delay window. Held by the engine so {@link
+     * #resolveSeedAndStart(Long)} can wire it into the spawner once at startup, and so {@code
+     * Stop} / map-change handlers can call {@link DelayWindow#reset()} (KPI-07 cache invalidation
+     * symmetry — the spawner clears its rolling throughput separately).
+     */
+    @Getter @Nullable private final DelayWindow delayWindow;
+
+    /**
      * Convenience constructor for tests/non-Spring callers that do not need to wire concrete
      * spawner/intersection beans (sub-RNG injection becomes a no-op).
      */
     public SimulationEngine(
             @Nullable MapLoader mapLoader, @Lazy CommandDispatcher commandDispatcher) {
-        this(mapLoader, commandDispatcher, null, null);
+        this(mapLoader, commandDispatcher, null, null, null);
     }
 
     /**
      * Spring-preferred constructor (annotated {@code @Autowired}). Receives the concrete {@link
      * VehicleSpawner} and {@link IntersectionManager} beans so {@link #resolveSeedAndStart(Long)}
-     * can call their package-private {@code setRng} methods (D-02 / D-03 wiring).
+     * can call their package-private {@code setRng} methods (D-02 / D-03 wiring), plus the {@link
+     * DelayWindow} bean which the engine fans out into the spawner on first start (Phase 25 Plan
+     * 04 D-05 wiring).
      */
     @Autowired
     public SimulationEngine(
             @Nullable MapLoader mapLoader,
             @Lazy CommandDispatcher commandDispatcher,
             @Nullable VehicleSpawner vehicleSpawnerConcrete,
-            @Nullable IntersectionManager intersectionManagerConcrete) {
+            @Nullable IntersectionManager intersectionManagerConcrete,
+            @Nullable DelayWindow delayWindow) {
         this.mapLoader = mapLoader;
         this.commandDispatcher = commandDispatcher;
         this.vehicleSpawnerConcrete = vehicleSpawnerConcrete;
         this.intersectionManagerConcrete = intersectionManagerConcrete;
+        this.delayWindow = delayWindow;
     }
 
     /**
@@ -162,6 +175,13 @@ public class SimulationEngine {
 
         if (vehicleSpawnerConcrete != null) {
             vehicleSpawnerConcrete.setRng(idmNoiseRng);
+            // D-05 wiring: hand the spawner the engine's DelayWindow so despawn events
+            // record (despawnTick, delaySeconds) into the same window the KpiAggregator reads.
+            // Reset on every Start so a fresh run starts with an empty window.
+            if (delayWindow != null) {
+                vehicleSpawnerConcrete.setDelayWindow(delayWindow);
+                delayWindow.reset();
+            }
         }
         if (intersectionManagerConcrete != null) {
             intersectionManagerConcrete.setRng(ixtnRoutingRng);
