@@ -128,6 +128,53 @@ Requirements for milestone v2.0. Adds real-world map import via OSM + optional A
 - [ ] **AVI-01**: Użytkownik może wgrać zdjęcie/screenshot drogi
 - [x] **AVI-02**: Backend wywołuje Claude CLI do analizy obrazu i generowania MapConfig
 
+## v3.0 Requirements — LLM-assisted redesign foundation
+
+Requirements for milestone v3.0 (next active per ROADMAP "Strategic Re-prioritisation 2026-04-26"). Phase 25 establishes determinism + KPI baseline.
+
+### Phase 25 — Determinism + KPI Foundation
+
+#### Determinism (DET-01..07)
+
+- [ ] **DET-01**: Same seed → byte-identical NDJSON replay log over 1000 ticks on ring-road (HEADLINE)
+- [ ] **DET-02**: Different seeds → different NDJSON logs (sanity)
+- [ ] **DET-03**: Seed source precedence: command > json > nanoTime, logged at INFO (per D-01, D-04)
+- [ ] **DET-04**: All 7 existing scenario JSONs continue to load and run (regression)
+- [ ] **DET-05**: Sub-RNG split order is fixed (append-only per D-02)
+- [ ] **DET-06**: `RUN_FOR_TICKS=N` auto-stops + terminal snapshot broadcast (per D-13)
+- [ ] **DET-07**: `RUN_FOR_TICKS_FAST=N` produces same NDJSON as `RUN_FOR_TICKS=N` (same seed)
+
+#### KPI Suite (KPI-01..07)
+
+- [ ] **KPI-01**: `KpiDto.throughputVehiclesPerMin` matches existing `StatsDto.throughput`
+- [ ] **KPI-02**: `KpiDto.meanDelaySeconds` per D-05 formula (per-vehicle actual − free-flow on despawn, 60s rolling avg)
+- [ ] **KPI-03**: Per-segment queue length per D-06 (speed < 0.30 × speedLimit, meters from exit upstream)
+- [ ] **KPI-04**: LOS classifier: A≤7, B≤11, C≤16, D≤22, E≤28, F>28 veh/km/lane (per D-07)
+- [ ] **KPI-05**: Per-segment / per-intersection lists sub-sampled every 5 ticks (per D-08)
+- [ ] **KPI-06**: `KpiDto` block present on `/topic/state` every tick after Start
+- [ ] **KPI-07**: Sub-sample cache cleared on `LOAD_MAP` / `LOAD_CONFIG`
+
+#### Ring-Road Scenario (RING-01..04)
+
+- [ ] **RING-01**: `ring-road.json` loads cleanly (passes MapValidator)
+- [ ] **RING-02**: 80 primed vehicles still present after 100 ticks (no PRIORITY-yield stall, per Pitfall #2)
+- [ ] **RING-03**: Steady-state ring (pre-perturbation) → all segments at LOS C or D
+- [ ] **RING-04**: After perturbation (tick=200, vehicleIndex=0, targetSpeed=5 m/s, durationTicks=60 per D-12) → at least one segment hits LOS F by tick=500
+
+#### Replay Logger (REPLAY-01..04)
+
+- [ ] **REPLAY-01**: NDJSON file written to `target/replays/{seed}-{ISO8601}.ndjson` when enabled (per D-14)
+- [ ] **REPLAY-02**: Header line schema per D-14 (seed, source, mapId, tickDt)
+- [ ] **REPLAY-03**: Disabled by default (`simulator.replay.enabled=false`); auto-enabled when `RUN_FOR_TICKS` invoked
+- [ ] **REPLAY-04**: `IOException` during write disables logger, no tick-loop crash
+
+#### Frontend Diagnostics (UI-01..04)
+
+- [ ] **UI-01**: `DiagnosticsPanel` collapsed by default (per D-09); toggle button works
+- [ ] **UI-02**: When collapsed, no canvas elements mounted (zero render cost per D-09)
+- [ ] **UI-03**: Space-time diagram shows ≥100 m continuous low-speed band on ring-road at tick 500 (phantom-jam visual proof)
+- [ ] **UI-04**: Frontend types mirror backend `KpiDto`/`SegmentKpiDto`/`IntersectionKpiDto` (compile-time check)
+
 ## Future Requirements
 
 Deferred to future releases.
@@ -217,12 +264,39 @@ Which phases cover which requirements. Updated during roadmap creation.
 | SINT-03 | Phase 19 — Simulation Integration & Export | ○ Pending |
 | AVI-01 | Phase 20 — AI Vision (Claude CLI) | ○ Pending |
 | AVI-02 | Phase 20 — AI Vision (Claude CLI) | ○ Pending |
+| DET-01 | Phase 25 — Determinism + KPI Foundation | ○ Pending |
+| DET-02 | Phase 25 — Determinism + KPI Foundation | ○ Pending |
+| DET-03 | Phase 25 — Determinism + KPI Foundation | ○ Pending |
+| DET-04 | Phase 25 — Determinism + KPI Foundation | ○ Pending |
+| DET-05 | Phase 25 — Determinism + KPI Foundation | ○ Pending |
+| DET-06 | Phase 25 — Determinism + KPI Foundation | ○ Pending |
+| DET-07 | Phase 25 — Determinism + KPI Foundation | ○ Pending |
+| KPI-01 | Phase 25 — Determinism + KPI Foundation | ○ Pending |
+| KPI-02 | Phase 25 — Determinism + KPI Foundation | ○ Pending |
+| KPI-03 | Phase 25 — Determinism + KPI Foundation | ○ Pending |
+| KPI-04 | Phase 25 — Determinism + KPI Foundation | ○ Pending |
+| KPI-05 | Phase 25 — Determinism + KPI Foundation | ○ Pending |
+| KPI-06 | Phase 25 — Determinism + KPI Foundation | ○ Pending |
+| KPI-07 | Phase 25 — Determinism + KPI Foundation | ○ Pending |
+| RING-01 | Phase 25 — Determinism + KPI Foundation | ○ Pending |
+| RING-02 | Phase 25 — Determinism + KPI Foundation | ○ Pending |
+| RING-03 | Phase 25 — Determinism + KPI Foundation | ○ Pending |
+| RING-04 | Phase 25 — Determinism + KPI Foundation | ○ Pending |
+| REPLAY-01 | Phase 25 — Determinism + KPI Foundation | ○ Pending |
+| REPLAY-02 | Phase 25 — Determinism + KPI Foundation | ○ Pending |
+| REPLAY-03 | Phase 25 — Determinism + KPI Foundation | ○ Pending |
+| REPLAY-04 | Phase 25 — Determinism + KPI Foundation | ○ Pending |
+| UI-01 | Phase 25 — Determinism + KPI Foundation | ○ Pending |
+| UI-02 | Phase 25 — Determinism + KPI Foundation | ○ Pending |
+| UI-03 | Phase 25 — Determinism + KPI Foundation | ○ Pending |
+| UI-04 | Phase 25 — Determinism + KPI Foundation | ○ Pending |
 
 **Coverage:**
 - v1 requirements: 33 total — mapped: 33 ✓
 - v2.0 requirements: 13 total — mapped: 13 ✓
+- v3.0 requirements: 26 total (Phase 25) — mapped: 26 ✓
 - Unmapped: 0 ✓
 
 ---
 *Requirements defined: 2026-03-27*
-*Last updated: 2026-04-10 — v2.0 traceability added (phases 17–20)*
+*Last updated: 2026-04-26 — v3.0 traceability added (Phase 25 — Determinism + KPI Foundation, 26 requirements)*
