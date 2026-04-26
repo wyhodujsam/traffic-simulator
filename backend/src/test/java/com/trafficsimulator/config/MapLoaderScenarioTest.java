@@ -142,6 +142,27 @@ class MapLoaderScenarioTest {
     }
 
     @Test
+    void loadsRingRoad() throws IOException {
+        // RING-01: ring-road.json (D-11 + D-12 + WAVE0 PRIORITY directive) loads cleanly with the
+        // Plan 25-03 schema extensions populated end-to-end.
+        MapLoader.LoadedMap loaded = mapLoader.loadFromClasspath("maps/ring-road.json");
+        RoadNetwork network = loaded.network();
+        assertThat(network.getId()).isEqualTo("ring-road");
+        assertThat(network.getRoads()).hasSize(8);
+        assertThat(network.getIntersections()).hasSize(8);
+        assertThat(network.getInitialVehicles()).hasSize(80);
+        assertThat(network.getPerturbation()).isNotNull();
+        assertThat(network.getPerturbation().getTick()).isEqualTo(200L);
+        assertThat(network.getPerturbation().getDurationTicks()).isEqualTo(60L);
+        assertThat(network.getPerturbation().getTargetSpeed()).isEqualTo(5.0);
+        assertThat(network.getPerturbation().getVehicleIndex()).isZero();
+        assertThat(network.getSeed()).isNull();
+        // All 8 intersections are PRIORITY per WAVE0-SPIKE-RESULT.md directive
+        assertThat(network.getIntersections().values())
+                .allMatch(i -> i.getType() == IntersectionType.PRIORITY);
+    }
+
+    @Test
     void invalidMapThrowsWithDescriptiveError() {
         MapValidator validator = new MapValidator();
         MapConfig config = new MapConfig();
