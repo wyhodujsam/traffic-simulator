@@ -5,7 +5,8 @@ import java.util.Deque;
 import java.util.List;
 import java.util.Set;
 import java.util.UUID;
-import java.util.concurrent.ThreadLocalRandom;
+import java.util.random.RandomGenerator;
+import java.util.random.RandomGeneratorFactory;
 import java.util.stream.Collectors;
 
 import org.springframework.stereotype.Component;
@@ -51,6 +52,23 @@ public class VehicleSpawner implements IVehicleSpawner {
     @Getter @Setter private double vehiclesPerSecond = 1.0;
 
     private int spawnPointIndex;
+
+    /**
+     * RNG for IDM ±20% noise. Defaults to a fresh nanoTime-seeded master so non-Spring callers
+     * (and the existing test suite) keep working. Replaced on every {@code Start} via {@link
+     * #setRng(RandomGenerator)} once {@link SimulationEngine#resolveSeedAndStart(Long)} fans the
+     * master out into sub-RNGs (D-02 / D-03).
+     */
+    private RandomGenerator idmNoiseRng =
+            RandomGeneratorFactory.of(SimulationEngine.MASTER_ALGORITHM).create(System.nanoTime());
+
+    /**
+     * Replaces the current IDM-noise RNG. Called by {@link SimulationEngine} on every {@code
+     * Start} with the third sub-RNG split off the master ({@code idmNoiseRng} in D-02 spawn order).
+     */
+    public void setRng(RandomGenerator rng) {
+        this.idmNoiseRng = rng;
+    }
 
     /**
      * Called each tick. Accumulates spawn budget and spawns vehicles when budget exceeds 1.0. Uses
@@ -145,10 +163,11 @@ public class VehicleSpawner implements IVehicleSpawner {
 
     /**
      * Applies ±20% uniform random noise to a base parameter value. Returns value in range [base *
-     * 0.8, base * 1.2].
+     * 0.8, base * 1.2]. Draws from the injected {@link #idmNoiseRng} so that the same seed
+     * reproduces the same vehicle population (D-03).
      */
     private double vary(double base) {
-        return base * (0.8 + ThreadLocalRandom.current().nextDouble() * 0.4);
+        return base * (0.8 + idmNoiseRng.nextDouble() * 0.4);
     }
 
     /**
