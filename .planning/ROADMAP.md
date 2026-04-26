@@ -503,6 +503,19 @@ Plans:
 - [ ] 24-06-PLAN.md — Frontend third button "Fetch roads (osm2streets)" + handleFetchRoadsO2s + resultOrigin extension + osm-bbox-o2s.spec.ts Playwright spec + canned lanes-populated fixture (Wave 4)
 - [ ] 24-07-PLAN.md — Docs: backend/docs/osm-converters.md Phase 24 section + lanes[] contract + roundabout gap + binary provenance cross-ref + full-suite close gate (checkpoint) (Wave 5)
 
+### Phase 24.1: Overpass XML element ordering fix (Phase 23 + Phase 24 hotfix) (INSERTED 2026-04-25)
+
+**Goal:** Fix `OverpassXmlFetcher.buildOverpassXmlQuery()` to emit standard nodes-before-ways OSM XML so that Phase 23 (GraphHopper) and Phase 24 (osm2streets) actually return roads for real-world bboxes. Close the test-coverage gap that hid this bug — both end-to-end paths are stubbed in Playwright and the only real-binary integration test is `@Disabled` by default.
+
+**Requirements**: N/A (inserted hotfix; scope authoritative in 24.1-CONTEXT.md)
+**Depends on:** Phase 23, Phase 24
+**Plans:** 3/3 plans complete
+
+Plans:
+- [x] 24.1-01-PLAN.md — RED unit test + GREEN fix in OverpassXmlFetcher.buildOverpassXmlQuery (Wave 1, autonomous)
+- [x] 24.1-02-PLAN.md — OsmPipelineSmokeIT @SpringBootTest exercising real Osm2StreetsService + GraphHopperOsmService end-to-end against canned Overpass XML via MockRestServiceServer (Wave 2, autonomous)
+- [x] 24.1-03-PLAN.md — Playwright real-backend e2e with local Overpass fixture HTTP server + Spring property override (Wave 3, includes deferral checkpoint per CONTEXT.md Risks)
+
 ### Phase 25: Traffic flow visualization
 
 **Goal:** Scientific visualization for phantom-jam experiments — space-time diagram (trajectory t/x, color=speed), live fundamental diagram (flow vs density scatter), speed-colored vehicles, optional trails, ring-road scenario for Sugiyama-style self-emerging jams.

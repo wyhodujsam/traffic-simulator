@@ -89,10 +89,9 @@ public class OverpassXmlFetcher {
                 [out:xml][timeout:25];
                 (
                   way["highway"~"^(motorway|trunk|primary|secondary|tertiary|unclassified|residential|living_street)$"](%f,%f,%f,%f);
+                  >;
                 );
-                out body;
-                >;
-                out skel qt;\
+                out body qt;\
                 """
                 .formatted(bbox.south(), bbox.west(), bbox.north(), bbox.east());
     }
