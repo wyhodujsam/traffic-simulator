@@ -63,4 +63,11 @@ public class CommandDto {
 
     /** Yellow phase duration in ms — used by SET_LIGHT_CYCLE. */
     private Long yellowDurationMs;
+
+    /**
+     * Optional master RNG seed — used by START. Per D-01 precedence: {@code command.seed} >
+     * {@code mapConfig.seed} > {@code System.nanoTime()}. When {@code null}, the engine falls
+     * back to the JSON or auto-generated seed.
+     */
+    private Long seed;
 }

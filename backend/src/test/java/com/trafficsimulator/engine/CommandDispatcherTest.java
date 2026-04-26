@@ -34,7 +34,7 @@ class CommandDispatcherTest {
     void testStartCommand() {
         assertThat(engine.getStatus()).isEqualTo(SimulationStatus.STOPPED);
 
-        dispatcher.dispatch(new SimulationCommand.Start());
+        dispatcher.dispatch(new SimulationCommand.Start(null));
 
         assertThat(engine.getStatus()).isEqualTo(SimulationStatus.RUNNING);
     }
@@ -42,7 +42,7 @@ class CommandDispatcherTest {
     @Test
     void testStopCommand() {
         // Start first so stop is accepted
-        dispatcher.dispatch(new SimulationCommand.Start());
+        dispatcher.dispatch(new SimulationCommand.Start(null));
         engine.getTickCounter().set(100);
 
         dispatcher.dispatch(new SimulationCommand.Stop());
@@ -53,7 +53,7 @@ class CommandDispatcherTest {
 
     @Test
     void testPauseResumeRoundTrip() {
-        dispatcher.dispatch(new SimulationCommand.Start());
+        dispatcher.dispatch(new SimulationCommand.Start(null));
         assertThat(engine.getStatus()).isEqualTo(SimulationStatus.RUNNING);
 
         dispatcher.dispatch(new SimulationCommand.Pause());
@@ -115,7 +115,7 @@ class CommandDispatcherTest {
         mapLoaderField.set(dispatcher, mapLoader);
 
         // Start simulation first so we can verify it stops on LoadMap
-        dispatcher.dispatch(new SimulationCommand.Start());
+        dispatcher.dispatch(new SimulationCommand.Start(null));
         assertThat(engine.getStatus()).isEqualTo(SimulationStatus.RUNNING);
 
         dispatcher.dispatch(new SimulationCommand.LoadMap("straight-road"));

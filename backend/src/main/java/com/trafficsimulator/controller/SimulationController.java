@@ -229,7 +229,8 @@ public class SimulationController {
         com.trafficsimulator.engine.command.SimulationCommand command =
                 switch (dto.getType()) {
                     case "START" ->
-                            new com.trafficsimulator.engine.command.SimulationCommand.Start();
+                            new com.trafficsimulator.engine.command.SimulationCommand.Start(
+                                    dto.getSeed());
                     case "STOP" -> new com.trafficsimulator.engine.command.SimulationCommand.Stop();
                     case "PAUSE" ->
                             new com.trafficsimulator.engine.command.SimulationCommand.Pause();

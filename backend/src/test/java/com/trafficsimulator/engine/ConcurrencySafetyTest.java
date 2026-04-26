@@ -38,7 +38,7 @@ class ConcurrencySafetyTest {
         SimulationEngine engine = createEngine();
 
         // Start simulation so commands affect RUNNING state
-        engine.enqueue(new SimulationCommand.Start());
+        engine.enqueue(new SimulationCommand.Start(null));
         engine.drainCommands();
 
         ExecutorService executor = Executors.newFixedThreadPool(10);
@@ -85,7 +85,7 @@ class ConcurrencySafetyTest {
     void drainCompletesUnderLoad_noDeadlock() {
         SimulationEngine engine = createEngine();
 
-        engine.enqueue(new SimulationCommand.Start());
+        engine.enqueue(new SimulationCommand.Start(null));
         engine.drainCommands();
 
         // Run 50 concurrent command submissions
@@ -114,7 +114,7 @@ class ConcurrencySafetyTest {
     void writeLockReentrancy_drainUnlockedInsideWriteLock() {
         SimulationEngine engine = createEngine();
 
-        engine.enqueue(new SimulationCommand.Start());
+        engine.enqueue(new SimulationCommand.Start(null));
 
         // Simulate TickEmitter pattern: acquire writeLock, then drainCommandsUnlocked
         engine.writeLock().lock();
@@ -135,7 +135,7 @@ class ConcurrencySafetyTest {
     void heavyConcurrentStress_mixedOperations() throws InterruptedException {
         SimulationEngine engine = createEngine();
 
-        engine.enqueue(new SimulationCommand.Start());
+        engine.enqueue(new SimulationCommand.Start(null));
         engine.drainCommands();
 
         int threadCount = 200;

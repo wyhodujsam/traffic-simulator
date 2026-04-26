@@ -54,7 +54,7 @@ public class SimulationSteps {
 
     @When("uruchamiam symulację")
     public void uruchamiamSymulacje() {
-        simulationEngine.enqueue(new SimulationCommand.Start());
+        simulationEngine.enqueue(new SimulationCommand.Start(null));
         simulationEngine.drainCommands();
     }
 

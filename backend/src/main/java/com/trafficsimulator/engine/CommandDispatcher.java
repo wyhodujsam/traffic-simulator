@@ -55,7 +55,9 @@ public class CommandDispatcher {
     }
 
     private void registerHandlers() {
-        handlers.put(SimulationCommand.Start.class, cmd -> handleStart());
+        handlers.put(
+                SimulationCommand.Start.class,
+                cmd -> handleStart((SimulationCommand.Start) cmd));
         handlers.put(SimulationCommand.Stop.class, cmd -> handleStop());
         handlers.put(SimulationCommand.Pause.class, cmd -> handlePause());
         handlers.put(SimulationCommand.Resume.class, cmd -> handleResume());
@@ -99,13 +101,17 @@ public class CommandDispatcher {
         log.debug("Applied command: {}", cmd);
     }
 
-    private void handleStart() {
+    private void handleStart(SimulationCommand.Start cmd) {
         if (engine.getStatus() != SimulationStatus.STOPPED) {
             log.warn(
                     "Start command ignored: simulation is {} (expected STOPPED)",
                     engine.getStatus());
             return;
         }
+        // D-01..D-04: resolve seed precedence, fan master into 3 sub-RNGs (D-02 spawn order),
+        // inject into spawner + intersection manager, emit INFO log line. Must run BEFORE the
+        // status flip so RNGs are ready when the first tick fires.
+        engine.resolveSeedAndStart(cmd.seed());
         engine.setStatus(SimulationStatus.RUNNING);
         log.info("Simulation started");
     }

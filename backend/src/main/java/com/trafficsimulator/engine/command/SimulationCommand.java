@@ -17,7 +17,12 @@ public sealed interface SimulationCommand
                 SimulationCommand.CloseLane,
                 SimulationCommand.SetLightCycle {
 
-    record Start() implements SimulationCommand {}
+    /**
+     * Starts the simulation. {@code seed} is the optional master RNG seed; when {@code null} the
+     * engine falls back to {@code MapConfig.seed} (json) or {@code System.nanoTime()} (auto) per
+     * D-01 precedence (command > json > auto). Logged at INFO via D-04.
+     */
+    record Start(Long seed) implements SimulationCommand {}
 
     record Stop() implements SimulationCommand {}
 

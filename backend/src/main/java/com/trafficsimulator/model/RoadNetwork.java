@@ -14,6 +14,15 @@ import lombok.Data;
 public class RoadNetwork {
     private String id; // map scenario id
 
+    /**
+     * Optional master RNG seed loaded from {@code MapConfig.seed} (Plan 03 will populate this from
+     * JSON). Per D-01 precedence (command > json > auto), {@link
+     * com.trafficsimulator.engine.SimulationEngine#resolveSeedAndStart(Long)} reads this when no
+     * STOMP {@code Start.seed} is supplied. Placeholder field added in Plan 02 — Plan 03 wires the
+     * loader.
+     */
+    private Long seed;
+
     @Builder.Default private Map<String, Road> roads = new LinkedHashMap<>();
 
     @Builder.Default private Map<String, Intersection> intersections = new LinkedHashMap<>();

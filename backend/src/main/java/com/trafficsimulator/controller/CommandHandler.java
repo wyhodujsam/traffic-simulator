@@ -41,7 +41,7 @@ public class CommandHandler {
         log.info("Received command: {}", dto.getType());
         SimulationCommand command =
                 switch (dto.getType()) {
-                    case "START" -> new SimulationCommand.Start();
+                    case "START" -> new SimulationCommand.Start(dto.getSeed());
                     case "STOP" -> new SimulationCommand.Stop();
                     case "PAUSE" -> new SimulationCommand.Pause();
                     case "RESUME" -> new SimulationCommand.Resume();
