@@ -43,28 +43,36 @@ export default defineConfig({
       stderr: 'pipe',
     },
     {
-      // Phase 24.1 Plan 03: backend started with two property overrides via JVM system
-      // properties (the `-Dspring-boot.run.jvmArguments=...` form, NOT `spring-boot.run.arguments`).
+      // Phase 24.1 Plan 03 + Phase 24.2 Plan 03: backend started with one property
+      // override via JVM system property (the `-Dspring-boot.run.jvmArguments=...`
+      // form, NOT `spring-boot.run.arguments`).
       //
       // Why `jvmArguments` and not `arguments`:
-      //   `spring-boot.run.arguments` is a COMMA-separated list. Our first override
-      //   (`osm.overpass.urls=http://localhost:18086`) doesn't survive that split because the
-      //   plugin re-joins the tail values into the property's own list, producing
-      //   `mirrors=[http://localhost:18086, --osm2streets.binary-path=...]` instead of two
-      //   separate property bindings (verified during the Plan 03 Task 5 deviation).
-      //   `jvmArguments` is space-separated and passes each `-D...=...` directly to the JVM
-      //   as an independent system property, which Spring's `@Value` reads cleanly.
+      //   `spring-boot.run.arguments` is a COMMA-separated list. Even though we now
+      //   pass only one override, sticking with `jvmArguments` keeps this entry
+      //   composable with future overrides without re-discovering the comma-split
+      //   pitfall (verified during Phase 24.1 Plan 03 Task 5 deviation).
+      //   `jvmArguments` is space-separated and passes each `-D...=...` directly to
+      //   the JVM as an independent system property, which Spring's `@Value` reads
+      //   cleanly.
       //
-      // Overrides:
-      //   1. -Dosm.overpass.urls=http://localhost:18086 — redirects OverpassXmlFetcher's outbound
-      //      HTTP from overpass-api.de to the local fixture server (Plan 03 Task 1 spike confirmed
-      //      the `--osm.overpass.urls=...` form worked alone; the equivalent `-D` form is what
-      //      we use here so it composes cleanly with the second override).
-      //   2. -Dosm2streets.binary-path=bin/osm2streets-cli-linux-x64 — when mvn spring-boot:run
-      //      starts with cwd=backend/, the production-default `backend/bin/...` path resolves to
-      //      `backend/backend/bin/...` and the CLI subprocess fails with ENOENT. The cwd-relative
-      //      `bin/...` form matches what OsmPipelineSmokeIT (Plan 02) uses via @TestPropertySource.
-      command: "cd ../backend && mvn spring-boot:run -q '-Dspring-boot.run.jvmArguments=-Dosm.overpass.urls=http://localhost:18086 -Dosm2streets.binary-path=bin/osm2streets-cli-linux-x64'",
+      // Override:
+      //   1. -Dosm.overpass.urls=http://localhost:18086 — redirects OverpassXmlFetcher's
+      //      outbound HTTP from overpass-api.de to the local fixture server (Plan 03
+      //      Task 1 spike confirmed the `--osm.overpass.urls=...` form worked alone;
+      //      the equivalent `-D` form is what we use here so it composes cleanly with
+      //      any future overrides).
+      //
+      // Phase 24.2 note: a SECOND override
+      //   `-Dosm2streets.binary-path=bin/osm2streets-cli-linux-x64`
+      // used to be required because `mvn spring-boot:run` runs with cwd=backend/ and
+      // the production default `backend/bin/osm2streets-cli-linux-x64` resolved to
+      // `backend/backend/bin/...` → ENOENT. Phase 24.2 Plan 01 made
+      // Osm2StreetsConfig.getBinaryPath() smart-resolve the configured path against
+      // the project root regardless of cwd, so the override is no longer needed and
+      // would in fact short-circuit the very resolver this e2e suite should now
+      // exercise. Removed deliberately.
+      command: "cd ../backend && mvn spring-boot:run -q '-Dspring-boot.run.jvmArguments=-Dosm.overpass.urls=http://localhost:18086'",
       url: 'http://localhost:8086/api/simulation/status',
       timeout: 120_000,
       reuseExistingServer: !process.env.CI,

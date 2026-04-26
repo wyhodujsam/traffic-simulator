@@ -516,6 +516,20 @@ Plans:
 - [x] 24.1-02-PLAN.md — OsmPipelineSmokeIT @SpringBootTest exercising real Osm2StreetsService + GraphHopperOsmService end-to-end against canned Overpass XML via MockRestServiceServer (Wave 2, autonomous)
 - [x] 24.1-03-PLAN.md — Playwright real-backend e2e with local Overpass fixture HTTP server + Spring property override (Wave 3, includes deferral checkpoint per CONTEXT.md Risks)
 
+### Phase 24.2: osm2streets binary-path resolution fix (Phase 24 hotfix) (INSERTED 2026-04-25)
+
+**Goal:** Fix `osm2streets.binary-path` resolution so `POST /api/osm/fetch-roads-o2s` works without manual JVM overrides for both `cd backend && mvn spring-boot:run` and `mvn -pl backend spring-boot:run` invocation styles. Close the test gap where Phase 24.1's integration test masks the production bug via an explicit override; the regression net should fail if the production default is broken.
+
+**Requirements**: N/A (inserted hotfix; scope authoritative in 24.2-CONTEXT.md)
+**Depends on:** Phase 24, Phase 24.1 (test infrastructure reuse)
+**Plans:** 4 plans
+
+Plans:
+- [ ] 24.2-01-PLAN.md — Smart-resolve osm2streets binary path in Osm2StreetsConfig.getBinaryPath() (RED unit tests + GREEN fix with project-root walk-up; AC#1, #2, #3, #4 unit-level)
+- [ ] 24.2-02-PLAN.md — Drop osm2streets.binary-path override in OsmPipelineSmokeIT + mutation-style sanity check (closes AC#4 integration-level)
+- [ ] 24.2-03-PLAN.md — Drop osm2streets.binary-path JVM arg in playwright.config.ts (e2e regression via osm-bbox-real-backend.spec.ts; closes AC#7 e2e)
+- [ ] 24.2-04-PLAN.md — Repro + fix-or-document frontend "Unknown error" sidebar message (checkpoint:human-verify; closes AC#6)
+
 ### Phase 25: Traffic flow visualization
 
 **Goal:** Scientific visualization for phantom-jam experiments — space-time diagram (trajectory t/x, color=speed), live fundamental diagram (flow vs density scatter), speed-colored vehicles, optional trails, ring-road scenario for Sugiyama-style self-emerging jams.
