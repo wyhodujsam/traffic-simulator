@@ -60,6 +60,20 @@ export function useWebSocket() {
           });
         };
         useSimulationStore.getState().setSendCommand(sendCommand);
+
+        // Phase 25 UI-03: dev-only window shim for Playwright. Exposes the same publish path
+        // used by the UI so e2e tests can dispatch RUN_FOR_TICKS_FAST etc. without scraping
+        // the controls panel. Gated by import.meta.env.DEV — Vite tree-shakes the entire
+        // expression in production builds, so __SIM_SEND_COMMAND__ never appears in the
+        // bundle (verified by `grep -q` in Plan 07 acceptance check).
+        if (import.meta.env.DEV) {
+          (window as unknown as { __SIM_SEND_COMMAND__?: (cmd: unknown) => void }).
+            __SIM_SEND_COMMAND__ = (cmd: unknown) =>
+              client.publish({
+                destination: '/app/command',
+                body: JSON.stringify(cmd),
+              });
+        }
       },
       onDisconnect: () => {
         console.warn('[WS] Disconnected from simulation broker');
