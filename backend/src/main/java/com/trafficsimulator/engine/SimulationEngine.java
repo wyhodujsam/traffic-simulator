@@ -106,6 +106,27 @@ public class SimulationEngine {
     /** Sub-RNG split #3 — drives IDM ±20% noise in {@link VehicleSpawner}. */
     @Getter private RandomGenerator idmNoiseRng;
 
+    /**
+     * Phase 25 DET-01: monotonic per-Start counter for deterministic vehicle IDs. Replaces
+     * {@code UUID.randomUUID()} call sites in {@link VehicleSpawner#createVehicle} and
+     * {@link CommandDispatcher#primeInitialVehicles} so the NDJSON replay log (which serialises
+     * {@code vehicle.id}) is byte-identical across two runs of the same seed.
+     *
+     * <p>Reset on every {@link #resolveSeedAndStart(Long)} (Start) and on {@link
+     * #clearAllVehicles()} call paths via {@link CommandDispatcher} (LoadMap / LoadConfig / Stop) so
+     * a fresh scenario starts at id=0.
+     */
+    @Getter private final AtomicLong vehicleIdCounter = new AtomicLong(0L);
+
+    /**
+     * Phase 25 DET-01 helper — returns the next deterministic vehicle ID and increments the
+     * counter. Format: {@code "v-<counter>"}. The counter resets on every Start / LoadMap so two
+     * runs of the same seed produce identical id streams.
+     */
+    public String nextVehicleId() {
+        return "v-" + vehicleIdCounter.getAndIncrement();
+    }
+
     private final MapLoader mapLoader;
     private CommandDispatcher commandDispatcher;
     private final VehicleSpawner vehicleSpawnerConcrete;
@@ -176,6 +197,10 @@ public class SimulationEngine {
         this.lastResolvedSeed = resolvedSeed;
         this.lastSeedSource = source;
 
+        // DET-01: reset deterministic vehicle ID counter so a fresh Start with the same seed
+        // produces the same id stream (avoids UUID-driven non-determinism in the NDJSON log).
+        this.vehicleIdCounter.set(0L);
+
         log.info("[SimulationEngine] Started with seed={} source={}", resolvedSeed, source);
 
         RandomGeneratorFactory<RandomGenerator> factory =
@@ -190,6 +215,10 @@ public class SimulationEngine {
 
         if (vehicleSpawnerConcrete != null) {
             vehicleSpawnerConcrete.setRng(idmNoiseRng);
+            // DET-01: install the deterministic id supplier so spawner-created vehicles
+            // get sequential ids (v-0, v-1, ...) reset per-Start. Without this the NDJSON
+            // replay logs differ on every run because UUID.randomUUID() is non-seeded.
+            vehicleSpawnerConcrete.setIdSupplier(this::nextVehicleId);
             // D-05 wiring: hand the spawner the engine's DelayWindow so despawn events
             // record (despawnTick, delaySeconds) into the same window the KpiAggregator reads.
             // Reset on every Start so a fresh run starts with an empty window.
@@ -314,5 +343,9 @@ public class SimulationEngine {
                 lane.setActive(true); // Reset lane status on stop
             }
         }
+        // DET-01: reset deterministic vehicle ID counter so the NEXT scenario starts at id=0.
+        // Symmetric with resolveSeedAndStart — covers Stop / LoadMap / LoadConfig paths that
+        // route through clearAllVehicles before resolving a new seed.
+        vehicleIdCounter.set(0L);
     }
 }

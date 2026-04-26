@@ -5,6 +5,7 @@ import java.util.Deque;
 import java.util.List;
 import java.util.Set;
 import java.util.UUID;
+import java.util.function.Supplier;
 import java.util.random.RandomGenerator;
 import java.util.random.RandomGeneratorFactory;
 import java.util.stream.Collectors;
@@ -37,10 +38,10 @@ public class VehicleSpawner implements IVehicleSpawner {
     private static final double MIN_SAFE_GAP = S0 + DEFAULT_VEHICLE_LENGTH; // 6.5m
 
     /**
-     * Tick frequency assumed by the rolling throughput window. Matches {@code
-     * @Scheduled(fixedRate = 50)} on TickEmitter — 20 ticks per simulated second. Used to convert
-     * the existing 60-second window semantics to a tick-keyed cutoff for determinism (Phase 25
-     * Plan 01, DET-01 precondition).
+     * Tick frequency assumed by the rolling throughput window. Matches {@code @Scheduled(fixedRate
+     * = 50)} on TickEmitter — 20 ticks per simulated second. Used to convert the existing 60-second
+     * window semantics to a tick-keyed cutoff for determinism (Phase 25 Plan 01, DET-01
+     * precondition).
      */
     private static final int TICKS_PER_SEC = 20;
 
@@ -55,8 +56,8 @@ public class VehicleSpawner implements IVehicleSpawner {
     private int spawnPointIndex;
 
     /**
-     * RNG for IDM ±20% noise. Defaults to a fresh nanoTime-seeded master so non-Spring callers
-     * (and the existing test suite) keep working. Replaced on every {@code Start} via {@link
+     * RNG for IDM ±20% noise. Defaults to a fresh nanoTime-seeded master so non-Spring callers (and
+     * the existing test suite) keep working. Replaced on every {@code Start} via {@link
      * #setRng(RandomGenerator)} once {@link SimulationEngine#resolveSeedAndStart(Long)} fans the
      * master out into sub-RNGs (D-02 / D-03).
      */
@@ -78,11 +79,24 @@ public class VehicleSpawner implements IVehicleSpawner {
     @Setter private DelayWindow delayWindow;
 
     /**
-     * Replaces the current IDM-noise RNG. Called by {@link SimulationEngine} on every {@code
-     * Start} with the third sub-RNG split off the master ({@code idmNoiseRng} in D-02 spawn order).
+     * Replaces the current IDM-noise RNG. Called by {@link SimulationEngine} on every {@code Start}
+     * with the third sub-RNG split off the master ({@code idmNoiseRng} in D-02 spawn order).
      */
     public void setRng(RandomGenerator rng) {
         this.idmNoiseRng = rng;
+    }
+
+    /**
+     * Phase 25 DET-01: deterministic vehicle-ID supplier. Defaults to {@code UUID.randomUUID()}
+     * for backward compatibility with non-Spring callers and the legacy unit test suite. Replaced
+     * by {@link SimulationEngine#nextVehicleId()} when wired by Spring so the NDJSON replay log
+     * is byte-identical across runs of the same seed (DET-01 HEADLINE).
+     */
+    private Supplier<String> idSupplier = () -> UUID.randomUUID().toString();
+
+    /** Phase 25 DET-01: replace the default UUID supplier with the engine's deterministic counter. */
+    public void setIdSupplier(Supplier<String> idSupplier) {
+        this.idSupplier = idSupplier;
     }
 
     /**
@@ -163,10 +177,9 @@ public class VehicleSpawner implements IVehicleSpawner {
         // D-05a: seed free-flow time with the current road's contribution so the first leg counts.
         // Use lane.getMaxSpeed (= road.speedLimit copied at load time) to avoid reaching back to
         // Lane#getRoad which is excluded from equality and may be null in fixture tests.
-        double initialFreeFlowSeconds =
-                lane.getLength() / Math.max(0.1, lane.getMaxSpeed());
+        double initialFreeFlowSeconds = lane.getLength() / Math.max(0.1, lane.getMaxSpeed());
         return Vehicle.builder()
-                .id(UUID.randomUUID().toString())
+                .id(idSupplier.get())
                 .position(position)
                 .speed(initialSpeed)
                 .acceleration(0.0)
@@ -216,7 +229,8 @@ public class VehicleSpawner implements IVehicleSpawner {
                         v -> {
                             if (v.getPosition() >= lane.getLength()) {
                                 despawnTicks.addLast(currentTick);
-                                // D-05: record (despawnTick, delaySeconds) so KpiAggregator can read mean delay.
+                                // D-05: record (despawnTick, delaySeconds) so KpiAggregator can
+                                // read mean delay.
                                 if (delayWindow != null) {
                                     double actualSeconds =
                                             (currentTick - v.getSpawnedAt()) * TICK_DT_SECONDS;
@@ -239,8 +253,8 @@ public class VehicleSpawner implements IVehicleSpawner {
 
     /**
      * Returns vehicles despawned in the last 60 simulated seconds (= {@code
-     * THROUGHPUT_WINDOW_TICKS} ticks at 20 Hz). Evicts stale entries strictly older than the
-     * cutoff (entries equal to the cutoff tick are retained).
+     * THROUGHPUT_WINDOW_TICKS} ticks at 20 Hz). Evicts stale entries strictly older than the cutoff
+     * (entries equal to the cutoff tick are retained).
      *
      * <p>Tick-keyed instead of wall-clock keyed so two runs of the same seed produce the same
      * throughput readings — DET-01 precondition (Phase 25 Plan 01).

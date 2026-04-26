@@ -60,7 +60,10 @@ public class FastSimulationRunner implements IFastSimulationRunner {
             return;
         }
         engine.setFastMode(true);
-        engine.scheduleAutoStop(ticks);
+        // DET-07: scheduleAutoStop is called synchronously by CommandDispatcher#handleRunForTicksFast
+        // BEFORE this @Async runs, so the autoStopTick is computed against the same tickCounter
+        // that wall-clock RUN_FOR_TICKS sees. Re-scheduling here would shift the target by however
+        // many @Scheduled ticks fired between dispatch and the worker actually starting.
         log.info("[FastSimulationRunner] Starting fast run for {} ticks", ticks);
         try {
             // Tight loop — invoke the same per-tick pipeline TickEmitter uses. Loop terminates

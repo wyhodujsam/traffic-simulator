@@ -461,6 +461,11 @@ public class CommandDispatcher {
             engine.resolveSeedAndStart(null);
         }
         engine.setStatus(SimulationStatus.RUNNING);
+        // DET-07: schedule auto-stop SYNCHRONOUSLY (using the same tickCounter the wall-clock
+        // path would see) BEFORE handing off to the @Async worker. If we deferred this into
+        // FastSimulationRunner.runFor, intermittent @Scheduled ticks could shift tickCounter
+        // between dispatch and worker start, breaking byte-identity with the wall-clock run.
+        engine.scheduleAutoStop(cmd.ticks());
         fastSimulationRunner.runFor(cmd.ticks());
         log.info("[CommandDispatcher] RUN_FOR_TICKS_FAST={} dispatched", cmd.ticks());
     }
@@ -523,9 +528,12 @@ public class CommandDispatcher {
                 continue;
             }
             Lane lane = road.getLanes().get(iv.getLaneIndex());
+            // DET-01: deterministic id derived from index. Initial vehicles are primed in a
+            // fixed list order from the scenario JSON, so id "init-N" is reproducible across
+            // runs. Avoids UUID.randomUUID which would break NDJSON byte-identity (Plan 07).
             Vehicle v =
                     Vehicle.builder()
-                            .id(java.util.UUID.randomUUID().toString())
+                            .id("init-" + primed)
                             .position(iv.getPosition())
                             .speed(iv.getSpeed())
                             .acceleration(0.0)
