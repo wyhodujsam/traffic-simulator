@@ -32,7 +32,16 @@ public class CommandHandler {
                     "ADD_OBSTACLE",
                     "REMOVE_OBSTACLE",
                     "CLOSE_LANE",
-                    "SET_LIGHT_CYCLE");
+                    "SET_LIGHT_CYCLE",
+                    "RUN_FOR_TICKS",
+                    "RUN_FOR_TICKS_FAST");
+
+    /**
+     * Phase 25 D-13 / T-25-02 DoS bound: maximum number of ticks accepted by RUN_FOR_TICKS and
+     * RUN_FOR_TICKS_FAST. 1_000_000 ticks at 50 ms cadence = 13.9 hours of wall-clock simulation;
+     * far above any sensible UX while still bounding worst-case NDJSON file size and CPU time.
+     */
+    static final long MAX_RUN_TICKS = 1_000_000L;
 
     private final SimulationEngine simulationEngine;
 
@@ -66,6 +75,10 @@ public class CommandHandler {
                                     dto.getYellowDurationMs() != null
                                             ? dto.getYellowDurationMs()
                                             : 3000);
+                    case "RUN_FOR_TICKS" ->
+                            new SimulationCommand.RunForTicks(validateTicks(dto.getTicks()));
+                    case "RUN_FOR_TICKS_FAST" ->
+                            new SimulationCommand.RunForTicksFast(validateTicks(dto.getTicks()));
                     default ->
                             throw new IllegalArgumentException(
                                     "Unknown command type: '"
@@ -77,5 +90,21 @@ public class CommandHandler {
                                                     .collect(Collectors.joining(", ")));
                 };
         simulationEngine.enqueue(command);
+    }
+
+    /**
+     * Validates the {@code ticks} payload field for RUN_FOR_TICKS / RUN_FOR_TICKS_FAST. T-25-02
+     * mitigation: rejects null, zero, negative, and {@code > 1_000_000} values BEFORE enqueue so
+     * the engine never sees an unbounded scenario.
+     */
+    private static long validateTicks(Long ticks) {
+        if (ticks == null) {
+            throw new IllegalArgumentException("RUN_FOR_TICKS requires 'ticks' field");
+        }
+        if (ticks <= 0L || ticks > MAX_RUN_TICKS) {
+            throw new IllegalArgumentException(
+                    "RUN_FOR_TICKS 'ticks' must be in 1..1_000_000 (got " + ticks + ")");
+        }
+        return ticks;
     }
 }

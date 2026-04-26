@@ -65,9 +65,15 @@ public class CommandDto {
     private Long yellowDurationMs;
 
     /**
-     * Optional master RNG seed — used by START. Per D-01 precedence: {@code command.seed} >
-     * {@code mapConfig.seed} > {@code System.nanoTime()}. When {@code null}, the engine falls
-     * back to the JSON or auto-generated seed.
+     * Optional master RNG seed — used by START. Per D-01 precedence: {@code command.seed} > {@code
+     * mapConfig.seed} > {@code System.nanoTime()}. When {@code null}, the engine falls back to the
+     * JSON or auto-generated seed.
      */
     private Long seed;
+
+    /**
+     * Tick count — required for RUN_FOR_TICKS and RUN_FOR_TICKS_FAST. Validated server-side to be
+     * in {@code 1..1_000_000} (T-25-02 DoS mitigation in {@code CommandHandler}).
+     */
+    private Long ticks;
 }

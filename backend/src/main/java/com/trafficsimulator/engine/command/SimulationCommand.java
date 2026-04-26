@@ -15,7 +15,9 @@ public sealed interface SimulationCommand
                 SimulationCommand.AddObstacle,
                 SimulationCommand.RemoveObstacle,
                 SimulationCommand.CloseLane,
-                SimulationCommand.SetLightCycle {
+                SimulationCommand.SetLightCycle,
+                SimulationCommand.RunForTicks,
+                SimulationCommand.RunForTicksFast {
 
     /**
      * Starts the simulation. {@code seed} is the optional master RNG seed; when {@code null} the
@@ -49,4 +51,19 @@ public sealed interface SimulationCommand
 
     record SetLightCycle(String intersectionId, long greenDurationMs, long yellowDurationMs)
             implements SimulationCommand {}
+
+    /**
+     * Phase 25 D-13: run {@code ticks} ticks at wall-clock 20 Hz (respects {@code
+     * speedMultiplier}), then auto-stop. CommandHandler validates {@code ticks > 0 && ticks <=
+     * 1_000_000} before enqueue (T-25-02 DoS mitigation).
+     */
+    record RunForTicks(long ticks) implements SimulationCommand {}
+
+    /**
+     * Phase 25 D-13: run {@code ticks} ticks as fast as the JVM permits (no STOMP frames during
+     * run, only terminal snapshot). Bypasses {@code @Scheduled} via {@code FastSimulationRunner};
+     * {@code TickEmitter} early-returns when {@code engine.isFastMode()} (Pitfall #5 race
+     * mitigation).
+     */
+    record RunForTicksFast(long ticks) implements SimulationCommand {}
 }
