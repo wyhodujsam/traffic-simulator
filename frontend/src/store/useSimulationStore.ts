@@ -52,6 +52,10 @@ interface SimulationStore {
   mapError: string | null;
   refetchRoads: (() => void) | null;
 
+  // --- UI state (Phase 25 D-09) ---
+  diagnosticsOpen: boolean;
+  toggleDiagnostics: () => void;
+
   // --- Actions ---
   setConnected: (connected: boolean) => void;
   setTick: (state: SimulationStateDto) => void;
@@ -65,7 +69,7 @@ interface SimulationStore {
   clearSnapshots: () => void;
 }
 
-export const useSimulationStore = create<SimulationStore>((set, get) => ({
+export const useSimulationStore = create<SimulationStore>((set) => ({
   status: 'STOPPED',
   currSnapshot: null,
   prevSnapshot: null,
@@ -82,6 +86,8 @@ export const useSimulationStore = create<SimulationStore>((set, get) => ({
   currentMapId: null,
   mapError: null,
   refetchRoads: null,
+  diagnosticsOpen: false,
+  toggleDiagnostics: () => set((s) => ({ diagnosticsOpen: !s.diagnosticsOpen })),
 
   setTick: (state: SimulationStateDto) => {
     const now = performance.now();

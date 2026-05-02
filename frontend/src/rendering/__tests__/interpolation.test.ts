@@ -15,6 +15,8 @@ const testRoads: RoadDto[] = [
     startY: 0,
     endX: 1000,
     endY: 0,
+    clipStart: 0,
+    clipEnd: 0,
   },
 ];
 
@@ -44,6 +46,8 @@ function makeSnapshot(
     obstacles: [],
     trafficLights: [],
     stats: { vehicleCount: vehicles.length, avgSpeed: 0, density: 0, throughput: 0 },
+    error: null,
+    mapId: null,
   };
   return {
     state,

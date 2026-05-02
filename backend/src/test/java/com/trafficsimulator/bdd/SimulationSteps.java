@@ -54,7 +54,7 @@ public class SimulationSteps {
 
     @When("uruchamiam symulację")
     public void uruchamiamSymulacje() {
-        simulationEngine.enqueue(new SimulationCommand.Start());
+        simulationEngine.enqueue(new SimulationCommand.Start(null));
         simulationEngine.drainCommands();
     }
 
@@ -90,7 +90,7 @@ public class SimulationSteps {
 
             laneChangeEngine.tick(network, currentTick);
             intersectionManager.processTransfers(network, currentTick);
-            vehicleSpawner.despawnVehicles(network);
+            vehicleSpawner.despawnVehicles(network, currentTick);
         }
     }
 

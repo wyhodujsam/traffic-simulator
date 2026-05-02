@@ -2,15 +2,15 @@
 gsd_state_version: 1.0
 milestone: v2.0
 milestone_name: — Map Screenshot to Simulation
-current_phase: 24.1
-current_plan: 3
-status: Phase 24.1 complete — ready to pick up Phase 23/24/25
-last_updated: "2026-04-25T17:25:02.390Z"
+current_phase: 25
+current_plan: 7
+status: Phase 25 complete (verified PASSED WITH FLAGS)
+last_updated: "2026-04-26T18:00:00.000Z"
 progress:
-  total_phases: 27
-  completed_phases: 23
-  total_plans: 103
-  completed_plans: 105
+  total_phases: 28
+  completed_phases: 25
+  total_plans: 114
+  completed_plans: 116
   percent: 100
 ---
 
@@ -18,7 +18,7 @@ progress:
 
 **Project:** Traffic Simulator
 **Milestone:** v2.0 — Map Screenshot to Simulation
-**Current Phase:** 24.1
+**Current Phase:** 25
 **Last Updated:** 2026-04-12
 
 ## Project Reference
@@ -26,7 +26,7 @@ progress:
 See: .planning/PROJECT.md (updated 2026-04-12)
 
 **Core value:** Wierna symulacja fizyki ruchu drogowego
-**Current focus:** Phase 24.1 — overpass-xml-element-ordering-fix
+**Current focus:** Phase 25 — Determinism + KPI foundation
 
 ## Phase Status
 
@@ -64,13 +64,14 @@ See: .planning/PROJECT.md (updated 2026-04-12)
 | 23 | GraphHopper-based OSM parser | ○ Not started |
 | 24 | osm2streets integration | ○ Not started |
 | 24.1 | Overpass XML element ordering fix (Phase 23/24 hotfix) | ✓ Complete (3/3 plans done) |
-| 25 | Traffic flow visualization | ○ Not started |
+| 25 | Determinism + KPI foundation (rescoped 2026-04-26) | ✓ Complete (7/7 plans done; verified PASSED WITH FLAGS) |
 
 ## Current Position
 
-Phase: 24.1 (overpass-xml-element-ordering-fix) — COMPLETE (3/3 plans)
+Phase: 25 (Determinism + KPI foundation) — EXECUTING
+Plan: 1 of 7
 **Active phase:** — (between phases; ready to pick up 23/24/25)
-**Current plan:** —
+**Current plan:** 1
 **Completed:** Phase 24.1 Plan 03 — Real-backend Playwright e2e (`osm-bbox-real-backend.spec.ts` 1/1 in 14.4s; full e2e 9/9) + live Modlin manual smoke verifying all three OSM endpoints end-to-end (Phase 18: 18 roads, Phase 23: 20 roads, Phase 24: 10 roads with populated `lanes[]` metadata). All 6 CONTEXT.md acceptance criteria CLOSED.
 **Integration point:** Phase 23/24 Overpass element-ordering bug class is fixed at four layers (unit query-shape + integration captured-body + integration service-behavior + e2e real-backend UI + live Modlin smoke). Pre-existing Phase 24 osm2streets binary-path resolution bug surfaced again at the live smoke (logged in Phase 24 deferred-items; recommended Phase 24.2 follow-up).
 

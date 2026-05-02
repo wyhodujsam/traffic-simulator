@@ -47,7 +47,7 @@ class TickPipelineIntegrationTest {
                     physics.tick(lane, dt);
                 }
             }
-            spawner.despawnVehicles(network);
+            spawner.despawnVehicles(network, tick);
         }
 
         // Vehicles should exist and have non-zero positions (physics moved them)
@@ -234,7 +234,7 @@ class TickPipelineIntegrationTest {
                     physics.tick(lane, dt);
                 }
             }
-            spawner.despawnVehicles(network);
+            spawner.despawnVehicles(network, tick);
         }
 
         // Some vehicles should have despawned (first vehicle spawned 600 ticks ago)

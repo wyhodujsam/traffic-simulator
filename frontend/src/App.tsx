@@ -2,6 +2,7 @@ import { BrowserRouter, Routes, Route, Link, useLocation } from 'react-router-do
 import { useWebSocket } from './hooks/useWebSocket';
 import { SimulationPage } from './pages/SimulationPage';
 import { MapPage } from './pages/MapPage';
+// Phase 25 D-09: DiagnosticsPanel is mounted inside SimulationPage below StatsPanel.
 
 function NavHeader() {
   const { pathname } = useLocation();

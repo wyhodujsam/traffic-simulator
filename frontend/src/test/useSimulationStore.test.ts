@@ -8,7 +8,11 @@ function makeTick(tick: number, timestamp: number): SimulationStateDto {
     timestamp,
     status: 'RUNNING',
     vehicles: [],
+    obstacles: [],
+    trafficLights: [],
     stats: { vehicleCount: 0, avgSpeed: 0, density: 0, throughput: 0 },
+    error: null,
+    mapId: null,
   };
 }
 
@@ -68,10 +72,14 @@ describe('useSimulationStore', () => {
       timestamp: 1000,
       status: 'RUNNING',
       vehicles: [
-        { id: 'v1', laneId: 'l1', position: 10, speed: 5, x: 100, y: 200, angle: 0 },
-        { id: 'v2', laneId: 'l1', position: 20, speed: 8, x: 150, y: 200, angle: 0 },
+        { id: 'v1', roadId: 'r1', laneId: 'l1', laneIndex: 0, position: 10, speed: 5, laneChangeProgress: 0, laneChangeSourceIndex: -1 },
+        { id: 'v2', roadId: 'r1', laneId: 'l1', laneIndex: 0, position: 20, speed: 8, laneChangeProgress: 0, laneChangeSourceIndex: -1 },
       ],
+      obstacles: [],
+      trafficLights: [],
       stats: { vehicleCount: 2, avgSpeed: 6.5, density: 1, throughput: 0 },
+      error: null,
+      mapId: null,
     };
     useSimulationStore.getState().setTick(tick);
 
@@ -87,7 +95,7 @@ describe('useSimulationStore', () => {
   });
 
   it('should store roads via setRoads', () => {
-    const roads = [{ id: 'r1', name: 'Main St', laneCount: 2, length: 500, speedLimit: 13.9, startX: 0, startY: 0, endX: 500, endY: 0 }];
+    const roads = [{ id: 'r1', name: 'Main St', laneCount: 2, length: 500, speedLimit: 13.9, startX: 0, startY: 0, endX: 500, endY: 0, clipStart: 0, clipEnd: 0 }];
     useSimulationStore.getState().setRoads(roads);
 
     const state = useSimulationStore.getState();

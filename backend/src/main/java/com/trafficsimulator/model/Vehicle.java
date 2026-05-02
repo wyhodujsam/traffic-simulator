@@ -44,6 +44,20 @@ public class Vehicle {
     @Setter private boolean zipperCandidate;
 
     /**
+     * Accumulated free-flow time across every road this vehicle has traversed (CONTEXT.md §D-05a).
+     * Seeded at spawn from the initial road ({@code lane.length / road.speedLimit}) and incremented
+     * by {@link com.trafficsimulator.engine.IntersectionManager} on every road transfer. Read once
+     * on despawn to compute {@code delaySeconds = (despawnTick − spawnedAt) × dt − freeFlowSeconds}
+     * which feeds {@link com.trafficsimulator.engine.kpi.DelayWindow}.
+     */
+    @Builder.Default private double freeFlowSeconds = 0.0;
+
+    /** Accumulator hook for D-05a — called by VehicleSpawner at spawn and IntersectionManager at transfer. */
+    public void addFreeFlowSeconds(double seconds) {
+        this.freeFlowSeconds += seconds;
+    }
+
+    /**
      * Single mutation point for physics state. Validates invariants. Clamps position to >= 0, speed
      * to [0, v0 * 1.1], acceleration unclamped.
      */

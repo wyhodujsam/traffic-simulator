@@ -5,7 +5,8 @@ import java.util.Comparator;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
-import java.util.concurrent.ThreadLocalRandom;
+import java.util.random.RandomGenerator;
+import java.util.random.RandomGeneratorFactory;
 
 import org.springframework.stereotype.Component;
 
@@ -28,6 +29,23 @@ public class IntersectionManager implements IIntersectionManager {
 
     private final RoundaboutManager roundaboutManager;
     private final Map<String, IntersectionState> intersectionStates = new HashMap<>();
+
+    /**
+     * RNG for routing decisions (random outbound road, random target lane). Defaults to a fresh
+     * nanoTime-seeded master so non-Spring callers (and the existing test suite) keep working.
+     * Replaced on every {@code Start} via {@link #setRng(RandomGenerator)} once {@link
+     * SimulationEngine#resolveSeedAndStart(Long)} fans the master out into sub-RNGs (D-02 / D-03).
+     */
+    private RandomGenerator routingRng =
+            RandomGeneratorFactory.of(SimulationEngine.MASTER_ALGORITHM).create(System.nanoTime());
+
+    /**
+     * Replaces the current routing RNG. Called by {@link SimulationEngine} on every {@code Start}
+     * with the second sub-RNG split off the master ({@code ixtnRoutingRng} in D-02 spawn order).
+     */
+    public void setRng(RandomGenerator rng) {
+        this.routingRng = rng;
+    }
 
     private static final class IntersectionState {
         long lastTransferTick;
@@ -363,7 +381,7 @@ public class IntersectionManager implements IIntersectionManager {
         }
         String outRoadId =
                 ixtn.getOutboundRoadIds()
-                        .get(ThreadLocalRandom.current().nextInt(ixtn.getOutboundRoadIds().size()));
+                        .get(routingRng.nextInt(ixtn.getOutboundRoadIds().size()));
         Road outRoad = network.getRoads().get(outRoadId);
         if (outRoad == null) {
             return;
@@ -380,6 +398,9 @@ public class IntersectionManager implements IIntersectionManager {
         victim.setLane(targetLane); // transfer = special case, not a lane change
         victim.completeLaneChange();
         targetLane.addVehicle(victim);
+        // D-05a: deadlock resolver still represents a road hand-off — accumulate free-flow time
+        // for the road just entered so KPI delay accounting stays consistent.
+        victim.addFreeFlowSeconds(outRoad.getLength() / Math.max(0.1, outRoad.getSpeedLimit()));
     }
 
     /**
@@ -471,6 +492,9 @@ public class IntersectionManager implements IIntersectionManager {
         v.completeLaneChange();
         targetLane.addVehicle(v);
         lastPlacedPosition.put(targetLane.getId(), effectivePosition);
+        // D-05a: accumulate the new road's free-flow time at hand-off. Read from outRoad (we have
+        // it here) — speedLimit guarded against zero just in case (matches VehicleSpawner pattern).
+        v.addFreeFlowSeconds(outRoad.getLength() / Math.max(0.1, outRoad.getSpeedLimit()));
 
         log.debug(
                 "Vehicle {} transferred through intersection {} from {} to {} at pos {}",
@@ -492,12 +516,12 @@ public class IntersectionManager implements IIntersectionManager {
         if (candidates.isEmpty() && !ixtn.getOutboundRoadIds().isEmpty()) {
             // Allow U-turn as fallback
             return ixtn.getOutboundRoadIds()
-                    .get(ThreadLocalRandom.current().nextInt(ixtn.getOutboundRoadIds().size()));
+                    .get(routingRng.nextInt(ixtn.getOutboundRoadIds().size()));
         }
         if (candidates.isEmpty()) {
             return null;
         }
-        return candidates.get(ThreadLocalRandom.current().nextInt(candidates.size()));
+        return candidates.get(routingRng.nextInt(candidates.size()));
     }
 
     private boolean isValidOutboundCandidate(
@@ -521,7 +545,7 @@ public class IntersectionManager implements IIntersectionManager {
         }
 
         // Default: random active lane
-        return active.get(ThreadLocalRandom.current().nextInt(active.size()));
+        return active.get(routingRng.nextInt(active.size()));
     }
 
     private Lane pickTargetLane(Road road) {

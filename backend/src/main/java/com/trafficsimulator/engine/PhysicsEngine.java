@@ -45,6 +45,21 @@ public class PhysicsEngine implements IPhysicsEngine {
      */
     @Override
     public void tick(Lane lane, double dt, double stopLinePosition) {
+        tick(lane, dt, stopLinePosition, null, 0L);
+    }
+
+    /**
+     * Plan 25-03 D-12 — perturbation-aware tick. When {@code perturbationManager} is non-null and
+     * returns a non-null override for a given vehicle, that vehicle's IDM desired speed is
+     * replaced for this integration step.
+     */
+    @Override
+    public void tick(
+            Lane lane,
+            double dt,
+            double stopLinePosition,
+            IPerturbationManager perturbationManager,
+            long currentTick) {
         List<Vehicle> vehicles = new ArrayList<>(lane.getVehiclesView());
         if (vehicles.isEmpty()) {
             return;
@@ -62,13 +77,27 @@ public class PhysicsEngine implements IPhysicsEngine {
             LeaderInfo leader =
                     findEffectiveLeader(vehicle, vehicleLeader, nearestObstacle, stopLinePosition);
 
+            // D-12: consult perturbation manager — non-null override replaces vehicle.v0 for this
+            // integration step. perturbationManager itself may be null (non-perturbed callsites).
+            Double v0Override =
+                    (perturbationManager != null)
+                            ? perturbationManager.getActiveV0(vehicle, currentTick)
+                            : null;
             double acceleration =
-                    computeAcceleration(
-                            vehicle,
-                            leader.position(),
-                            leader.speed(),
-                            leader.length(),
-                            leader.present());
+                    (v0Override != null)
+                            ? computeAccelerationWithV0(
+                                    vehicle,
+                                    leader.position(),
+                                    leader.speed(),
+                                    leader.length(),
+                                    leader.present(),
+                                    v0Override)
+                            : computeAcceleration(
+                                    vehicle,
+                                    leader.position(),
+                                    leader.speed(),
+                                    leader.length(),
+                                    leader.present());
 
             applyGuardsAndIntegrate(vehicle, acceleration, dt, lane.getMaxSpeed(), leader);
         }
@@ -244,5 +273,44 @@ public class PhysicsEngine implements IPhysicsEngine {
     @Override
     public double computeFreeFlowAcceleration(Vehicle vehicle) {
         return computeAcceleration(vehicle, 0, 0, 0, false);
+    }
+
+    /**
+     * D-12 perturbation variant — mirrors {@link #computeAcceleration} but substitutes the supplied
+     * {@code effectiveV0} for {@code vehicle.getV0()}. Routed through only when {@link
+     * IPerturbationManager#getActiveV0} returned non-null; the non-perturbed path keeps using the
+     * existing {@link #computeAcceleration} unchanged.
+     */
+    private double computeAccelerationWithV0(
+            Vehicle vehicle,
+            double leaderPosition,
+            double leaderSpeed,
+            double leaderLength,
+            boolean hasLeader,
+            double effectiveV0) {
+        double v = vehicle.getSpeed();
+        double aMax = vehicle.getAMax();
+
+        // Free-road term: (v / effectiveV0)^delta — denominator may be very small if perturbation
+        // clamps to a tiny target speed; rely on existing NaN/Infinity guard in
+        // applyGuardsAndIntegrate (Guard 4) to recover.
+        double vRatio = v / effectiveV0;
+        double freeRoadTerm = vRatio * vRatio * vRatio * vRatio;
+
+        if (!hasLeader) {
+            return aMax * (1.0 - freeRoadTerm);
+        }
+
+        double gap = leaderPosition - vehicle.getPosition() - leaderLength;
+        double safeGap = Math.max(gap, S_MIN);
+        double deltaV = v - leaderSpeed;
+
+        double sqrtTerm = 2.0 * Math.sqrt(aMax * vehicle.getB());
+        double interactionTerm = (sqrtTerm > 0.0) ? (v * deltaV / sqrtTerm) : 0.0;
+        double sStar =
+                vehicle.getS0() + Math.max(0.0, v * vehicle.getTimeHeadway() + interactionTerm);
+
+        double sRatio = sStar / safeGap;
+        return aMax * (1.0 - freeRoadTerm - sRatio * sRatio);
     }
 }

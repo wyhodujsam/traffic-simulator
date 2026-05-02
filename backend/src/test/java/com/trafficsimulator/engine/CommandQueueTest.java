@@ -55,7 +55,7 @@ class CommandQueueTest {
             throws InterruptedException {
         SimulationEngine engine = createEngine();
         // Start the simulation so commands are processed against RUNNING state
-        engine.enqueue(new SimulationCommand.Start());
+        engine.enqueue(new SimulationCommand.Start(null));
         engine.drainCommands();
 
         int threadCount = 1000;
@@ -109,7 +109,7 @@ class CommandQueueTest {
 
         assertThat(engine.getStatus()).isEqualTo(SimulationStatus.STOPPED);
 
-        engine.enqueue(new SimulationCommand.Start());
+        engine.enqueue(new SimulationCommand.Start(null));
         engine.drainCommands();
 
         assertThat(engine.getStatus()).isEqualTo(SimulationStatus.RUNNING);
@@ -119,7 +119,7 @@ class CommandQueueTest {
     void drainCommands_appliesPauseAfterStart() {
         SimulationEngine engine = createEngine();
 
-        engine.enqueue(new SimulationCommand.Start());
+        engine.enqueue(new SimulationCommand.Start(null));
         engine.enqueue(new SimulationCommand.Pause());
         engine.drainCommands();
 
@@ -130,7 +130,7 @@ class CommandQueueTest {
     void drainCommands_resumeAfterPause() {
         SimulationEngine engine = createEngine();
 
-        engine.enqueue(new SimulationCommand.Start());
+        engine.enqueue(new SimulationCommand.Start(null));
         engine.drainCommands();
         engine.enqueue(new SimulationCommand.Pause());
         engine.drainCommands();
@@ -144,7 +144,7 @@ class CommandQueueTest {
     void drainCommands_stopResetsTickCounter() {
         SimulationEngine engine = createEngine();
         // Must start first so Stop command is accepted (state machine: STOPPED->RUNNING->STOPPED)
-        engine.enqueue(new SimulationCommand.Start());
+        engine.enqueue(new SimulationCommand.Start(null));
         engine.drainCommands();
         engine.getTickCounter().set(42);
 

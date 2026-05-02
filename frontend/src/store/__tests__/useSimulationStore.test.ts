@@ -8,7 +8,11 @@ function makeState(overrides: Partial<SimulationStateDto> = {}): SimulationState
     timestamp: Date.now(),
     status: 'RUNNING',
     vehicles: [],
+    obstacles: [],
+    trafficLights: [],
     stats: { vehicleCount: 0, avgSpeed: 0, density: 0, throughput: 0 },
+    error: null,
+    mapId: null,
     ...overrides,
   };
 }
@@ -25,6 +29,7 @@ describe('useSimulationStore', () => {
       roads: [],
       roadsLoaded: false,
       sendCommand: null,
+      diagnosticsOpen: false,
     });
   });
 
@@ -63,21 +68,21 @@ describe('useSimulationStore', () => {
   it('setTick builds vehicleMap for O(1) lookup', () => {
     const tick = makeState({
       vehicles: [
-        { id: 'v1', laneId: 'l1', position: 10, speed: 5, x: 100, y: 200, angle: 0 },
-        { id: 'v2', laneId: 'l1', position: 20, speed: 8, x: 150, y: 200, angle: 0 },
+        { id: 'v1', roadId: 'r1', laneId: 'l1', laneIndex: 0, position: 10, speed: 5, laneChangeProgress: 0, laneChangeSourceIndex: -1 },
+        { id: 'v2', roadId: 'r1', laneId: 'l1', laneIndex: 0, position: 20, speed: 8, laneChangeProgress: 0, laneChangeSourceIndex: -1 },
       ],
     });
     useSimulationStore.getState().setTick(tick);
 
     const map = useSimulationStore.getState().currSnapshot?.vehicleMap;
     expect(map?.size).toBe(2);
-    expect(map?.get('v1')?.x).toBe(100);
-    expect(map?.get('v2')?.x).toBe(150);
+    expect(map?.get('v1')?.speed).toBe(5);
+    expect(map?.get('v2')?.speed).toBe(8);
   });
 
   it('setRoads marks roadsLoaded as true', () => {
     useSimulationStore.getState().setRoads([
-      { id: 'r1', name: 'Test', laneCount: 3, length: 800, speedLimit: 33, startX: 50, startY: 300, endX: 850, endY: 300 },
+      { id: 'r1', name: 'Test', laneCount: 3, length: 800, speedLimit: 33, startX: 50, startY: 300, endX: 850, endY: 300, clipStart: 0, clipEnd: 0 },
     ]);
     const state = useSimulationStore.getState();
     expect(state.roads).toHaveLength(1);
@@ -88,5 +93,49 @@ describe('useSimulationStore', () => {
     const mockSend = () => {};
     useSimulationStore.getState().setSendCommand(mockSend);
     expect(useSimulationStore.getState().sendCommand).toBe(mockSend);
+  });
+});
+
+describe('useSimulationStore — diagnostics UI state (Phase 25 D-09)', () => {
+  beforeEach(() => {
+    // Reset diagnosticsOpen to default
+    useSimulationStore.setState({ diagnosticsOpen: false });
+  });
+
+  it('diagnosticsOpen defaults to false', () => {
+    expect(useSimulationStore.getState().diagnosticsOpen).toBe(false);
+  });
+
+  it('toggleDiagnostics flips state', () => {
+    useSimulationStore.getState().toggleDiagnostics();
+    expect(useSimulationStore.getState().diagnosticsOpen).toBe(true);
+    useSimulationStore.getState().toggleDiagnostics();
+    expect(useSimulationStore.getState().diagnosticsOpen).toBe(false);
+  });
+
+  it('stats accepts KPI block via setTick', () => {
+    const state: SimulationStateDto = {
+      tick: 1,
+      timestamp: 0,
+      status: 'RUNNING',
+      vehicles: [],
+      obstacles: [],
+      trafficLights: [],
+      stats: {
+        vehicleCount: 1,
+        avgSpeed: 10,
+        density: 1,
+        throughput: 5,
+        kpi: { throughputVehiclesPerMin: 5, meanDelaySeconds: 0.5, p95QueueLengthMeters: 0, worstLos: 'B' },
+        segmentKpis: [],
+        intersectionKpis: [],
+      },
+      error: null,
+      mapId: 'test',
+    };
+    useSimulationStore.getState().setTick(state);
+    const stats = useSimulationStore.getState().stats;
+    expect(stats?.kpi?.worstLos).toBe('B');
+    expect(stats?.kpi?.throughputVehiclesPerMin).toBe(5);
   });
 });

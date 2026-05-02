@@ -74,7 +74,7 @@ class VehicleDespawnTest {
 
         RoadNetwork network = buildNetwork(road);
 
-        new VehicleSpawner().despawnVehicles(network);
+        new VehicleSpawner().despawnVehicles(network, 0L);
 
         assertThat(lane.getVehiclesView()).isEmpty();
     }
@@ -109,7 +109,7 @@ class VehicleDespawnTest {
 
         RoadNetwork network = buildNetwork(road);
 
-        new VehicleSpawner().despawnVehicles(network);
+        new VehicleSpawner().despawnVehicles(network, 0L);
 
         assertThat(lane.getVehiclesView()).hasSize(1);
     }
@@ -144,7 +144,7 @@ class VehicleDespawnTest {
 
         RoadNetwork network = buildNetwork(road);
 
-        new VehicleSpawner().despawnVehicles(network);
+        new VehicleSpawner().despawnVehicles(network, 0L);
 
         assertThat(lane.getVehiclesView()).isEmpty();
     }

@@ -8,6 +8,19 @@ public interface IPhysicsEngine {
 
     void tick(Lane lane, double dt, double stopLinePosition);
 
+    /**
+     * Plan 25-03 D-12 — perturbation-aware tick. When {@code perturbationManager} is non-null and
+     * returns a non-null override for a given vehicle/tick pair, that vehicle's IDM desired speed
+     * is replaced for that integration step. Pass {@code null}/{@code 0L} for the
+     * non-perturbed callsites (tests, ad-hoc invocations).
+     */
+    void tick(
+            Lane lane,
+            double dt,
+            double stopLinePosition,
+            IPerturbationManager perturbationManager,
+            long currentTick);
+
     double computeAcceleration(
             Vehicle v,
             double leaderPos,

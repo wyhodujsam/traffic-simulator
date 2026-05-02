@@ -2,6 +2,7 @@ import { useIsMobile } from '../hooks/useIsMobile';
 import { SimulationCanvas } from '../components/SimulationCanvas';
 import { ControlsPanel } from '../components/ControlsPanel';
 import { StatsPanel } from '../components/StatsPanel';
+import { DiagnosticsPanel } from '../components/DiagnosticsPanel';
 import { useSimulationStore } from '../store/useSimulationStore';
 
 function DisconnectBanner() {
@@ -94,6 +95,7 @@ export function SimulationPage() {
           <ControlsPanel />
           <div style={{ borderTop: '1px solid #333' }} />
           <StatsPanel />
+          <DiagnosticsPanel />
         </aside>
       </div>
     </>

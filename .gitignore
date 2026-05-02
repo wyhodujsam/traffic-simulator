@@ -2,3 +2,6 @@
 # Keep Cargo.lock and backend/bin/osm2streets-cli-linux-x64 checked in; only
 # exclude the target/ build output directory.
 tools/osm2streets-cli/target/
+
+# Phase 25 D-14: replay NDJSON output (target/ already partly tracked, so be specific).
+backend/target/replays/

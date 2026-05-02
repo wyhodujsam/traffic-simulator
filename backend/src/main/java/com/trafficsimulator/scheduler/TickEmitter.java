@@ -1,13 +1,20 @@
 package com.trafficsimulator.scheduler;
 
+import java.io.IOException;
+import java.util.List;
 import java.util.Map;
 
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.lang.Nullable;
 import org.springframework.scheduling.annotation.Scheduled;
 import org.springframework.stereotype.Component;
 
 import com.trafficsimulator.dto.SimulationStateDto;
+import com.trafficsimulator.dto.VehicleDto;
+import com.trafficsimulator.dto.VehicleSnapshotDto;
 import com.trafficsimulator.engine.IIntersectionManager;
 import com.trafficsimulator.engine.ILaneChangeEngine;
+import com.trafficsimulator.engine.IPerturbationManager;
 import com.trafficsimulator.engine.IPhysicsEngine;
 import com.trafficsimulator.engine.ITrafficLightController;
 import com.trafficsimulator.engine.IVehicleSpawner;
@@ -17,12 +24,11 @@ import com.trafficsimulator.engine.StatePublisher;
 import com.trafficsimulator.model.Lane;
 import com.trafficsimulator.model.Road;
 import com.trafficsimulator.model.RoadNetwork;
+import com.trafficsimulator.replay.ReplayLogger;
 
-import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 
 @Component
-@RequiredArgsConstructor
 @Slf4j
 @org.springframework.boot.autoconfigure.condition.ConditionalOnProperty(
         name = "simulation.tick-emitter.enabled",
@@ -40,10 +46,56 @@ public class TickEmitter {
     private final ILaneChangeEngine laneChangeEngine;
     private final ITrafficLightController trafficLightController;
     private final IIntersectionManager intersectionManager;
+    private final IPerturbationManager perturbationManager;
     private final SnapshotBuilder snapshotBuilder;
 
+    /** Phase 25 D-14: optional NDJSON replay logger. Null in unit tests that omit it. */
+    @Nullable private final ReplayLogger replayLogger;
+
+    @Autowired
+    public TickEmitter(
+            StatePublisher statePublisher,
+            SimulationEngine simulationEngine,
+            IVehicleSpawner vehicleSpawner,
+            IPhysicsEngine physicsEngine,
+            ILaneChangeEngine laneChangeEngine,
+            ITrafficLightController trafficLightController,
+            IIntersectionManager intersectionManager,
+            IPerturbationManager perturbationManager,
+            SnapshotBuilder snapshotBuilder,
+            @Nullable ReplayLogger replayLogger) {
+        this.statePublisher = statePublisher;
+        this.simulationEngine = simulationEngine;
+        this.vehicleSpawner = vehicleSpawner;
+        this.physicsEngine = physicsEngine;
+        this.laneChangeEngine = laneChangeEngine;
+        this.trafficLightController = trafficLightController;
+        this.intersectionManager = intersectionManager;
+        this.perturbationManager = perturbationManager;
+        this.snapshotBuilder = snapshotBuilder;
+        this.replayLogger = replayLogger;
+    }
+
+    /**
+     * Wall-clock 20 Hz scheduler entrypoint. Phase 25 D-13 + RESEARCH.md §Pitfall #5: when {@code
+     * engine.isFastMode()} is true, the {@code FastSimulationRunner} owns the tick pipeline; the
+     * scheduler MUST early-return to avoid the scheduler-vs-worker race (T-25-RACE).
+     */
     @Scheduled(fixedRate = 50)
     public void emitTick() {
+        if (simulationEngine.isFastMode()) {
+            return;
+        }
+        runOneTick();
+    }
+
+    /**
+     * Single tick of the simulation pipeline (drain commands → physics → snapshot → broadcast →
+     * replay). Factored out of {@link #emitTick()} so {@link
+     * com.trafficsimulator.scheduler.FastSimulationRunner} can drive the same logic from a worker
+     * thread without going through the {@code @Scheduled} cadence.
+     */
+    public void runOneTick() {
         long tickStart = System.nanoTime();
 
         // Acquire writeLock for the entire tick pipeline (drain + physics + snapshot)
@@ -83,10 +135,49 @@ public class TickEmitter {
                 simulationEngine.setLastError(null);
             }
 
+            // Phase 25 D-14: write replay NDJSON line if logger active.
+            writeReplayLine(tick, state);
+
+            // Phase 25 D-13: auto-stop when target tick reached. Issues an internal STOP and emits
+            // a terminal status=STOPPED snapshot on the next iteration (or, in fast mode, the
+            // worker exits its loop on the same check).
+            if (simulationEngine.isAutoStopReached()) {
+                simulationEngine.setStatus(SimulationStatus.STOPPED);
+                simulationEngine.clearAutoStop();
+                if (replayLogger != null) {
+                    try {
+                        replayLogger.close();
+                    } catch (IOException e) {
+                        log.warn("[TickEmitter] Replay close failed: {}", e.getMessage());
+                    }
+                }
+                log.info("[TickEmitter] Auto-stop reached at tick {}", tick);
+            }
+
             logTickMetrics(tick, tickStart, state);
         } finally {
             simulationEngine.writeLock().unlock();
         }
+    }
+
+    private void writeReplayLine(long tick, SimulationStateDto state) {
+        if (replayLogger == null || !replayLogger.isActive()) {
+            return;
+        }
+        // Build the narrow VehicleSnapshotDto list from the broadcast state's VehicleDto list.
+        List<VehicleSnapshotDto> snapshots =
+                state.getVehicles().stream().map(TickEmitter::toSnapshot).toList();
+        replayLogger.onTick(tick, snapshots);
+    }
+
+    private static VehicleSnapshotDto toSnapshot(VehicleDto v) {
+        return VehicleSnapshotDto.builder()
+                .id(v.getId())
+                .roadId(v.getRoadId())
+                .laneIndex(v.getLaneIndex())
+                .position(v.getPosition())
+                .speed(v.getSpeed())
+                .build();
     }
 
     private void runSimulationPipeline(RoadNetwork network, long tick) {
@@ -116,7 +207,7 @@ public class TickEmitter {
             for (Road road : network.getRoads().values()) {
                 for (Lane lane : road.getLanes()) {
                     double stopLine = stopLines.getOrDefault(lane.getId(), -1.0);
-                    physicsEngine.tick(lane, stepDt, stopLine);
+                    physicsEngine.tick(lane, stepDt, stopLine, perturbationManager, tick);
                 }
             }
         }
@@ -127,8 +218,8 @@ public class TickEmitter {
         // 4. Intersection transfers (after physics, before despawn)
         intersectionManager.processTransfers(network, tick);
 
-        // 5. Despawn (only EXIT-node roads)
-        vehicleSpawner.despawnVehicles(network);
+        // 5. Despawn (only EXIT-node roads). Pass current tick for tick-keyed throughput window.
+        vehicleSpawner.despawnVehicles(network, tick);
     }
 
     private void logTickMetrics(long tick, long tickStart, SimulationStateDto state) {
